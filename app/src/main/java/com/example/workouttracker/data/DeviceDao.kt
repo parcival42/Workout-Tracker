@@ -11,6 +11,12 @@ interface DeviceDao {
     @Query("SELECT * FROM device WHERE archived = 0 ORDER BY name COLLATE NOCASE")
     fun observeActive(): Flow<List<Device>>
 
+    @Query("SELECT * FROM device WHERE archived = 1 ORDER BY name COLLATE NOCASE")
+    fun observeArchived(): Flow<List<Device>>
+
+    @Query("UPDATE device SET archived = :archived WHERE id = :deviceId")
+    suspend fun setArchived(deviceId: Long, archived: Boolean)
+
     // Includes archived devices: their history stays viewable.
     @Query(
         """

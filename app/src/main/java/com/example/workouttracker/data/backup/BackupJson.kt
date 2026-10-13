@@ -31,7 +31,8 @@ object BackupJson {
                 put("name", d.name)
                 put("imageUri", d.imageUri ?: JSONObject.NULL)
                 put("archived", d.archived)
-                put("startWeightGrams", d.startWeightGrams)
+                // Key name kept from v1 for compatibility; holds the device's minimum weight.
+                put("startWeightGrams", d.minWeightGrams)
                 put("weightStepGrams", d.weightStepGrams)
             }
         }))
@@ -78,7 +79,7 @@ object BackupJson {
                         name = o.getString("name"),
                         imageUri = if (o.isNull("imageUri")) null else o.getString("imageUri"),
                         archived = o.getBoolean("archived"),
-                        startWeightGrams = o.getInt("startWeightGrams"),
+                        minWeightGrams = o.getInt("startWeightGrams"),
                         weightStepGrams = o.getInt("weightStepGrams"),
                     )
                 },
@@ -129,7 +130,7 @@ object BackupJson {
         check(data.planEntries.map { it.id }.let { ids -> ids.toSet().size == ids.size && ids.all { it > 0 } }, "Invalid plan entry ids")
         check(data.sets.map { it.id }.let { ids -> ids.toSet().size == ids.size && ids.all { it > 0 } }, "Invalid set ids")
         check(data.plans.count { it.isDefault } <= 1, "More than one default plan")
-        check(data.devices.all { it.name.isNotBlank() && it.startWeightGrams >= 0 && it.weightStepGrams > 0 }, "Invalid device values")
+        check(data.devices.all { it.name.isNotBlank() && it.minWeightGrams >= 0 && it.weightStepGrams > 0 }, "Invalid device values")
         check(data.planEntries.all { it.planId in planIds && it.deviceId in deviceIds }, "Plan entry references a missing plan or device")
         check(data.planEntries.all { it.targetSets > 0 && it.targetReps > 0 }, "Invalid plan entry targets")
         check(data.sets.all { it.deviceId in deviceIds }, "Set references a missing device")

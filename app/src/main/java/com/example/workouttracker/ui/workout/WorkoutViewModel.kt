@@ -26,6 +26,7 @@ data class WorkoutItem(
     val targetReps: Int,
     val todaySets: List<SetLog>,
     val weightGrams: Int,
+    val minWeightGrams: Int,
     val weightStepGrams: Int,
     val reps: Int,
 ) {
@@ -75,7 +76,8 @@ class WorkoutViewModel(
                     targetSets = entry.targetSets,
                     targetReps = entry.targetReps,
                     todaySets = todayByDevice[entry.deviceId].orEmpty(),
-                    weightGrams = draft?.weightGrams ?: last?.weightGrams ?: entry.startWeightGrams,
+                    weightGrams = draft?.weightGrams ?: last?.weightGrams ?: entry.minWeightGrams,
+                    minWeightGrams = entry.minWeightGrams,
                     weightStepGrams = entry.weightStepGrams,
                     reps = draft?.reps ?: last?.reps ?: entry.targetReps,
                 )
