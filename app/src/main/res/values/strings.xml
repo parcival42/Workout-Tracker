@@ -4,10 +4,21 @@
     <string name="devices_title">Devices</string>
     <string name="devices_empty">No devices yet. Tap + to add your first device.</string>
     <string name="device_add_title">Add device</string>
+    <string name="devices_archived_show">Show archived devices (%1$d)</string>
+    <string name="devices_archived_hide">Hide archived devices</string>
+    <string name="device_archived_message">\"%1$s\" archived</string>
+    <string name="action_restore">Restore</string>
+    <string name="action_undo">Undo</string>
     <string name="device_edit_title">Edit device</string>
-    <string name="device_start_weight_label">Start weight (kg)</string>
-    <string name="device_weight_step_label">Weight step (kg)</string>
-    <string name="device_weight_info">Start %1$s kg · step %2$s kg</string>
+    <string name="device_name_label">Device name</string>
+    <string name="device_name_placeholder">e.g. Leg press</string>
+    <string name="device_min_weight_label">Minimum weight (kg)</string>
+    <string name="device_min_weight_help">Lightest setting on the machine. Weight steps are counted from here.</string>
+    <string name="device_min_weight_error">Enter a weight from 0 to 1000 kg.</string>
+    <string name="device_weight_step_label">Weight increment (kg)</string>
+    <string name="device_weight_step_help">Difference between two settings on the machine, e.g. 2.5 or 5.</string>
+    <string name="device_weight_step_error">Enter an increment greater than 0 kg.</string>
+    <string name="device_weight_info">From %1$s kg in %2$s kg increments</string>
 
     <string name="plans_title">Training plans</string>
     <string name="training_title">Training</string>

@@ -55,6 +55,8 @@ import com.example.workouttracker.data.SetLog
 import com.example.workouttracker.ui.components.EmptyHint
 import com.example.workouttracker.ui.components.formatKg
 import com.example.workouttracker.ui.components.parseKgToGrams
+import com.example.workouttracker.ui.components.stepWeightDown
+import com.example.workouttracker.ui.components.stepWeightUp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -352,9 +354,9 @@ private fun NextSetSheet(
             ValueStepper(
                 label = stringResource(R.string.weight_label),
                 value = stringResource(R.string.weight_kg, formatKg(weightGrams)),
-                onDecrease = { weightGrams = (weightGrams - item.weightStepGrams).coerceAtLeast(0) },
-                onIncrease = { weightGrams += item.weightStepGrams },
-                decreaseEnabled = weightGrams > 0,
+                onDecrease = { weightGrams = stepWeightDown(weightGrams, item.minWeightGrams, item.weightStepGrams) },
+                onIncrease = { weightGrams = stepWeightUp(weightGrams, item.minWeightGrams, item.weightStepGrams) },
+                decreaseEnabled = weightGrams > item.minWeightGrams,
                 onValueClick = { showWeightDialog = true },
             )
             ValueStepper(

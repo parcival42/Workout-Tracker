@@ -18,6 +18,9 @@ class DeviceListViewModel(private val deviceDao: DeviceDao) : ViewModel() {
     val devices: StateFlow<List<Device>> = deviceDao.observeActive()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    val archivedDevices: StateFlow<List<Device>> = deviceDao.observeArchived()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
     fun save(device: Device) {
         if (device.name.isBlank()) return
         viewModelScope.launch {
@@ -26,7 +29,11 @@ class DeviceListViewModel(private val deviceDao: DeviceDao) : ViewModel() {
     }
 
     fun archive(device: Device) {
-        viewModelScope.launch { deviceDao.update(device.copy(archived = true)) }
+        viewModelScope.launch { deviceDao.setArchived(device.id, true) }
+    }
+
+    fun restore(device: Device) {
+        viewModelScope.launch { deviceDao.setArchived(device.id, false) }
     }
 
     companion object {

@@ -2,10 +2,21 @@
     <string name="devices_title">Geräte</string>
     <string name="devices_empty">Noch keine Geräte. Tippe auf +, um dein erstes Gerät anzulegen.</string>
     <string name="device_add_title">Gerät anlegen</string>
+    <string name="devices_archived_show">Archivierte Geräte anzeigen (%1$d)</string>
+    <string name="devices_archived_hide">Archivierte Geräte ausblenden</string>
+    <string name="device_archived_message">„%1$s“ archiviert</string>
+    <string name="action_restore">Wiederherstellen</string>
+    <string name="action_undo">Rückgängig</string>
     <string name="device_edit_title">Gerät bearbeiten</string>
-    <string name="device_start_weight_label">Startgewicht (kg)</string>
-    <string name="device_weight_step_label">Schrittweite (kg)</string>
-    <string name="device_weight_info">Start %1$s kg · Schritt %2$s kg</string>
+    <string name="device_name_label">Gerätename</string>
+    <string name="device_name_placeholder">z. B. Beinpresse</string>
+    <string name="device_min_weight_label">Mindestgewicht (kg)</string>
+    <string name="device_min_weight_help">Leichteste Einstellung am Gerät. Von hier aus wird in Abstufungen gezählt.</string>
+    <string name="device_min_weight_error">Gib ein Gewicht von 0 bis 1000 kg ein.</string>
+    <string name="device_weight_step_label">Abstufung (kg)</string>
+    <string name="device_weight_step_help">Gewichtsunterschied zwischen zwei Stufen am Gerät, z. B. 2,5 oder 5.</string>
+    <string name="device_weight_step_error">Gib eine Abstufung größer als 0 kg ein.</string>
+    <string name="device_weight_info">Ab %1$s kg in %2$s-kg-Stufen</string>
 
     <string name="plans_title">Trainingspläne</string>
     <string name="training_title">Training</string>

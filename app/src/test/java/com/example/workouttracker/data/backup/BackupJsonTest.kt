@@ -12,7 +12,7 @@ class BackupJsonTest {
 
     private val sample = BackupData(
         devices = listOf(
-            Device(id = 1, name = "Leg Press", startWeightGrams = 40_000, weightStepGrams = 5_000),
+            Device(id = 1, name = "Leg Press", minWeightGrams = 40_000, weightStepGrams = 5_000),
             Device(id = 2, name = "Old Rowing", imageUri = "content://image", archived = true),
         ),
         plans = listOf(TrainingPlan(id = 7, name = "Upper Body", isDefault = true), TrainingPlan(id = 8, name = "Legs")),

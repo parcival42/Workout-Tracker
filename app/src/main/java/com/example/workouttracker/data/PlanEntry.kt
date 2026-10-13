@@ -38,6 +38,6 @@ data class PlanEntryItem(
     val deviceName: String,
     val targetSets: Int,
     val targetReps: Int,
-    val startWeightGrams: Int,
+    val minWeightGrams: Int,
     val weightStepGrams: Int,
 )

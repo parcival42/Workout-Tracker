@@ -36,7 +36,7 @@ abstract class PlanDao {
         """
         SELECT pe.id, pe.device_id AS deviceId, d.name AS deviceName,
                pe.target_sets AS targetSets, pe.target_reps AS targetReps,
-               d.start_weight_grams AS startWeightGrams, d.weight_step_grams AS weightStepGrams
+               d.start_weight_grams AS minWeightGrams, d.weight_step_grams AS weightStepGrams
         FROM plan_entry pe
         JOIN device d ON d.id = pe.device_id
         WHERE pe.plan_id = :planId AND d.archived = 0
