@@ -1,0 +1,80 @@
+<resources>
+    <string name="devices_title">Geräte</string>
+    <string name="devices_empty">Noch keine Geräte. Tippe auf +, um dein erstes Gerät anzulegen.</string>
+    <string name="device_add_title">Gerät anlegen</string>
+    <string name="device_edit_title">Gerät bearbeiten</string>
+    <string name="device_start_weight_label">Startgewicht (kg)</string>
+    <string name="device_weight_step_label">Schrittweite (kg)</string>
+    <string name="device_weight_info">Start %1$s kg · Schritt %2$s kg</string>
+
+    <string name="plans_title">Trainingspläne</string>
+    <string name="training_title">Training</string>
+    <string name="training_no_plan">Du hast noch keinen Trainingsplan. Lege einen an, um mit dem Training zu starten.</string>
+    <string name="plans_default_hint">Markiere einen Plan mit dem Stern, damit er im Tab Training automatisch startet.</string>
+    <string name="action_switch_plan">Plan wechseln</string>
+    <string name="action_set_default_plan">Als Standardplan festlegen</string>
+    <string name="action_unset_default_plan">Standardplan entfernen</string>
+    <string name="plan_add_title">Neuer Plan</string>
+    <string name="plan_rename_title">Plan umbenennen</string>
+    <string name="plan_delete_title">Plan löschen?</string>
+    <string name="plan_delete_message">Der Plan „%1$s“ wird gelöscht. Dein Trainingsverlauf bleibt erhalten.</string>
+    <string name="plan_entries_empty">Noch keine Geräte in diesem Plan. Tippe auf +, um eins hinzuzufügen.</string>
+    <string name="plan_add_device_title">Gerät zum Plan hinzufügen</string>
+    <string name="plan_no_devices_available">Alle Geräte sind bereits in diesem Plan. Neue Geräte legst du im Tab Geräte an.</string>
+    <string name="target_sets">Sätze</string>
+    <string name="target_reps">Wiederholungen</string>
+
+    <string name="workout_empty">Dieser Plan hat noch keine Geräte. Füge sie über den Bearbeiten-Button hinzu.</string>
+    <string name="workout_next_set">Nächster Satz: %1$s kg × %2$d</string>
+    <string name="next_set_sheet_subtitle">Gewicht und Wiederholungen für den nächsten Satz</string>
+    <string name="weight_label">Gewicht</string>
+    <string name="action_edit_next_set">Nächsten Satz bearbeiten</string>
+    <string name="action_apply">Übernehmen</string>
+    <string name="weight_dialog_title">Gewicht festlegen</string>
+    <string name="weight_label_kg">Gewicht (kg)</string>
+    <string name="action_device_done">Erledigt</string>
+    <string name="action_set_n_of_m">Satz %1$d von %2$d</string>
+    <string name="action_extra_set">Zusatzsatz</string>
+    <string name="edit_set_title">Satz %1$d bearbeiten</string>
+    <string name="action_undo_set">Letzten Satz rückgängig</string>
+    <string name="action_edit_plan">Plan bearbeiten</string>
+
+    <string name="history_title">Verlauf</string>
+    <string name="history_empty">Noch keine Trainingsdaten. Dein Verlauf erscheint hier nach dem ersten Training.</string>
+    <string name="history_select_device">Wähle ein Gerät, um seinen Verlauf zu sehen.</string>
+    <string name="history_no_data_in_range">Keine Sätze in diesem Zeitraum.</string>
+    <string name="history_chart_title">Gewicht pro Satz (kg)</string>
+    <string name="history_tap_hint">Tippe auf einen Punkt für Details.</string>
+    <string name="history_range_1m">1 M</string>
+    <string name="history_range_3m">3 M</string>
+    <string name="history_range_1y">1 J</string>
+    <string name="history_range_all">Alle</string>
+
+    <string name="settings_title">Einstellungen</string>
+    <string name="settings_language_title">Sprache</string>
+    <string name="language_system">Systemsprache</string>
+    <string name="settings_data_title">Datensicherung</string>
+    <string name="settings_data_description">Deine Daten liegen nur auf diesem Handy. Exportiere sie regelmäßig, z. B. vor einem Handywechsel.</string>
+    <string name="backup_export_action">Daten exportieren</string>
+    <string name="backup_import_action">Daten importieren</string>
+    <string name="backup_import_confirm_title">Alle Daten ersetzen?</string>
+    <string name="backup_import_confirm_message">Alle Geräte, Pläne und der Trainingsverlauf auf diesem Handy werden durch den Inhalt der Datei ersetzt. Das lässt sich nicht rückgängig machen.</string>
+    <string name="backup_import_confirm_action">Ersetzen</string>
+    <string name="backup_exported">Daten exportiert.</string>
+    <string name="backup_export_failed">Export fehlgeschlagen.</string>
+    <string name="backup_imported">Daten importiert.</string>
+    <string name="backup_import_invalid">Diese Datei ist keine gültige Workout-Tracker-Sicherung. Es wurde nichts geändert.</string>
+    <string name="backup_import_failed">Import fehlgeschlagen. Es wurde nichts geändert.</string>
+
+    <string name="name_label">Name</string>
+    <string name="action_save">Speichern</string>
+    <string name="action_cancel">Abbrechen</string>
+    <string name="action_archive">Archivieren</string>
+    <string name="action_rename">Umbenennen</string>
+    <string name="action_delete">Löschen</string>
+    <string name="action_remove_from_plan">Aus Plan entfernen</string>
+    <string name="action_back">Zurück</string>
+    <string name="action_reorder">Verschieben</string>
+    <string name="action_decrease">Verringern</string>
+    <string name="action_increase">Erhöhen</string>
+</resources>
