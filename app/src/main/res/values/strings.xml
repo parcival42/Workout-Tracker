@@ -1,3 +1,89 @@
 <resources>
-    <string name="app_name">Workout Tracker</string>
+    <string name="app_name" translatable="false">Workout Tracker</string>
+
+    <string name="devices_title">Devices</string>
+    <string name="devices_empty">No devices yet. Tap + to add your first device.</string>
+    <string name="device_add_title">Add device</string>
+    <string name="device_edit_title">Edit device</string>
+    <string name="device_start_weight_label">Start weight (kg)</string>
+    <string name="device_weight_step_label">Weight step (kg)</string>
+    <string name="device_weight_info">Start %1$s kg · step %2$s kg</string>
+
+    <string name="plans_title">Training plans</string>
+    <string name="training_title">Training</string>
+    <string name="training_no_plan">You don\'t have a training plan yet. Create one to start training.</string>
+    <string name="plans_default_hint">Mark a plan with the star to start it automatically in the Training tab.</string>
+    <string name="action_switch_plan">Switch plan</string>
+    <string name="action_set_default_plan">Set as default plan</string>
+    <string name="action_unset_default_plan">Remove default plan</string>
+    <string name="plan_add_title">New plan</string>
+    <string name="plan_rename_title">Rename plan</string>
+    <string name="plan_delete_title">Delete plan?</string>
+    <string name="plan_delete_message">The plan \"%1$s\" will be deleted. Your training history is kept.</string>
+    <string name="plan_entries_empty">No devices in this plan yet. Tap + to add one.</string>
+    <string name="plan_add_device_title">Add device to plan</string>
+    <string name="plan_no_devices_available">All devices are already in this plan. Create new devices in the Devices tab.</string>
+    <string name="plan_entry_targets" translatable="false">%1$d × %2$d</string>
+    <string name="target_sets">Sets</string>
+    <string name="target_reps">Reps</string>
+
+    <string name="workout_empty">This plan has no devices yet. Add devices with the edit button.</string>
+    <string name="workout_progress" translatable="false">%1$d/%2$d</string>
+    <string name="workout_set_summary" translatable="false">%1$s kg × %2$d</string>
+    <string name="weight_kg" translatable="false">%1$s kg</string>
+    <string name="workout_next_set">Next set: %1$s kg × %2$d</string>
+    <string name="next_set_sheet_subtitle">Weight and reps for the next set</string>
+    <string name="weight_label">Weight</string>
+    <string name="action_edit_next_set">Edit next set</string>
+    <string name="action_apply">Apply</string>
+    <string name="weight_dialog_title">Set weight</string>
+    <string name="weight_label_kg">Weight (kg)</string>
+    <string name="action_device_done">Done</string>
+    <string name="action_set_n_of_m">Set %1$d of %2$d</string>
+    <string name="action_extra_set">Extra set</string>
+    <string name="edit_set_title">Edit set %1$d</string>
+    <string name="action_undo_set">Undo last set</string>
+    <string name="action_edit_plan">Edit plan</string>
+
+    <string name="history_title">History</string>
+    <string name="history_empty">No training logged yet. Your history appears here after your first workout.</string>
+    <string name="history_select_device">Select a device to see its history.</string>
+    <string name="history_no_data_in_range">No sets in this time range.</string>
+    <string name="history_chart_title">Weight per set (kg)</string>
+    <string name="history_tap_hint">Tap a point for details.</string>
+    <string name="history_point_detail" translatable="false">%1$s · %2$s · %3$s kg × %4$d</string>
+    <string name="history_range_1m">1 M</string>
+    <string name="history_range_3m">3 M</string>
+    <string name="history_range_1y">1 Y</string>
+    <string name="history_range_all">All</string>
+
+    <string name="settings_title">Settings</string>
+    <string name="settings_language_title">Language</string>
+    <string name="language_system">System default</string>
+    <string name="language_german" translatable="false">Deutsch</string>
+    <string name="language_english" translatable="false">English</string>
+    <string name="settings_data_title">Backup</string>
+    <string name="settings_data_description">Your data is stored only on this phone. Export it regularly to keep it safe, e.g. before switching phones.</string>
+    <string name="backup_export_action">Export data</string>
+    <string name="backup_import_action">Import data</string>
+    <string name="backup_import_confirm_title">Replace all data?</string>
+    <string name="backup_import_confirm_message">All devices, plans and training history on this phone will be replaced by the contents of the file. This cannot be undone.</string>
+    <string name="backup_import_confirm_action">Replace</string>
+    <string name="backup_exported">Data exported.</string>
+    <string name="backup_export_failed">Export failed.</string>
+    <string name="backup_imported">Data imported.</string>
+    <string name="backup_import_invalid">This file is not a valid Workout Tracker backup. Nothing was changed.</string>
+    <string name="backup_import_failed">Import failed. Nothing was changed.</string>
+
+    <string name="name_label">Name</string>
+    <string name="action_save">Save</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_archive">Archive</string>
+    <string name="action_rename">Rename</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_remove_from_plan">Remove from plan</string>
+    <string name="action_back">Back</string>
+    <string name="action_reorder">Reorder</string>
+    <string name="action_decrease">Decrease</string>
+    <string name="action_increase">Increase</string>
 </resources>
