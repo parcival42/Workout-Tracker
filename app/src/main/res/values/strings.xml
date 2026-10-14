@@ -19,6 +19,9 @@
     <string name="device_weight_step_help">Difference between two settings on the machine, e.g. 2.5 or 5.</string>
     <string name="device_weight_step_error">Enter an increment greater than 0 kg.</string>
     <string name="device_weight_info">From %1$s kg in %2$s kg increments</string>
+    <string name="device_type_strength">Strength</string>
+    <string name="device_type_cardio">Cardio</string>
+    <string name="device_type_locked">The type can\'t be changed because training has already been logged on this device.</string>
 
     <string name="plans_title">Training plans</string>
     <string name="training_title">Training</string>
@@ -37,6 +40,10 @@
     <string name="plan_entry_targets" translatable="false">%1$d × %2$d</string>
     <string name="target_sets">Sets</string>
     <string name="target_reps">Reps</string>
+    <string name="duration_label">Duration</string>
+    <string name="duration_label_min">Duration (min)</string>
+    <string name="duration_min" translatable="false">%1$d min</string>
+    <string name="duration_dialog_title">Set duration</string>
 
     <string name="workout_empty">This plan has no devices yet. Add devices with the edit button.</string>
     <string name="workout_progress" translatable="false">%1$d/%2$d</string>
@@ -55,14 +62,22 @@
     <string name="edit_set_title">Edit set %1$d</string>
     <string name="action_undo_set">Undo last set</string>
     <string name="action_edit_plan">Edit plan</string>
+    <string name="workout_next_session">Duration: %1$d min</string>
+    <string name="next_session_sheet_subtitle">Duration of the next session</string>
+    <string name="action_edit_next_session">Edit next session</string>
+    <string name="action_extra_session">Extra session</string>
+    <string name="action_undo_session">Undo last session</string>
+    <string name="edit_session_title">Edit session %1$d</string>
 
     <string name="history_title">History</string>
     <string name="history_empty">No training logged yet. Your history appears here after your first workout.</string>
     <string name="history_select_device">Select a device to see its history.</string>
-    <string name="history_no_data_in_range">No sets in this time range.</string>
+    <string name="history_no_data_in_range">No training in this time range.</string>
     <string name="history_chart_title">Weight per set (kg)</string>
+    <string name="history_chart_title_cardio">Duration per session (min)</string>
     <string name="history_tap_hint">Tap a point for details.</string>
     <string name="history_point_detail" translatable="false">%1$s · %2$s · %3$s kg × %4$d</string>
+    <string name="history_point_detail_cardio" translatable="false">%1$s · %2$s · %3$d min</string>
     <string name="history_range_1m">1 M</string>
     <string name="history_range_3m">3 M</string>
     <string name="history_range_1y">1 Y</string>

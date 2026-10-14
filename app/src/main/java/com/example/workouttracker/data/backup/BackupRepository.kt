@@ -12,6 +12,7 @@ class BackupRepository(private val database: AppDatabase) {
                 plans = database.planDao().getAllPlans(),
                 planEntries = database.planDao().getAllEntries(),
                 sets = database.setLogDao().getAll(),
+                cardioSessions = database.cardioLogDao().getAll(),
             )
         }
         return BackupJson.encode(data, exportedAt = System.currentTimeMillis())
@@ -22,6 +23,7 @@ class BackupRepository(private val database: AppDatabase) {
         val data = BackupJson.decode(json)
         database.withTransaction {
             database.setLogDao().deleteAll()
+            database.cardioLogDao().deleteAll()
             database.planDao().deleteAllEntries()
             database.planDao().deleteAllPlans()
             database.deviceDao().deleteAll()
@@ -30,6 +32,7 @@ class BackupRepository(private val database: AppDatabase) {
             database.planDao().insertPlans(data.plans)
             database.planDao().insertEntries(data.planEntries)
             database.setLogDao().insertAll(data.sets)
+            database.cardioLogDao().insertAll(data.cardioSessions)
         }
     }
 }

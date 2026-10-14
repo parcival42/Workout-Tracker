@@ -17,6 +17,9 @@
     <string name="device_weight_step_help">Gewichtsunterschied zwischen zwei Stufen am Gerät, z. B. 2,5 oder 5.</string>
     <string name="device_weight_step_error">Gib eine Abstufung größer als 0 kg ein.</string>
     <string name="device_weight_info">Ab %1$s kg in %2$s-kg-Stufen</string>
+    <string name="device_type_strength">Kraft</string>
+    <string name="device_type_cardio">Cardio</string>
+    <string name="device_type_locked">Der Typ lässt sich nicht mehr ändern, weil an diesem Gerät schon Training erfasst ist.</string>
 
     <string name="plans_title">Trainingspläne</string>
     <string name="training_title">Training</string>
@@ -34,6 +37,9 @@
     <string name="plan_no_devices_available">Alle Geräte sind bereits in diesem Plan. Neue Geräte legst du im Tab Geräte an.</string>
     <string name="target_sets">Sätze</string>
     <string name="target_reps">Wiederholungen</string>
+    <string name="duration_label">Dauer</string>
+    <string name="duration_label_min">Dauer (min)</string>
+    <string name="duration_dialog_title">Dauer festlegen</string>
 
     <string name="workout_empty">Dieser Plan hat noch keine Geräte. Füge sie über den Bearbeiten-Button hinzu.</string>
     <string name="workout_next_set">Nächster Satz: %1$s kg × %2$d</string>
@@ -49,12 +55,19 @@
     <string name="edit_set_title">Satz %1$d bearbeiten</string>
     <string name="action_undo_set">Letzten Satz rückgängig</string>
     <string name="action_edit_plan">Plan bearbeiten</string>
+    <string name="workout_next_session">Dauer: %1$d min</string>
+    <string name="next_session_sheet_subtitle">Dauer der nächsten Einheit</string>
+    <string name="action_edit_next_session">Nächste Einheit bearbeiten</string>
+    <string name="action_extra_session">Weitere Einheit</string>
+    <string name="action_undo_session">Letzte Einheit rückgängig</string>
+    <string name="edit_session_title">Einheit %1$d bearbeiten</string>
 
     <string name="history_title">Verlauf</string>
     <string name="history_empty">Noch keine Trainingsdaten. Dein Verlauf erscheint hier nach dem ersten Training.</string>
     <string name="history_select_device">Wähle ein Gerät, um seinen Verlauf zu sehen.</string>
-    <string name="history_no_data_in_range">Keine Sätze in diesem Zeitraum.</string>
+    <string name="history_no_data_in_range">Kein Training in diesem Zeitraum.</string>
     <string name="history_chart_title">Gewicht pro Satz (kg)</string>
+    <string name="history_chart_title_cardio">Dauer pro Einheit (min)</string>
     <string name="history_tap_hint">Tippe auf einen Punkt für Details.</string>
     <string name="history_range_1m">1 M</string>
     <string name="history_range_3m">3 M</string>

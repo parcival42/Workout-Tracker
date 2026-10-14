@@ -10,6 +10,7 @@ import com.example.workouttracker.data.Device
 import com.example.workouttracker.data.DeviceDao
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -20,6 +21,10 @@ class DeviceListViewModel(private val deviceDao: DeviceDao) : ViewModel() {
 
     val archivedDevices: StateFlow<List<Device>> = deviceDao.observeArchived()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val deviceIdsWithLogs: StateFlow<Set<Long>> = deviceDao.observeIdsWithLogs()
+        .map { it.toSet() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptySet())
 
     fun save(device: Device) {
         if (device.name.isBlank()) return

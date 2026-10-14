@@ -22,10 +22,14 @@ interface DeviceDao {
         """
         SELECT * FROM device d
         WHERE EXISTS (SELECT 1 FROM set_log s WHERE s.device_id = d.id)
+           OR EXISTS (SELECT 1 FROM cardio_log c WHERE c.device_id = d.id)
         ORDER BY d.name COLLATE NOCASE
         """
     )
     fun observeWithHistory(): Flow<List<Device>>
+
+    @Query("SELECT device_id FROM set_log UNION SELECT device_id FROM cardio_log")
+    fun observeIdsWithLogs(): Flow<List<Long>>
 
     @Insert
     suspend fun insert(device: Device): Long
