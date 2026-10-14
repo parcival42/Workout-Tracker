@@ -2,7 +2,35 @@
     <string name="app_name" translatable="false">Simple Workout Tracker</string>
 
     <string name="devices_title">Devices</string>
-    <string name="devices_empty">No devices yet. Tap + to add your first device.</string>
+    <string name="devices_empty">No devices yet. Tap + to add a device, or pick common machines from the templates.</string>
+    <string name="template_open_action">Add from templates</string>
+    <string name="template_dialog_title">Device templates</string>
+    <string name="template_dialog_hint">Weights are rough defaults. Adjust them to your machines afterwards.</string>
+    <string name="template_add_action">Add (%1$d)</string>
+    <string name="template_already_added">Already added</string>
+    <string name="template_group_legs">Legs</string>
+    <string name="template_group_upper_body">Upper body</string>
+    <string name="template_group_core">Core</string>
+    <string name="template_leg_press">Leg press</string>
+    <string name="template_leg_extension">Leg extension</string>
+    <string name="template_leg_curl">Leg curl</string>
+    <string name="template_hip_abduction">Hip abduction</string>
+    <string name="template_hip_adduction">Hip adduction</string>
+    <string name="template_calf_raise">Calf raise</string>
+    <string name="template_chest_press">Chest press</string>
+    <string name="template_pec_fly">Pec fly</string>
+    <string name="template_shoulder_press">Shoulder press</string>
+    <string name="template_lat_pulldown">Lat pulldown</string>
+    <string name="template_seated_row">Seated row</string>
+    <string name="template_biceps_curl">Biceps curl</string>
+    <string name="template_triceps_extension">Triceps extension</string>
+    <string name="template_abdominal_crunch">Abdominal crunch</string>
+    <string name="template_back_extension">Back extension</string>
+    <string name="template_treadmill">Treadmill</string>
+    <string name="template_elliptical">Elliptical</string>
+    <string name="template_exercise_bike">Exercise bike</string>
+    <string name="template_rowing_machine">Rowing machine</string>
+    <string name="template_stair_climber">Stair climber</string>
     <string name="device_add_title">Add device</string>
     <string name="devices_archived_show">Show archived devices (%1$d)</string>
     <string name="devices_archived_hide">Hide archived devices</string>
