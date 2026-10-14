@@ -33,6 +33,11 @@ class DeviceListViewModel(private val deviceDao: DeviceDao) : ViewModel() {
         }
     }
 
+    fun addAll(devices: List<Device>) {
+        if (devices.isEmpty()) return
+        viewModelScope.launch { deviceDao.insertAll(devices) }
+    }
+
     fun archive(device: Device) {
         viewModelScope.launch { deviceDao.setArchived(device.id, true) }
     }

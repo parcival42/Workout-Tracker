@@ -12,6 +12,8 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -51,6 +53,7 @@ fun DeviceListScreen(
     val archivedDevices by viewModel.archivedDevices.collectAsStateWithLifecycle()
     val deviceIdsWithLogs by viewModel.deviceIdsWithLogs.collectAsStateWithLifecycle()
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
+    var showTemplateDialog by rememberSaveable { mutableStateOf(false) }
     var editingDevice by remember { mutableStateOf<Device?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -61,9 +64,21 @@ fun DeviceListScreen(
         archivedDevices = archivedDevices,
         snackbarHostState = snackbarHostState,
         onAddClick = { showAddDialog = true },
+        onTemplatesClick = { showTemplateDialog = true },
         onDeviceClick = { editingDevice = it },
         onRestore = viewModel::restore,
     )
+
+    if (showTemplateDialog) {
+        TemplateDialog(
+            existingNames = (devices + archivedDevices).mapTo(HashSet()) { it.name },
+            onConfirm = {
+                viewModel.addAll(it)
+                showTemplateDialog = false
+            },
+            onDismiss = { showTemplateDialog = false },
+        )
+    }
 
     if (showAddDialog) {
         DeviceDialog(
@@ -110,13 +125,26 @@ private fun DeviceListContent(
     archivedDevices: List<Device>,
     snackbarHostState: SnackbarHostState,
     onAddClick: () -> Unit,
+    onTemplatesClick: () -> Unit,
     onDeviceClick: (Device) -> Unit,
     onRestore: (Device) -> Unit,
 ) {
     var showArchived by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.devices_title)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.devices_title)) },
+                actions = {
+                    IconButton(onClick = onTemplatesClick) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_list),
+                            contentDescription = stringResource(R.string.template_open_action),
+                        )
+                    }
+                },
+            )
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
             FloatingActionButton(onClick = onAddClick) {
@@ -131,6 +159,11 @@ private fun DeviceListContent(
             EmptyHint(
                 text = stringResource(R.string.devices_empty),
                 modifier = Modifier.padding(innerPadding),
+                action = {
+                    OutlinedButton(onClick = onTemplatesClick) {
+                        Text(stringResource(R.string.template_open_action))
+                    }
+                },
             )
         } else {
             LazyColumn(modifier = Modifier.padding(innerPadding)) {
