@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name" translatable="false">Workout Tracker</string>
+    <string name="app_name" translatable="false">Simple Workout Tracker</string>
 
     <string name="devices_title">Devices</string>
     <string name="devices_empty">No devices yet. Tap + to add your first device.</string>
@@ -98,7 +98,7 @@
     <string name="backup_exported">Data exported.</string>
     <string name="backup_export_failed">Export failed.</string>
     <string name="backup_imported">Data imported.</string>
-    <string name="backup_import_invalid">This file is not a valid Workout Tracker backup. Nothing was changed.</string>
+    <string name="backup_import_invalid">This file is not a valid Simple Workout Tracker backup. Nothing was changed.</string>
     <string name="backup_import_failed">Import failed. Nothing was changed.</string>
 
     <string name="name_label">Name</string>

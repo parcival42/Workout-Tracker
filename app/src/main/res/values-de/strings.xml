@@ -87,7 +87,7 @@
     <string name="backup_exported">Daten exportiert.</string>
     <string name="backup_export_failed">Export fehlgeschlagen.</string>
     <string name="backup_imported">Daten importiert.</string>
-    <string name="backup_import_invalid">Diese Datei ist keine gültige Workout-Tracker-Sicherung. Es wurde nichts geändert.</string>
+    <string name="backup_import_invalid">Diese Datei ist keine gültige Simple-Workout-Tracker-Sicherung. Es wurde nichts geändert.</string>
     <string name="backup_import_failed">Import fehlgeschlagen. Es wurde nichts geändert.</string>
 
     <string name="name_label">Name</string>

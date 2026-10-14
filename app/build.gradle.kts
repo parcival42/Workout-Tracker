@@ -6,13 +6,13 @@ plugins {
 }
 
 android {
-    namespace = "com.example.workouttracker"
+    namespace = "io.github.parcival42.workouttracker"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.example.workouttracker"
+        applicationId = "io.github.parcival42.workouttracker"
         minSdk = 36
         targetSdk = 37
         versionCode = 1
