@@ -38,11 +38,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.parcival42.workouttracker.BuildConfig
 import io.github.parcival42.workouttracker.R
 import java.time.LocalDate
 
@@ -119,6 +121,8 @@ fun SettingsScreen(
                     Text(stringResource(R.string.backup_import_action))
                 }
             }
+            HorizontalDivider()
+            AboutSection()
         }
     }
 
@@ -141,6 +145,26 @@ fun SettingsScreen(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun AboutSection() {
+    val uriHandler = LocalUriHandler.current
+    val repositoryUrl = stringResource(R.string.settings_repository_url)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(R.string.settings_about_title), style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        OutlinedButton(
+            onClick = { uriHandler.openUri(repositoryUrl) },
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.settings_repository_action))
+        }
     }
 }
 
