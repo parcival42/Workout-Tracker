@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.workouttracker.R
+import com.example.workouttracker.data.CardioLog
 import com.example.workouttracker.data.SetLog
 import com.example.workouttracker.ui.components.EmptyHint
 import com.example.workouttracker.ui.components.formatKg
@@ -69,6 +70,7 @@ fun WorkoutScreen(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     var editingSet by remember { mutableStateOf<Pair<Int, SetLog>?>(null) }
+    var editingSession by remember { mutableStateOf<Pair<Int, CardioLog>?>(null) }
     var nextSetDeviceId by rememberSaveable { mutableStateOf<Long?>(null) }
 
     LaunchedEffect(state.planExists) {
@@ -120,21 +122,30 @@ fun WorkoutScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(state.items, key = { it.deviceId }) { item ->
-                    WorkoutCard(
-                        item = item,
-                        onEditNextSet = { nextSetDeviceId = item.deviceId },
-                        onCompleteDevice = { viewModel.completeDevice(item) },
-                        onCompleteOneSet = { viewModel.completeOneSet(item) },
-                        onUndo = { viewModel.undoLastSet(item) },
-                        onSetClick = { number, set -> editingSet = number to set },
-                    )
+                    when (item) {
+                        is StrengthItem -> WorkoutCard(
+                            item = item,
+                            onEditNextSet = { nextSetDeviceId = item.deviceId },
+                            onCompleteDevice = { viewModel.completeDevice(item) },
+                            onCompleteOneSet = { viewModel.completeOneSet(item) },
+                            onUndo = { viewModel.undoLastSet(item) },
+                            onSetClick = { number, set -> editingSet = number to set },
+                        )
+                        is CardioItem -> CardioCard(
+                            item = item,
+                            onEditNextSession = { nextSetDeviceId = item.deviceId },
+                            onLogSession = { viewModel.logSession(item) },
+                            onUndo = { viewModel.undoLastSession(item) },
+                            onSessionClick = { number, session -> editingSession = number to session },
+                        )
+                    }
                 }
             }
         }
     }
 
-    state.items.firstOrNull { it.deviceId == nextSetDeviceId }?.let { item ->
-        NextSetSheet(
+    when (val item = state.items.firstOrNull { it.deviceId == nextSetDeviceId }) {
+        is StrengthItem -> NextSetSheet(
             item = item,
             onApply = { weightGrams, reps ->
                 viewModel.setWeight(item.deviceId, weightGrams)
@@ -142,6 +153,31 @@ fun WorkoutScreen(
                 nextSetDeviceId = null
             },
             onDismiss = { nextSetDeviceId = null },
+        )
+        is CardioItem -> NextSessionSheet(
+            item = item,
+            onApply = { minutes ->
+                viewModel.setMinutes(item.deviceId, minutes)
+                nextSetDeviceId = null
+            },
+            onDismiss = { nextSetDeviceId = null },
+        )
+        null -> Unit
+    }
+
+    editingSession?.let { (number, session) ->
+        EditSessionDialog(
+            sessionNumber = number,
+            session = session,
+            onConfirm = { minutes ->
+                viewModel.updateSession(session, minutes)
+                editingSession = null
+            },
+            onDelete = {
+                viewModel.deleteSession(session)
+                editingSession = null
+            },
+            onDismiss = { editingSession = null },
         )
     }
 
@@ -217,7 +253,7 @@ private fun EditSetDialog(
 
 @Composable
 private fun WorkoutCard(
-    item: WorkoutItem,
+    item: StrengthItem,
     onEditNextSet: () -> Unit,
     onCompleteDevice: () -> Unit,
     onCompleteOneSet: () -> Unit,
@@ -328,7 +364,7 @@ private fun WorkoutCard(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NextSetSheet(
-    item: WorkoutItem,
+    item: StrengthItem,
     onApply: (weightGrams: Int, reps: Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -385,7 +421,7 @@ private fun NextSetSheet(
 }
 
 @Composable
-private fun ValueStepper(
+internal fun ValueStepper(
     label: String,
     value: String,
     onDecrease: () -> Unit,

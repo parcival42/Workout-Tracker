@@ -43,9 +43,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.workouttracker.R
 import com.example.workouttracker.data.Device
+import com.example.workouttracker.data.DeviceType
 import com.example.workouttracker.data.PlanEntryItem
 import com.example.workouttracker.ui.components.EmptyHint
+import com.example.workouttracker.ui.components.MAX_DURATION_MINUTES
 import com.example.workouttracker.ui.components.NameDialog
+import com.example.workouttracker.ui.components.secondsToMinutes
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
@@ -209,6 +212,10 @@ fun PlanEditorScreen(
                 viewModel.updateTargets(entry.id, sets, reps)
                 editingEntry = null
             },
+            onConfirmDuration = { minutes ->
+                viewModel.updateTargetDuration(entry.id, minutes)
+                editingEntry = null
+            },
             onRemove = {
                 viewModel.removeEntry(entry.id)
                 editingEntry = null
@@ -234,7 +241,10 @@ private fun PlanEntryRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(text = entry.deviceName, style = MaterialTheme.typography.titleMedium)
             Text(
-                text = stringResource(R.string.plan_entry_targets, entry.targetSets, entry.targetReps),
+                text = when (entry.deviceType) {
+                    DeviceType.STRENGTH -> stringResource(R.string.plan_entry_targets, entry.targetSets, entry.targetReps)
+                    DeviceType.CARDIO -> stringResource(R.string.duration_min, secondsToMinutes(entry.targetDurationSeconds))
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -281,32 +291,44 @@ private fun AddDeviceDialog(
 private fun EntryTargetsDialog(
     entry: PlanEntryItem,
     onConfirm: (sets: Int, reps: Int) -> Unit,
+    onConfirmDuration: (minutes: Int) -> Unit,
     onRemove: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     var sets by rememberSaveable { mutableIntStateOf(entry.targetSets) }
     var reps by rememberSaveable { mutableIntStateOf(entry.targetReps) }
+    var minutes by rememberSaveable { mutableIntStateOf(secondsToMinutes(entry.targetDurationSeconds)) }
+    val isCardio = entry.deviceType == DeviceType.CARDIO
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(entry.deviceName) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                Stepper(
-                    label = stringResource(R.string.target_sets),
-                    value = sets,
-                    onValueChange = { sets = it },
-                    range = 1..20,
-                )
-                Stepper(
-                    label = stringResource(R.string.target_reps),
-                    value = reps,
-                    onValueChange = { reps = it },
-                    range = 1..100,
-                )
+                if (isCardio) {
+                    Stepper(
+                        label = stringResource(R.string.duration_label_min),
+                        value = minutes,
+                        onValueChange = { minutes = it },
+                        range = 1..MAX_DURATION_MINUTES,
+                    )
+                } else {
+                    Stepper(
+                        label = stringResource(R.string.target_sets),
+                        value = sets,
+                        onValueChange = { sets = it },
+                        range = 1..20,
+                    )
+                    Stepper(
+                        label = stringResource(R.string.target_reps),
+                        value = reps,
+                        onValueChange = { reps = it },
+                        range = 1..100,
+                    )
+                }
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(sets, reps) }) {
+            TextButton(onClick = { if (isCardio) onConfirmDuration(minutes) else onConfirm(sets, reps) }) {
                 Text(stringResource(R.string.action_save))
             }
         },

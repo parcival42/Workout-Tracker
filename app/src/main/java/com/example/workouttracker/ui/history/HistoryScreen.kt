@@ -20,6 +20,9 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -37,7 +40,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.workouttracker.R
+import com.example.workouttracker.data.DeviceType
 import com.example.workouttracker.ui.components.EmptyHint
+import com.example.workouttracker.ui.devices.labelRes
 import com.example.workouttracker.ui.components.formatKg
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -62,6 +67,7 @@ fun HistoryScreen(
             HistoryContent(
                 state = state,
                 onRangeSelect = viewModel::setRange,
+                onModeSelect = viewModel::setMode,
                 onDeviceToggle = viewModel::toggleDevice,
                 modifier = Modifier.padding(innerPadding),
             )
@@ -73,9 +79,11 @@ fun HistoryScreen(
 private fun HistoryContent(
     state: HistoryUiState,
     onRangeSelect: (HistoryRange) -> Unit,
+    onModeSelect: (DeviceType) -> Unit,
     onDeviceToggle: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val isCardio = state.mode == DeviceType.CARDIO
     val locale = LocalConfiguration.current.locales[0]
     val shortDateFormatter = remember(locale) {
         DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "dMMM"), locale)
@@ -92,6 +100,22 @@ private fun HistoryContent(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        if (state.availableModes.size > 1) {
+            item {
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    state.availableModes.forEachIndexed { index, mode ->
+                        SegmentedButton(
+                            selected = state.mode == mode,
+                            onClick = { onModeSelect(mode) },
+                            shape = SegmentedButtonDefaults.itemShape(index, state.availableModes.size),
+                        ) {
+                            Text(stringResource(mode.labelRes()))
+                        }
+                    }
+                }
+            }
+        }
+
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 HistoryRange.entries.forEach { range ->
@@ -136,34 +160,43 @@ private fun HistoryContent(
                 }
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    val chartTitle = stringResource(
+                        if (isCardio) R.string.history_chart_title_cardio else R.string.history_chart_title
+                    )
                     Text(
-                        text = stringResource(R.string.history_chart_title),
+                        text = chartTitle,
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    WeightChart(
+                    HistoryChart(
                         dates = state.dates,
                         points = points,
+                        scale = if (isCardio) MinutesScale else WeightScale,
                         colorSlots = colorSlots,
                         selected = selectedPoint,
                         onSelect = { selectedPoint = it },
                         dateFormatter = shortDateFormatter,
                         surfaceColor = MaterialTheme.colorScheme.background,
                         inkColor = MaterialTheme.colorScheme.onBackground,
-                        contentDescription = stringResource(R.string.history_chart_title),
+                        contentDescription = chartTitle,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(260.dp),
                     )
                     Text(
                         text = selectedPoint?.let {
-                            stringResource(
-                                R.string.history_point_detail,
-                                it.deviceName,
-                                it.date.format(shortDateFormatter),
-                                formatKg(it.set.weightGrams),
-                                it.set.reps,
-                            )
+                            val date = it.date.format(shortDateFormatter)
+                            if (it.entry.reps == null) {
+                                stringResource(R.string.history_point_detail_cardio, it.deviceName, date, it.entry.value)
+                            } else {
+                                stringResource(
+                                    R.string.history_point_detail,
+                                    it.deviceName,
+                                    date,
+                                    formatKg(it.entry.value),
+                                    it.entry.reps,
+                                )
+                            }
                         } ?: stringResource(R.string.history_tap_hint),
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (selectedPoint != null) {
@@ -208,8 +241,12 @@ private fun HistoryDayEntry(
                 Column(modifier = Modifier.padding(start = 8.dp)) {
                     Text(text = s.deviceName, style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        text = day.sets.joinToString("  ·  ") {
-                            resources.getString(R.string.workout_set_summary, formatKg(it.weightGrams), it.reps)
+                        text = day.entries.joinToString("  ·  ") { entry ->
+                            if (entry.reps == null) {
+                                resources.getString(R.string.duration_min, entry.value)
+                            } else {
+                                resources.getString(R.string.workout_set_summary, formatKg(entry.value), entry.reps)
+                            }
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

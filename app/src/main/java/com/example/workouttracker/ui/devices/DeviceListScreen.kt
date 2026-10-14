@@ -38,6 +38,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.workouttracker.R
 import com.example.workouttracker.data.Device
+import com.example.workouttracker.data.DeviceType
 import com.example.workouttracker.ui.components.EmptyHint
 import com.example.workouttracker.ui.components.formatKg
 import kotlinx.coroutines.launch
@@ -48,6 +49,7 @@ fun DeviceListScreen(
 ) {
     val devices by viewModel.devices.collectAsStateWithLifecycle()
     val archivedDevices by viewModel.archivedDevices.collectAsStateWithLifecycle()
+    val deviceIdsWithLogs by viewModel.deviceIdsWithLogs.collectAsStateWithLifecycle()
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var editingDevice by remember { mutableStateOf<Device?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
@@ -84,6 +86,7 @@ fun DeviceListScreen(
                 editingDevice = null
             },
             onDismiss = { editingDevice = null },
+            typeLocked = device.id in deviceIdsWithLogs,
             onArchive = {
                 viewModel.archive(device)
                 editingDevice = null
@@ -209,11 +212,14 @@ private fun DeviceRow(device: Device, onClick: () -> Unit) {
         Column(modifier = Modifier.padding(start = 16.dp)) {
             Text(text = device.name, style = MaterialTheme.typography.titleMedium)
             Text(
-                text = stringResource(
-                    R.string.device_weight_info,
-                    formatKg(device.minWeightGrams),
-                    formatKg(device.weightStepGrams),
-                ),
+                text = when (device.type) {
+                    DeviceType.STRENGTH -> stringResource(
+                        R.string.device_weight_info,
+                        formatKg(device.minWeightGrams),
+                        formatKg(device.weightStepGrams),
+                    )
+                    DeviceType.CARDIO -> stringResource(R.string.device_type_cardio)
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

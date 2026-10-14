@@ -6,10 +6,12 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.workouttracker.WorkoutTrackerApplication
+import com.example.workouttracker.data.CardioLogDao
 import com.example.workouttracker.data.Device
 import com.example.workouttracker.data.DeviceDao
-import com.example.workouttracker.data.SetLog
+import com.example.workouttracker.data.DeviceType
 import com.example.workouttracker.data.SetLogDao
+import com.example.workouttracker.ui.components.secondsToMinutes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -31,14 +33,31 @@ enum class HistoryRange(val months: Long?) {
 
 data class HistoryDevice(val device: Device, val colorSlot: Int?)
 
-data class DaySets(val date: LocalDate, val sets: List<SetLog>)
+/**
+ * One logged set or cardio session. [value] is in chart units: grams for strength,
+ * whole minutes for cardio. [reps] is null for cardio.
+ */
+data class HistoryEntry(
+    val id: Long,
+    val deviceId: Long,
+    val performedAt: Long,
+    val value: Int,
+    val reps: Int?,
+)
 
-data class HistorySeries(val deviceId: Long, val deviceName: String, val colorSlot: Int, val days: List<DaySets>)
+data class DayEntries(val date: LocalDate, val entries: List<HistoryEntry>)
+
+data class HistorySeries(val deviceId: Long, val deviceName: String, val colorSlot: Int, val days: List<DayEntries>)
 
 data class HistoryUiState(
+    /** Strength and cardio are never mixed in one chart: they have different units. */
+    val mode: DeviceType = DeviceType.STRENGTH,
+    /** Device types that have history; the mode switch is only shown for more than one. */
+    val availableModes: List<DeviceType> = emptyList(),
+    /** Devices of the current mode. */
     val devices: List<HistoryDevice> = emptyList(),
     val range: HistoryRange = HistoryRange.THREE_MONTHS,
-    /** All dates with at least one set of a selected device, ascending. */
+    /** All dates with at least one entry of a selected device, ascending. */
     val dates: List<LocalDate> = emptyList(),
     val series: List<HistorySeries> = emptyList(),
     val canSelectMore: Boolean = true,
@@ -48,43 +67,72 @@ data class HistoryUiState(
 class HistoryViewModel(
     deviceDao: DeviceDao,
     private val setLogDao: SetLogDao,
+    private val cardioLogDao: CardioLogDao,
 ) : ViewModel() {
 
     private val range = MutableStateFlow(HistoryRange.THREE_MONTHS)
 
-    // deviceId -> color slot. A slot stays with its device while selected, so toggling
-    // other devices never repaints the ones already shown.
-    private val selection = MutableStateFlow<Map<Long, Int>?>(null)
+    // null until the user picks a mode; then the mode of the most recent training is shown.
+    private val mode = MutableStateFlow<DeviceType?>(null)
 
-    private val sets = range.flatMapLatest { setLogDao.observeSince(it.startMillis()) }
+    // Per mode: deviceId -> color slot. A slot stays with its device while selected, so
+    // toggling other devices never repaints the ones already shown.
+    private val selections = MutableStateFlow<Map<DeviceType, Map<Long, Int>>>(emptyMap())
+
+    private val entries = range.flatMapLatest { range ->
+        val since = range.startMillis()
+        combine(setLogDao.observeSince(since), cardioLogDao.observeSince(since)) { sets, sessions ->
+            mapOf(
+                DeviceType.STRENGTH to sets.map { HistoryEntry(it.id, it.deviceId, it.performedAt, it.weightGrams, it.reps) },
+                DeviceType.CARDIO to sessions.map {
+                    HistoryEntry(it.id, it.deviceId, it.performedAt, secondsToMinutes(it.durationSeconds), null)
+                },
+            )
+        }
+    }
 
     val uiState: StateFlow<HistoryUiState> = combine(
         deviceDao.observeWithHistory(),
         range,
-        selection,
-        sets,
-    ) { devices, range, selection, sets ->
+        mode,
+        selections,
+        entries,
+    ) { devices, range, mode, selections, entriesByType ->
+        val availableModes = DeviceType.entries.filter { type -> devices.any { it.type == type } }
+        val mostRecentMode = entriesByType
+            .mapNotNull { (type, entries) -> entries.lastOrNull()?.let { type to it.performedAt } }
+            .maxByOrNull { it.second }?.first
+        val effectiveMode = mode?.takeIf { it in availableModes }
+            ?: mostRecentMode?.takeIf { it in availableModes }
+            ?: availableModes.firstOrNull()
+            ?: DeviceType.STRENGTH
+
+        val modeDevices = devices.filter { it.type == effectiveMode }
+        val modeEntries = entriesByType[effectiveMode].orEmpty()
+
         // Default: show the most recently trained device until the user picks something.
-        val defaultDeviceId = sets.lastOrNull()?.deviceId ?: devices.firstOrNull()?.id
-        val effectiveSelection = selection
+        val defaultDeviceId = modeEntries.lastOrNull()?.deviceId ?: modeDevices.firstOrNull()?.id
+        val effectiveSelection = selections[effectiveMode]
             ?: defaultDeviceId?.let { mapOf(it to 0) }
             ?: emptyMap()
 
-        val selectedSetsByDevice = sets
+        val selectedEntriesByDevice = modeEntries
             .filter { it.deviceId in effectiveSelection }
             .groupBy { it.deviceId }
         val zone = ZoneId.systemDefault()
-        val series = devices.mapNotNull { device ->
+        val series = modeDevices.mapNotNull { device ->
             val slot = effectiveSelection[device.id] ?: return@mapNotNull null
-            val days = selectedSetsByDevice[device.id].orEmpty()
+            val days = selectedEntriesByDevice[device.id].orEmpty()
                 .sortedWith(compareBy({ it.performedAt }, { it.id }))
                 .groupBy { Instant.ofEpochMilli(it.performedAt).atZone(zone).toLocalDate() }
-                .map { (date, daySets) -> DaySets(date, daySets) }
+                .map { (date, dayEntries) -> DayEntries(date, dayEntries) }
             HistorySeries(device.id, device.name, slot, days)
         }
 
         HistoryUiState(
-            devices = devices.map { HistoryDevice(it, effectiveSelection[it.id]) },
+            mode = effectiveMode,
+            availableModes = availableModes,
+            devices = modeDevices.map { HistoryDevice(it, effectiveSelection[it.id]) },
             range = range,
             dates = series.flatMap { s -> s.days.map { it.date } }.distinct().sorted(),
             series = series,
@@ -96,18 +144,24 @@ class HistoryViewModel(
         range.value = newRange
     }
 
+    fun setMode(newMode: DeviceType) {
+        mode.value = newMode
+    }
+
     fun toggleDevice(deviceId: Long) {
-        val current = selection.value
-            ?: uiState.value.devices.filter { it.colorSlot != null }
+        val state = uiState.value
+        val current = selections.value[state.mode]
+            ?: state.devices.filter { it.colorSlot != null }
                 .associate { it.device.id to it.colorSlot!! }
-        selection.update {
-            if (deviceId in current) {
-                current - deviceId
-            } else {
-                val freeSlot = (0 until MAX_SERIES).firstOrNull { it !in current.values }
-                if (freeSlot == null) current else current + (deviceId to freeSlot)
-            }
+        val updated = if (deviceId in current) {
+            current - deviceId
+        } else {
+            val freeSlot = (0 until MAX_SERIES).firstOrNull { it !in current.values }
+            if (freeSlot == null) current else current + (deviceId to freeSlot)
         }
+        // Pin the mode too, so the view doesn't jump to another mode when new training is logged.
+        mode.value = state.mode
+        selections.update { it + (state.mode to updated) }
     }
 
     private fun HistoryRange.startMillis(): Long {
@@ -122,7 +176,7 @@ class HistoryViewModel(
         val Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as WorkoutTrackerApplication
-                HistoryViewModel(app.database.deviceDao(), app.database.setLogDao())
+                HistoryViewModel(app.database.deviceDao(), app.database.setLogDao(), app.database.cardioLogDao())
             }
         }
     }

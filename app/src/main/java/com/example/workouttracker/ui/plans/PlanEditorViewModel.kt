@@ -13,6 +13,7 @@ import com.example.workouttracker.data.DeviceDao
 import com.example.workouttracker.data.PlanDao
 import com.example.workouttracker.data.PlanEntryItem
 import com.example.workouttracker.data.TrainingPlan
+import com.example.workouttracker.ui.components.SECONDS_PER_MINUTE
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -62,6 +63,10 @@ class PlanEditorViewModel(
 
     fun updateTargets(entryId: Long, targetSets: Int, targetReps: Int) {
         viewModelScope.launch { planDao.updateTargets(entryId, targetSets, targetReps) }
+    }
+
+    fun updateTargetDuration(entryId: Long, targetMinutes: Int) {
+        viewModelScope.launch { planDao.updateTargetDuration(entryId, targetMinutes * SECONDS_PER_MINUTE) }
     }
 
     fun removeEntry(entryId: Long) {

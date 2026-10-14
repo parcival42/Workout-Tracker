@@ -30,14 +30,23 @@ data class PlanEntry(
     @ColumnInfo(name = "sort_order") val sortOrder: Int,
     @ColumnInfo(name = "target_sets") val targetSets: Int,
     @ColumnInfo(name = "target_reps") val targetReps: Int,
-)
+    // Only used for cardio devices; sets/reps are only used for strength devices.
+    @ColumnInfo(name = "target_duration_seconds", defaultValue = "1200")
+    val targetDurationSeconds: Int = DEFAULT_TARGET_DURATION_SECONDS,
+) {
+    companion object {
+        const val DEFAULT_TARGET_DURATION_SECONDS = 1_200
+    }
+}
 
 data class PlanEntryItem(
     val id: Long,
     val deviceId: Long,
     val deviceName: String,
+    val deviceType: DeviceType,
     val targetSets: Int,
     val targetReps: Int,
+    val targetDurationSeconds: Int,
     val minWeightGrams: Int,
     val weightStepGrams: Int,
 )

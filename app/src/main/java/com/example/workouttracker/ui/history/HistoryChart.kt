@@ -19,7 +19,6 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.workouttracker.data.SetLog
 import com.example.workouttracker.ui.components.formatKg
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -44,14 +43,22 @@ val SeriesColors = listOf(
 private val GridColor = Color(0xFF2C2C2A)
 private val AxisColor = Color(0xFF383835)
 private val MutedInk = Color(0xFF898781)
-private const val MIN_Y_RANGE_GRAMS = 5_000
+
+/** Y axis units of a chart: the smallest visible range, allowed tick step factors and label format. */
+class ValueScale(val minRange: Int, val stepFactors: List<Double>, val format: (Int) -> String)
+
+// Grams; 2.5 kg steps are common on machines.
+val WeightScale = ValueScale(minRange = 5_000, stepFactors = listOf(1.0, 2.0, 2.5, 5.0, 10.0), format = ::formatKg)
+
+// Whole minutes; integer factors only, so ticks stay whole minutes.
+val MinutesScale = ValueScale(minRange = 10, stepFactors = listOf(1.0, 2.0, 5.0, 10.0), format = Int::toString)
 
 data class ChartPoint(
     val deviceId: Long,
     val deviceName: String,
     val date: LocalDate,
-    val set: SetLog,
-    /** Position on the x axis in day slots; sets of one day are spread inside their slot. */
+    val entry: HistoryEntry,
+    /** Position on the x axis in day slots; entries of one day are spread inside their slot. */
     val x: Float,
 )
 
@@ -60,30 +67,31 @@ fun buildChartPoints(dates: List<LocalDate>, series: List<HistorySeries>): Map<L
     return series.associate { s ->
         s.deviceId to s.days.flatMap { day ->
             val slot = dayIndex.getValue(day.date)
-            day.sets.mapIndexed { i, set ->
-                ChartPoint(s.deviceId, s.deviceName, day.date, set, slot + (i + 1f) / (day.sets.size + 1f))
+            day.entries.mapIndexed { i, entry ->
+                ChartPoint(s.deviceId, s.deviceName, day.date, entry, slot + (i + 1f) / (day.entries.size + 1f))
             }
         }
     }
 }
 
-private data class YAxis(val minGrams: Int, val maxGrams: Int, val ticks: List<Int>)
+private data class YAxis(val min: Int, val max: Int, val ticks: List<Int>)
 
-private fun niceYAxis(minGrams: Int, maxGrams: Int): YAxis {
-    val rawRange = max(maxGrams - minGrams, MIN_Y_RANGE_GRAMS).toDouble()
+private fun niceYAxis(minValue: Int, maxValue: Int, scale: ValueScale): YAxis {
+    val rawRange = max(maxValue - minValue, scale.minRange).toDouble()
     val roughStep = rawRange / 4
     val magnitude = 10.0.pow(floor(log10(roughStep)))
-    val step = listOf(1.0, 2.0, 2.5, 5.0, 10.0).map { it * magnitude }.first { it >= roughStep }
-    val low = floor(minGrams / step) * step
-    val high = max(ceil(maxGrams / step) * step, low + 2 * step)
+    val step = scale.stepFactors.map { it * magnitude }.first { it >= roughStep }
+    val low = floor(minValue / step) * step
+    val high = max(ceil(maxValue / step) * step, low + 2 * step)
     val ticks = generateSequence(low) { it + step }.takeWhile { it <= high + step / 2 }.map { it.toInt() }.toList()
     return YAxis(low.toInt(), high.toInt(), ticks)
 }
 
 @Composable
-fun WeightChart(
+fun HistoryChart(
     dates: List<LocalDate>,
     points: Map<Long, List<ChartPoint>>,
+    scale: ValueScale,
     colorSlots: Map<Long, Int>,
     selected: ChartPoint?,
     onSelect: (ChartPoint?) -> Unit,
@@ -96,8 +104,8 @@ fun WeightChart(
     val textMeasurer = rememberTextMeasurer()
     val labelStyle = TextStyle(color = MutedInk, fontSize = 11.sp)
     val allPoints = remember(points) { points.values.flatten() }
-    val yAxis = remember(allPoints) {
-        niceYAxis(allPoints.minOf { it.set.weightGrams }, allPoints.maxOf { it.set.weightGrams })
+    val yAxis = remember(allPoints, scale) {
+        niceYAxis(allPoints.minOf { it.entry.value }, allPoints.maxOf { it.entry.value }, scale)
     }
 
     Canvas(
@@ -105,19 +113,19 @@ fun WeightChart(
             .semantics { this.contentDescription = contentDescription }
             .pointerInput(allPoints, dates, yAxis) {
                 detectTapGestures { tap ->
-                    val layout = ChartLayout(size.width.toFloat(), size.height.toFloat(), this, yAxis, dates.size, textMeasurer, labelStyle)
+                    val layout = ChartLayout(size.width.toFloat(), size.height.toFloat(), this, yAxis, scale, dates.size, textMeasurer, labelStyle)
                     val hitRadius = 24.dp.toPx()
                     val nearest = allPoints.minByOrNull { (layout.position(it) - tap).getDistance() }
                     onSelect(nearest?.takeIf { (layout.position(it) - tap).getDistance() <= hitRadius })
                 }
             },
     ) {
-        val layout = ChartLayout(size.width, size.height, this, yAxis, dates.size, textMeasurer, labelStyle)
+        val layout = ChartLayout(size.width, size.height, this, yAxis, scale, dates.size, textMeasurer, labelStyle)
 
         yAxis.ticks.forEach { tick ->
             val y = layout.y(tick)
             drawLine(GridColor, Offset(layout.left, y), Offset(layout.right, y), strokeWidth = 1.dp.toPx())
-            val label = textMeasurer.measure(formatKg(tick), labelStyle)
+            val label = textMeasurer.measure(scale.format(tick), labelStyle)
             drawText(label, topLeft = Offset(layout.left - label.size.width - 6.dp.toPx(), y - label.size.height / 2f))
         }
         drawLine(AxisColor, Offset(layout.left, layout.bottom), Offset(layout.right, layout.bottom), strokeWidth = 1.dp.toPx())
@@ -160,6 +168,7 @@ private class ChartLayout(
     height: Float,
     density: androidx.compose.ui.unit.Density,
     private val yAxis: YAxis,
+    scale: ValueScale,
     private val daySlots: Int,
     textMeasurer: androidx.compose.ui.text.TextMeasurer,
     labelStyle: TextStyle,
@@ -171,17 +180,17 @@ private class ChartLayout(
     val plotWidth: Float
 
     init {
-        val widestLabel = yAxis.ticks.maxOf { textMeasurer.measure(formatKg(it), labelStyle).size.width }
+        val widestLabel = yAxis.ticks.maxOf { textMeasurer.measure(scale.format(it), labelStyle).size.width }
         left = widestLabel + with(density) { 12.dp.toPx() }
         plotWidth = right - left
     }
 
     fun x(slotPosition: Float): Float = left + plotWidth * slotPosition / max(daySlots, 1)
 
-    fun y(weightGrams: Int): Float {
-        val fraction = (weightGrams - yAxis.minGrams).toFloat() / (yAxis.maxGrams - yAxis.minGrams)
+    fun y(value: Int): Float {
+        val fraction = (value - yAxis.min).toFloat() / (yAxis.max - yAxis.min)
         return bottom - fraction * (bottom - top)
     }
 
-    fun position(point: ChartPoint) = Offset(x(point.x), y(point.set.weightGrams))
+    fun position(point: ChartPoint) = Offset(x(point.x), y(point.entry.value))
 }
