@@ -29,6 +29,9 @@ abstract class PlanDao {
     @Query("UPDATE training_plan SET is_default = (id = :planId)")
     abstract suspend fun setDefault(planId: Long)
 
+    @Query("UPDATE training_plan SET session_started_at = :startedAt WHERE id = :planId")
+    abstract suspend fun setSessionStart(planId: Long, startedAt: Long?)
+
     @Query("UPDATE training_plan SET is_default = 0")
     abstract suspend fun clearDefault()
 

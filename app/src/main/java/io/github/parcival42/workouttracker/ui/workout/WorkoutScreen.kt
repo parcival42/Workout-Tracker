@@ -26,6 +26,10 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -36,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -56,6 +61,7 @@ import io.github.parcival42.workouttracker.ui.components.formatKg
 import io.github.parcival42.workouttracker.ui.components.parseKgToGrams
 import io.github.parcival42.workouttracker.ui.components.stepWeightDown
 import io.github.parcival42.workouttracker.ui.components.stepWeightUp
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,6 +76,22 @@ fun WorkoutScreen(
     var editingSet by remember { mutableStateOf<Pair<Int, SetLog>?>(null) }
     var editingSession by remember { mutableStateOf<Pair<Int, CardioLog>?>(null) }
     var nextSetDeviceId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    val resources = LocalResources.current
+
+    val restartPlan: () -> Unit = {
+        viewModel.restartPlan()
+        scope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            val result = snackbarHostState.showSnackbar(
+                message = resources.getString(R.string.workout_plan_restarted),
+                actionLabel = resources.getString(R.string.action_undo),
+                duration = SnackbarDuration.Long,
+            )
+            if (result == SnackbarResult.ActionPerformed) viewModel.undoRestartPlan()
+        }
+    }
 
     LaunchedEffect(state.planExists) {
         if (!state.planExists) onBack?.invoke()
@@ -98,6 +120,14 @@ fun WorkoutScreen(
                             )
                         }
                     }
+                    if (state.items.isNotEmpty()) {
+                        IconButton(onClick = restartPlan) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_restart),
+                                contentDescription = stringResource(R.string.action_restart_plan),
+                            )
+                        }
+                    }
                     IconButton(onClick = onEditPlan) {
                         Icon(
                             painter = painterResource(R.drawable.ic_edit),
@@ -107,6 +137,7 @@ fun WorkoutScreen(
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         if (state.items.isEmpty()) {
             EmptyHint(
@@ -136,6 +167,33 @@ fun WorkoutScreen(
                             onUndo = { viewModel.undoLastSession(item) },
                             onSessionClick = { number, session -> editingSession = number to session },
                         )
+                    }
+                }
+                if (state.isComplete) {
+                    item(key = "plan-complete") {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            Text(
+                                text = stringResource(R.string.workout_plan_complete),
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            OutlinedButton(onClick = restartPlan) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_restart),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Text(
+                                    text = stringResource(R.string.action_restart_plan),
+                                    modifier = Modifier.padding(start = 8.dp),
+                                )
+                            }
+                        }
                     }
                 }
             }
