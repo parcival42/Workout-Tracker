@@ -84,6 +84,9 @@
     <string name="action_undo_set">Letzten Satz rückgängig</string>
     <string name="action_show_details">Details anzeigen</string>
     <string name="action_hide_details">Details ausblenden</string>
+    <string name="action_restart_plan">Trainingsplan neu starten</string>
+    <string name="workout_plan_complete">Trainingsplan abgeschlossen</string>
+    <string name="workout_plan_restarted">Trainingsplan neu gestartet</string>
     <string name="action_edit_plan">Plan bearbeiten</string>
     <string name="workout_next_session">Dauer: %1$d min</string>
     <string name="next_session_sheet_subtitle">Dauer der nächsten Einheit</string>

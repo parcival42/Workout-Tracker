@@ -15,10 +15,15 @@ import io.github.parcival42.workouttracker.data.SetLogDao
 import io.github.parcival42.workouttracker.ui.components.MAX_DURATION_MINUTES
 import io.github.parcival42.workouttracker.ui.components.SECONDS_PER_MINUTE
 import io.github.parcival42.workouttracker.ui.components.secondsToMinutes
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -59,30 +64,43 @@ data class WorkoutUiState(
     val planName: String = "",
     val planExists: Boolean = true,
     val items: List<WorkoutItem> = emptyList(),
-)
+) {
+    val isComplete: Boolean get() = items.isNotEmpty() && items.all { it.isComplete }
+}
 
 /** Unsaved edits; null fields fall back to the last logged set or session (see [strengthLogs]). */
 private data class Draft(val weightGrams: Int? = null, val reps: Int? = null, val minutes: Int? = null)
 
 private data class LogsByDevice<T>(val today: Map<Long, List<T>>, val last: Map<Long, T>)
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class WorkoutViewModel(
     private val planId: Long,
-    planDao: PlanDao,
+    private val planDao: PlanDao,
     private val setLogDao: SetLogDao,
     private val cardioLogDao: CardioLogDao,
 ) : ViewModel() {
 
-    // The set counter resets per calendar day; "today" is fixed when the screen opens.
+    // The set counter resets per calendar day (or on a restart); "today" is fixed when the screen opens.
     private val startOfToday: Long =
         LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
     private val drafts = MutableStateFlow<Map<Long, Draft>>(emptyMap())
 
-    // Today's logs count per plan. The prefill comes from the device's last log in this plan,
-    // falling back to its last log in any plan (or without one).
+    private val plan = planDao.observePlan(planId)
+
+    // Sets count from the start of the current session: midnight, or a later restart of the plan.
+    private val sessionStart = plan
+        .map { maxOf(startOfToday, it?.sessionStartedAt ?: 0L) }
+        .distinctUntilChanged()
+
+    // Session start before the last restart, for undoing the restart.
+    private var previousSessionStartedAt: Long? = null
+
+    // The session's logs count per plan. The prefill comes from the device's last log in this
+    // plan, falling back to its last log in any plan (or without one).
     private val strengthLogs = combine(
-        setLogDao.observeSinceInPlan(startOfToday, planId),
+        sessionStart.flatMapLatest { since -> setLogDao.observeSinceInPlan(since, planId) },
         setLogDao.observeLastSetPerDeviceInPlan(planId),
         setLogDao.observeLastSetPerDevice(),
     ) { today, lastInPlan, lastAnywhere ->
@@ -93,7 +111,7 @@ class WorkoutViewModel(
     }
 
     private val cardioLogs = combine(
-        cardioLogDao.observeSinceInPlan(startOfToday, planId),
+        sessionStart.flatMapLatest { since -> cardioLogDao.observeSinceInPlan(since, planId) },
         cardioLogDao.observeLastPerDeviceInPlan(planId),
         cardioLogDao.observeLastPerDevice(),
     ) { today, lastInPlan, lastAnywhere ->
@@ -104,7 +122,7 @@ class WorkoutViewModel(
     }
 
     val uiState: StateFlow<WorkoutUiState> = combine(
-        planDao.observePlan(planId),
+        plan,
         planDao.observeEntries(planId),
         strengthLogs,
         cardioLogs,
@@ -166,7 +184,7 @@ class WorkoutViewModel(
     fun undoLastSet(item: StrengthItem) {
         // Pin the displayed values so removing the set does not change the selected weight.
         drafts.update { it + (item.deviceId to Draft(weightGrams = item.weightGrams, reps = item.reps)) }
-        viewModelScope.launch { setLogDao.deleteLastSinceInPlan(item.deviceId, planId, startOfToday) }
+        viewModelScope.launch { setLogDao.deleteLastSinceInPlan(item.deviceId, planId, sessionStart.first()) }
     }
 
     fun updateSet(set: SetLog, weightGrams: Int, reps: Int) {
@@ -198,7 +216,7 @@ class WorkoutViewModel(
     fun undoLastSession(item: CardioItem) {
         // Pin the displayed duration so removing the session does not change it.
         drafts.update { it + (item.deviceId to Draft(minutes = item.minutes)) }
-        viewModelScope.launch { cardioLogDao.deleteLastSinceInPlan(item.deviceId, planId, startOfToday) }
+        viewModelScope.launch { cardioLogDao.deleteLastSinceInPlan(item.deviceId, planId, sessionStart.first()) }
     }
 
     fun updateSession(session: CardioLog, minutes: Int) {
@@ -208,6 +226,18 @@ class WorkoutViewModel(
 
     fun deleteSession(session: CardioLog) {
         viewModelScope.launch { cardioLogDao.delete(session) }
+    }
+
+    /** Starts the plan over: only sets logged from now on count for today's progress. */
+    fun restartPlan() {
+        viewModelScope.launch {
+            previousSessionStartedAt = plan.first()?.sessionStartedAt
+            planDao.setSessionStart(planId, System.currentTimeMillis())
+        }
+    }
+
+    fun undoRestartPlan() {
+        viewModelScope.launch { planDao.setSessionStart(planId, previousSessionStartedAt) }
     }
 
     private fun logSets(item: StrengthItem, count: Int) {

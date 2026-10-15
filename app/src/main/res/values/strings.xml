@@ -78,6 +78,9 @@
     <string name="workout_set_summary" translatable="false">%1$s kg × %2$d</string>
     <string name="action_show_details">Show details</string>
     <string name="action_hide_details">Hide details</string>
+    <string name="action_restart_plan">Restart plan</string>
+    <string name="workout_plan_complete">Plan complete</string>
+    <string name="workout_plan_restarted">Plan restarted</string>
     <string name="weight_kg" translatable="false">%1$s kg</string>
     <string name="workout_next_set">Next set: %1$s kg × %2$d</string>
     <string name="next_set_sheet_subtitle">Weight and reps for the next set</string>

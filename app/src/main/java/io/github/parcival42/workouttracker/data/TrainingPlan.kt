@@ -10,4 +10,7 @@ data class TrainingPlan(
     val name: String,
     // At most one plan is the default; it starts automatically in the Training tab.
     @ColumnInfo(name = "is_default", defaultValue = "0") val isDefault: Boolean = false,
+    // Set when the user restarts the plan on the same day; the workout only counts sets
+    // logged since then (but never before midnight). Transient state, not part of the backup.
+    @ColumnInfo(name = "session_started_at") val sessionStartedAt: Long? = null,
 )
