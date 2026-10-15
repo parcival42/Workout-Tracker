@@ -67,6 +67,7 @@ fun HistoryScreen(
             HistoryContent(
                 state = state,
                 onRangeSelect = viewModel::setRange,
+                onPlanSelect = viewModel::setPlanFilter,
                 onModeSelect = viewModel::setMode,
                 onDeviceToggle = viewModel::toggleDevice,
                 modifier = Modifier.padding(innerPadding),
@@ -79,6 +80,7 @@ fun HistoryScreen(
 private fun HistoryContent(
     state: HistoryUiState,
     onRangeSelect: (HistoryRange) -> Unit,
+    onPlanSelect: (Long?) -> Unit,
     onModeSelect: (DeviceType) -> Unit,
     onDeviceToggle: (Long) -> Unit,
     modifier: Modifier = Modifier,
@@ -100,6 +102,25 @@ private fun HistoryContent(
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
+        if (state.plans.isNotEmpty()) {
+            item {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = state.planId == null,
+                        onClick = { onPlanSelect(null) },
+                        label = { Text(stringResource(R.string.history_plan_all)) },
+                    )
+                    state.plans.forEach { plan ->
+                        FilterChip(
+                            selected = state.planId == plan.id,
+                            onClick = { onPlanSelect(plan.id) },
+                            label = { Text(plan.name) },
+                        )
+                    }
+                }
+            }
+        }
+
         if (state.availableModes.size > 1) {
             item {
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {

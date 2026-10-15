@@ -9,8 +9,11 @@ import io.github.parcival42.workouttracker.WorkoutTrackerApplication
 import io.github.parcival42.workouttracker.data.CardioLogDao
 import io.github.parcival42.workouttracker.data.Device
 import io.github.parcival42.workouttracker.data.DeviceDao
+import io.github.parcival42.workouttracker.data.DevicePlan
 import io.github.parcival42.workouttracker.data.DeviceType
+import io.github.parcival42.workouttracker.data.PlanDao
 import io.github.parcival42.workouttracker.data.SetLogDao
+import io.github.parcival42.workouttracker.data.TrainingPlan
 import io.github.parcival42.workouttracker.ui.components.secondsToMinutes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,13 +46,20 @@ data class HistoryEntry(
     val performedAt: Long,
     val value: Int,
     val reps: Int?,
+    val planId: Long?,
 )
 
 data class DayEntries(val date: LocalDate, val entries: List<HistoryEntry>)
 
 data class HistorySeries(val deviceId: Long, val deviceName: String, val colorSlot: Int, val days: List<DayEntries>)
 
+private data class PlanData(val devices: List<Device>, val plans: List<TrainingPlan>, val devicePlans: Set<DevicePlan>)
+
 data class HistoryUiState(
+    /** Plans with logged training; the plan filter is only shown if there is at least one. */
+    val plans: List<TrainingPlan> = emptyList(),
+    /** Selected plan filter; null shows all logs, including those without a plan. */
+    val planId: Long? = null,
     /** Strength and cardio are never mixed in one chart: they have different units. */
     val mode: DeviceType = DeviceType.STRENGTH,
     /** Device types that have history; the mode switch is only shown for more than one. */
@@ -66,11 +76,14 @@ data class HistoryUiState(
 @OptIn(ExperimentalCoroutinesApi::class)
 class HistoryViewModel(
     deviceDao: DeviceDao,
+    planDao: PlanDao,
     private val setLogDao: SetLogDao,
     private val cardioLogDao: CardioLogDao,
 ) : ViewModel() {
 
     private val range = MutableStateFlow(HistoryRange.THREE_MONTHS)
+
+    private val planFilter = MutableStateFlow<Long?>(null)
 
     // null until the user picks a mode; then the mode of the most recent training is shown.
     private val mode = MutableStateFlow<DeviceType?>(null)
@@ -83,21 +96,43 @@ class HistoryViewModel(
         val since = range.startMillis()
         combine(setLogDao.observeSince(since), cardioLogDao.observeSince(since)) { sets, sessions ->
             mapOf(
-                DeviceType.STRENGTH to sets.map { HistoryEntry(it.id, it.deviceId, it.performedAt, it.weightGrams, it.reps) },
+                DeviceType.STRENGTH to sets.map { HistoryEntry(it.id, it.deviceId, it.performedAt, it.weightGrams, it.reps, it.planId) },
                 DeviceType.CARDIO to sessions.map {
-                    HistoryEntry(it.id, it.deviceId, it.performedAt, secondsToMinutes(it.durationSeconds), null)
+                    HistoryEntry(it.id, it.deviceId, it.performedAt, secondsToMinutes(it.durationSeconds), null, it.planId)
                 },
             )
         }
     }
 
-    val uiState: StateFlow<HistoryUiState> = combine(
+    private val planData = combine(
         deviceDao.observeWithHistory(),
-        range,
+        planDao.observePlans(),
+        planDao.observeLoggedDevicePlans(),
+    ) { devices, plans, devicePlans -> PlanData(devices, plans, devicePlans.toSet()) }
+
+    private val filters = combine(range, planFilter, ::Pair)
+
+    val uiState: StateFlow<HistoryUiState> = combine(
+        planData,
+        filters,
         mode,
         selections,
         entries,
-    ) { devices, range, mode, selections, entriesByType ->
+    ) { planData, (range, planFilter), mode, selections, allEntriesByType ->
+        val plansWithHistory = planData.plans.filter { plan -> planData.devicePlans.any { it.planId == plan.id } }
+        // Falls back to all plans if the selected plan was deleted.
+        val effectivePlanId = planFilter?.takeIf { id -> plansWithHistory.any { it.id == id } }
+        val devices = if (effectivePlanId == null) {
+            planData.devices
+        } else {
+            planData.devices.filter { DevicePlan(it.id, effectivePlanId) in planData.devicePlans }
+        }
+        val entriesByType = if (effectivePlanId == null) {
+            allEntriesByType
+        } else {
+            allEntriesByType.mapValues { (_, entries) -> entries.filter { it.planId == effectivePlanId } }
+        }
+
         val availableModes = DeviceType.entries.filter { type -> devices.any { it.type == type } }
         val mostRecentMode = entriesByType
             .mapNotNull { (type, entries) -> entries.lastOrNull()?.let { type to it.performedAt } }
@@ -130,18 +165,24 @@ class HistoryViewModel(
         }
 
         HistoryUiState(
+            plans = plansWithHistory,
+            planId = effectivePlanId,
             mode = effectiveMode,
             availableModes = availableModes,
             devices = modeDevices.map { HistoryDevice(it, effectiveSelection[it.id]) },
             range = range,
             dates = series.flatMap { s -> s.days.map { it.date } }.distinct().sorted(),
             series = series,
-            canSelectMore = effectiveSelection.size < MAX_SERIES,
+            canSelectMore = effectiveSelection.keys.count { id -> modeDevices.any { it.id == id } } < MAX_SERIES,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HistoryUiState())
 
     fun setRange(newRange: HistoryRange) {
         range.value = newRange
+    }
+
+    fun setPlanFilter(planId: Long?) {
+        planFilter.value = planId
     }
 
     fun setMode(newMode: DeviceType) {
@@ -156,8 +197,11 @@ class HistoryViewModel(
         val updated = if (deviceId in current) {
             current - deviceId
         } else {
-            val freeSlot = (0 until MAX_SERIES).firstOrNull { it !in current.values }
-            if (freeSlot == null) current else current + (deviceId to freeSlot)
+            // Devices hidden by the plan filter keep their slot unless all slots are taken.
+            val visibleIds = state.devices.mapTo(HashSet()) { it.device.id }
+            val candidates = if (current.size < MAX_SERIES) current else current.filterKeys { it in visibleIds }
+            val freeSlot = (0 until MAX_SERIES).firstOrNull { it !in candidates.values }
+            if (freeSlot == null) current else candidates + (deviceId to freeSlot)
         }
         // Pin the mode too, so the view doesn't jump to another mode when new training is logged.
         mode.value = state.mode
@@ -176,7 +220,12 @@ class HistoryViewModel(
         val Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as WorkoutTrackerApplication
-                HistoryViewModel(app.database.deviceDao(), app.database.setLogDao(), app.database.cardioLogDao())
+                HistoryViewModel(
+                    app.database.deviceDao(),
+                    app.database.planDao(),
+                    app.database.setLogDao(),
+                    app.database.cardioLogDao(),
+                )
             }
         }
     }

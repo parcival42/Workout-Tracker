@@ -50,3 +50,6 @@ data class PlanEntryItem(
     val minWeightGrams: Int,
     val weightStepGrams: Int,
 )
+
+/** A device that has logged training in a plan. */
+data class DevicePlan(val deviceId: Long, val planId: Long)

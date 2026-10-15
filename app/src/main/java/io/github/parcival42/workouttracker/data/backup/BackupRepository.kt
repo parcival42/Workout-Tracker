@@ -2,6 +2,7 @@ package io.github.parcival42.workouttracker.data.backup
 
 import androidx.room.withTransaction
 import io.github.parcival42.workouttracker.data.AppDatabase
+import io.github.parcival42.workouttracker.data.UserSettings
 
 class BackupRepository(private val database: AppDatabase) {
 
@@ -13,6 +14,7 @@ class BackupRepository(private val database: AppDatabase) {
                 planEntries = database.planDao().getAllEntries(),
                 sets = database.setLogDao().getAll(),
                 cardioSessions = database.cardioLogDao().getAll(),
+                settings = database.userSettingsDao().get() ?: UserSettings(),
             )
         }
         return BackupJson.encode(data, exportedAt = System.currentTimeMillis())
@@ -27,12 +29,14 @@ class BackupRepository(private val database: AppDatabase) {
             database.planDao().deleteAllEntries()
             database.planDao().deleteAllPlans()
             database.deviceDao().deleteAll()
+            database.userSettingsDao().deleteAll()
 
             database.deviceDao().insertAll(data.devices)
             database.planDao().insertPlans(data.plans)
             database.planDao().insertEntries(data.planEntries)
             database.setLogDao().insertAll(data.sets)
             database.cardioLogDao().insertAll(data.cardioSessions)
+            database.userSettingsDao().upsert(data.settings)
         }
     }
 }

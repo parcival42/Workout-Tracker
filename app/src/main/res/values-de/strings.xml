@@ -82,6 +82,8 @@
     <string name="action_extra_set">Zusatzsatz</string>
     <string name="edit_set_title">Satz %1$d bearbeiten</string>
     <string name="action_undo_set">Letzten Satz rückgängig</string>
+    <string name="action_show_details">Details anzeigen</string>
+    <string name="action_hide_details">Details ausblenden</string>
     <string name="action_edit_plan">Plan bearbeiten</string>
     <string name="workout_next_session">Dauer: %1$d min</string>
     <string name="next_session_sheet_subtitle">Dauer der nächsten Einheit</string>
@@ -101,9 +103,13 @@
     <string name="history_range_3m">3 M</string>
     <string name="history_range_1y">1 J</string>
     <string name="history_range_all">Alle</string>
+    <string name="history_plan_all">Alle Pläne</string>
 
     <string name="settings_title">Einstellungen</string>
     <string name="settings_language_title">Sprache</string>
+    <string name="settings_plan_defaults_title">Standardwerte für neue Planeinträge</string>
+    <string name="settings_plan_defaults_description">Wird vorbelegt, wenn du ein Gerät zu einem Plan hinzufügst. Bestehende Planeinträge bleiben unverändert.</string>
+    <string name="settings_default_duration">Cardio-Dauer (min)</string>
     <string name="language_system">Systemsprache</string>
     <string name="settings_data_title">Datensicherung</string>
     <string name="settings_data_description">Deine Daten liegen nur auf diesem Handy. Exportiere sie regelmäßig, z. B. vor einem Handywechsel.</string>

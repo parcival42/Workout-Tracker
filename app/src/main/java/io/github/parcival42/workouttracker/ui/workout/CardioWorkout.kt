@@ -1,11 +1,11 @@
 package io.github.parcival42.workouttracker.ui.workout
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,6 +31,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -51,87 +50,73 @@ internal fun CardioCard(
     onUndo: () -> Unit,
     onSessionClick: (sessionNumber: Int, session: CardioLog) -> Unit,
 ) {
-    val cardModifier = if (item.isComplete) {
-        Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CardDefaults.elevatedShape)
-    } else {
-        Modifier
-    }
-    ElevatedCard(modifier = Modifier.fillMaxWidth().then(cardModifier)) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+    val resources = LocalResources.current
+    DeviceCard(
+        deviceName = item.deviceName,
+        isComplete = item.isComplete,
+        progress = null,
+        summary = item.todaySessions.joinToString("  ·  ") {
+            resources.getString(R.string.duration_min, secondsToMinutes(it.durationSeconds))
+        },
+    ) {
+        if (item.todaySessions.isNotEmpty()) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                item.todaySessions.forEachIndexed { index, session ->
+                    SuggestionChip(
+                        onClick = { onSessionClick(index + 1, session) },
+                        label = {
+                            Text(stringResource(R.string.duration_min, secondsToMinutes(session.durationSeconds)))
+                        },
+                    )
+                }
+            }
+        }
+
+        // The duration is only editable in the sheet, so a stray tap on the card can't change it.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .clickable(
+                    onClickLabel = stringResource(R.string.action_edit_next_session),
+                    onClick = onEditNextSession,
+                ),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = item.deviceName,
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.weight(1f),
-                )
-                if (item.isComplete) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_check),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
+            Text(
+                text = stringResource(R.string.workout_next_session, item.minutes),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f),
+            )
+            Icon(
+                painter = painterResource(R.drawable.ic_edit),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
+        }
 
-            if (item.todaySessions.isNotEmpty()) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    item.todaySessions.forEachIndexed { index, session ->
-                        SuggestionChip(
-                            onClick = { onSessionClick(index + 1, session) },
-                            label = {
-                                Text(stringResource(R.string.duration_min, secondsToMinutes(session.durationSeconds)))
-                            },
-                        )
-                    }
-                }
-            }
-
-            // The duration is only editable in the sheet, so a stray tap on the card can't change it.
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp)
-                    .clickable(
-                        onClickLabel = stringResource(R.string.action_edit_next_session),
-                        onClick = onEditNextSession,
-                    ),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.workout_next_session, item.minutes),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
-                )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            IconButton(onClick = onUndo, enabled = item.todaySessions.isNotEmpty()) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_edit),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
+                    painter = painterResource(R.drawable.ic_undo),
+                    contentDescription = stringResource(R.string.action_undo_session),
                 )
             }
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                IconButton(onClick = onUndo, enabled = item.todaySessions.isNotEmpty()) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_undo),
-                        contentDescription = stringResource(R.string.action_undo_session),
-                    )
+            // Keeps the button in the same grid slot as "Done" on strength cards, which have
+            // a second button here.
+            Spacer(modifier = Modifier.weight(1f))
+            // Once done, a further session stays possible but is no longer the prominent action.
+            if (item.isComplete) {
+                OutlinedButton(onClick = onLogSession, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.action_extra_session), maxLines = 1)
                 }
-                // Once done, a further session stays possible but is no longer the prominent action.
-                if (item.isComplete) {
-                    OutlinedButton(onClick = onLogSession, modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.action_extra_session), maxLines = 1)
-                    }
-                } else {
-                    Button(onClick = onLogSession, modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.action_device_done))
-                    }
+            } else {
+                Button(onClick = onLogSession, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.action_device_done))
                 }
             }
         }

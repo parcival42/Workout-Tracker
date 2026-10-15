@@ -6,7 +6,9 @@ import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.data.PlanEntry
 import io.github.parcival42.workouttracker.data.SetLog
 import io.github.parcival42.workouttracker.data.TrainingPlan
+import io.github.parcival42.workouttracker.data.UserSettings
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Test
 
@@ -27,12 +29,13 @@ class BackupJsonTest {
             ),
         ),
         sets = listOf(
-            SetLog(id = 10, deviceId = 1, performedAt = 1_760_000_000_000, weightGrams = 20_000, reps = 10),
+            SetLog(id = 10, deviceId = 1, performedAt = 1_760_000_000_000, weightGrams = 20_000, reps = 10, planId = 7),
             SetLog(id = 11, deviceId = 2, performedAt = 1_760_000_000_001, weightGrams = 22_500, reps = 10),
         ),
         cardioSessions = listOf(
-            CardioLog(id = 20, deviceId = 3, performedAt = 1_760_000_000_002, durationSeconds = 1_500),
+            CardioLog(id = 20, deviceId = 3, performedAt = 1_760_000_000_002, durationSeconds = 1_500, planId = 8),
         ),
+        settings = UserSettings(defaultTargetSets = 4, defaultTargetReps = 8, defaultTargetDurationSeconds = 900),
     )
 
     @Test
@@ -104,6 +107,33 @@ class BackupJsonTest {
     @Test
     fun rejectsDanglingReferences() {
         val broken = sample.copy(sets = sample.sets + SetLog(id = 12, deviceId = 99, performedAt = 0, weightGrams = 0, reps = 1))
+        assertThrows(InvalidBackupException::class.java) { BackupJson.decode(BackupJson.encode(broken, 0)) }
+    }
+
+    @Test
+    fun readsVersion3WithoutPlansOnLogsAndDefaultSettings() {
+        val v3 = """
+            {"format":"workout-tracker-backup","version":3,"exportedAt":0,
+             "devices":[{"id":1,"name":"Leg Press","imageUri":null,"archived":false,"startWeightGrams":0,"weightStepGrams":2500,"type":"STRENGTH"}],
+             "plans":[{"id":7,"name":"Upper Body","isDefault":false}],
+             "planEntries":[],
+             "sets":[{"id":10,"deviceId":1,"performedAt":0,"weightGrams":20000,"reps":10}],
+             "cardioSessions":[]}
+        """.trimIndent()
+        val data = BackupJson.decode(v3)
+        assertNull(data.sets.single().planId)
+        assertEquals(UserSettings(), data.settings)
+    }
+
+    @Test
+    fun rejectsLogsOfMissingPlan() {
+        val broken = sample.copy(sets = sample.sets.map { it.copy(planId = 99) })
+        assertThrows(InvalidBackupException::class.java) { BackupJson.decode(BackupJson.encode(broken, 0)) }
+    }
+
+    @Test
+    fun rejectsInvalidSettings() {
+        val broken = sample.copy(settings = UserSettings(defaultTargetSets = 0))
         assertThrows(InvalidBackupException::class.java) { BackupJson.decode(BackupJson.encode(broken, 0)) }
     }
 }
