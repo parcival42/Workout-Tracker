@@ -12,6 +12,9 @@ interface CardioLogDao {
     @Query("SELECT * FROM cardio_log WHERE performed_at >= :since ORDER BY performed_at, id")
     fun observeSince(since: Long): Flow<List<CardioLog>>
 
+    @Query("SELECT * FROM cardio_log WHERE performed_at >= :since AND plan_id = :planId ORDER BY performed_at, id")
+    fun observeSinceInPlan(since: Long, planId: Long): Flow<List<CardioLog>>
+
     // Ordered by time, not id: imported data does not guarantee ids in chronological order.
     @Query(
         """
@@ -22,6 +25,16 @@ interface CardioLogDao {
         """
     )
     fun observeLastPerDevice(): Flow<List<CardioLog>>
+
+    @Query(
+        """
+        SELECT * FROM cardio_log c WHERE c.plan_id = :planId AND c.id = (
+            SELECT c2.id FROM cardio_log c2 WHERE c2.device_id = c.device_id AND c2.plan_id = :planId
+            ORDER BY c2.performed_at DESC, c2.id DESC LIMIT 1
+        )
+        """
+    )
+    fun observeLastPerDeviceInPlan(planId: Long): Flow<List<CardioLog>>
 
     @Insert
     suspend fun insert(session: CardioLog)
@@ -44,10 +57,10 @@ interface CardioLogDao {
     @Query(
         """
         DELETE FROM cardio_log WHERE id = (
-            SELECT id FROM cardio_log WHERE device_id = :deviceId AND performed_at >= :since
+            SELECT id FROM cardio_log WHERE device_id = :deviceId AND plan_id = :planId AND performed_at >= :since
             ORDER BY performed_at DESC, id DESC LIMIT 1
         )
         """
     )
-    suspend fun deleteLastSince(deviceId: Long, since: Long)
+    suspend fun deleteLastSinceInPlan(deviceId: Long, planId: Long, since: Long)
 }

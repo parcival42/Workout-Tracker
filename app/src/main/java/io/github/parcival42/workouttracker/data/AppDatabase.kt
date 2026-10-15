@@ -7,8 +7,10 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [Device::class, TrainingPlan::class, PlanEntry::class, SetLog::class, CardioLog::class],
-    version = 6,
+    entities = [
+        Device::class, TrainingPlan::class, PlanEntry::class, SetLog::class, CardioLog::class, UserSettings::class,
+    ],
+    version = 7,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -16,6 +18,7 @@ import androidx.room.RoomDatabase
         AutoMigration(from = 3, to = 4),
         AutoMigration(from = 4, to = 5),
         AutoMigration(from = 5, to = 6),
+        AutoMigration(from = 6, to = 7),
     ],
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -23,6 +26,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun planDao(): PlanDao
     abstract fun setLogDao(): SetLogDao
     abstract fun cardioLogDao(): CardioLogDao
+    abstract fun userSettingsDao(): UserSettingsDao
 
     companion object {
         // Training history is the product: never use a destructive migration fallback.

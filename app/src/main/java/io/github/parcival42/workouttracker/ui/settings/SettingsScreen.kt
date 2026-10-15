@@ -46,6 +46,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.parcival42.workouttracker.BuildConfig
 import io.github.parcival42.workouttracker.R
+import io.github.parcival42.workouttracker.data.UserSettings
+import io.github.parcival42.workouttracker.ui.components.Stepper
+import io.github.parcival42.workouttracker.ui.components.TARGET_MINUTES_RANGE
+import io.github.parcival42.workouttracker.ui.components.TARGET_REPS_RANGE
+import io.github.parcival42.workouttracker.ui.components.TARGET_SETS_RANGE
+import io.github.parcival42.workouttracker.ui.components.secondsToMinutes
 import java.time.LocalDate
 
 private enum class AppLanguage(val languageTag: String, val labelRes: Int) {
@@ -61,6 +67,7 @@ fun SettingsScreen(
 ) {
     val result by viewModel.result.collectAsStateWithLifecycle()
     val busy by viewModel.busy.collectAsStateWithLifecycle()
+    val planDefaults by viewModel.planDefaults.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val resources = LocalResources.current
     var pendingImportUri by rememberSaveable { mutableStateOf<Uri?>(null) }
@@ -98,6 +105,13 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             LanguageSection()
+            HorizontalDivider()
+            PlanDefaultsSection(
+                defaults = planDefaults,
+                onSetsChange = viewModel::changeDefaultTargetSets,
+                onRepsChange = viewModel::changeDefaultTargetReps,
+                onMinutesChange = viewModel::changeDefaultTargetMinutes,
+            )
             HorizontalDivider()
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(stringResource(R.string.settings_data_title), style = MaterialTheme.typography.titleMedium)
@@ -202,5 +216,40 @@ private fun LanguageSection() {
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun PlanDefaultsSection(
+    defaults: UserSettings,
+    onSetsChange: (delta: Int) -> Unit,
+    onRepsChange: (delta: Int) -> Unit,
+    onMinutesChange: (delta: Int) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(stringResource(R.string.settings_plan_defaults_title), style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = stringResource(R.string.settings_plan_defaults_description),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Stepper(
+            label = stringResource(R.string.target_sets),
+            value = defaults.defaultTargetSets,
+            onValueChange = { onSetsChange(it - defaults.defaultTargetSets) },
+            range = TARGET_SETS_RANGE,
+        )
+        Stepper(
+            label = stringResource(R.string.target_reps),
+            value = defaults.defaultTargetReps,
+            onValueChange = { onRepsChange(it - defaults.defaultTargetReps) },
+            range = TARGET_REPS_RANGE,
+        )
+        Stepper(
+            label = stringResource(R.string.settings_default_duration),
+            value = secondsToMinutes(defaults.defaultTargetDurationSeconds),
+            onValueChange = { onMinutesChange(it - secondsToMinutes(defaults.defaultTargetDurationSeconds)) },
+            range = TARGET_MINUTES_RANGE,
+        )
     }
 }

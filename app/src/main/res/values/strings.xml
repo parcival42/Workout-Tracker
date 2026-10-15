@@ -76,6 +76,8 @@
     <string name="workout_empty">This plan has no devices yet. Add devices with the edit button.</string>
     <string name="workout_progress" translatable="false">%1$d/%2$d</string>
     <string name="workout_set_summary" translatable="false">%1$s kg × %2$d</string>
+    <string name="action_show_details">Show details</string>
+    <string name="action_hide_details">Hide details</string>
     <string name="weight_kg" translatable="false">%1$s kg</string>
     <string name="workout_next_set">Next set: %1$s kg × %2$d</string>
     <string name="next_set_sheet_subtitle">Weight and reps for the next set</string>
@@ -110,9 +112,13 @@
     <string name="history_range_3m">3 M</string>
     <string name="history_range_1y">1 Y</string>
     <string name="history_range_all">All</string>
+    <string name="history_plan_all">All plans</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_language_title">Language</string>
+    <string name="settings_plan_defaults_title">Defaults for new plan entries</string>
+    <string name="settings_plan_defaults_description">Prefilled when you add a device to a plan. Existing plan entries are not changed.</string>
+    <string name="settings_default_duration">Cardio duration (min)</string>
     <string name="language_system">System default</string>
     <string name="language_german" translatable="false">Deutsch</string>
     <string name="language_english" translatable="false">English</string>

@@ -14,8 +14,14 @@ import androidx.room.PrimaryKey
             parentColumns = ["id"],
             childColumns = ["device_id"],
         ),
+        ForeignKey(
+            entity = TrainingPlan::class,
+            parentColumns = ["id"],
+            childColumns = ["plan_id"],
+            onDelete = ForeignKey.SET_NULL,
+        ),
     ],
-    indices = [Index("device_id"), Index("performed_at")],
+    indices = [Index("device_id"), Index("performed_at"), Index("plan_id")],
 )
 data class CardioLog(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -23,4 +29,6 @@ data class CardioLog(
     @ColumnInfo(name = "performed_at") val performedAt: Long,
     // Seconds, although the UI works in whole minutes, so finer input needs no migration.
     @ColumnInfo(name = "duration_seconds") val durationSeconds: Int,
+    // Plan the session was logged in; null for sessions without a known plan (deleted plan, old data).
+    @ColumnInfo(name = "plan_id") val planId: Long? = null,
 )

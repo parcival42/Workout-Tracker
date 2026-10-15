@@ -13,7 +13,13 @@ import io.github.parcival42.workouttracker.data.DeviceDao
 import io.github.parcival42.workouttracker.data.PlanDao
 import io.github.parcival42.workouttracker.data.PlanEntryItem
 import io.github.parcival42.workouttracker.data.TrainingPlan
+import io.github.parcival42.workouttracker.data.UserSettings
+import io.github.parcival42.workouttracker.data.UserSettingsDao
 import io.github.parcival42.workouttracker.ui.components.SECONDS_PER_MINUTE
+import io.github.parcival42.workouttracker.ui.components.TARGET_MINUTES_RANGE
+import io.github.parcival42.workouttracker.ui.components.TARGET_REPS_RANGE
+import io.github.parcival42.workouttracker.ui.components.TARGET_SETS_RANGE
+import io.github.parcival42.workouttracker.ui.components.secondsToMinutes
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -24,6 +30,7 @@ class PlanEditorViewModel(
     savedStateHandle: SavedStateHandle,
     private val planDao: PlanDao,
     deviceDao: DeviceDao,
+    private val userSettingsDao: UserSettingsDao,
 ) : ViewModel() {
 
     private val planId: Long = checkNotNull(savedStateHandle[PLAN_ID_ARG])
@@ -57,7 +64,16 @@ class PlanEditorViewModel(
 
     fun addDevice(deviceId: Long) {
         viewModelScope.launch {
-            planDao.addEntry(planId, deviceId, DEFAULT_TARGET_SETS, DEFAULT_TARGET_REPS)
+            // The personal defaults only prefill the new entry; it is edited independently afterwards.
+            val defaults = userSettingsDao.get() ?: UserSettings()
+            planDao.addEntry(
+                planId = planId,
+                deviceId = deviceId,
+                targetSets = defaults.defaultTargetSets.coerceIn(TARGET_SETS_RANGE),
+                targetReps = defaults.defaultTargetReps.coerceIn(TARGET_REPS_RANGE),
+                targetDurationSeconds = secondsToMinutes(defaults.defaultTargetDurationSeconds)
+                    .coerceIn(TARGET_MINUTES_RANGE) * SECONDS_PER_MINUTE,
+            )
         }
     }
 
@@ -79,8 +95,6 @@ class PlanEditorViewModel(
 
     companion object {
         const val PLAN_ID_ARG = "planId"
-        const val DEFAULT_TARGET_SETS = 3
-        const val DEFAULT_TARGET_REPS = 10
 
         val Factory = viewModelFactory {
             initializer {
@@ -89,6 +103,7 @@ class PlanEditorViewModel(
                     createSavedStateHandle(),
                     app.database.planDao(),
                     app.database.deviceDao(),
+                    app.database.userSettingsDao(),
                 )
             }
         }

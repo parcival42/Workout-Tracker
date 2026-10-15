@@ -6,13 +6,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -37,7 +35,6 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -46,7 +43,10 @@ import io.github.parcival42.workouttracker.data.Device
 import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.data.PlanEntryItem
 import io.github.parcival42.workouttracker.ui.components.EmptyHint
-import io.github.parcival42.workouttracker.ui.components.MAX_DURATION_MINUTES
+import io.github.parcival42.workouttracker.ui.components.Stepper
+import io.github.parcival42.workouttracker.ui.components.TARGET_MINUTES_RANGE
+import io.github.parcival42.workouttracker.ui.components.TARGET_REPS_RANGE
+import io.github.parcival42.workouttracker.ui.components.TARGET_SETS_RANGE
 import io.github.parcival42.workouttracker.ui.components.NameDialog
 import io.github.parcival42.workouttracker.ui.components.secondsToMinutes
 import sh.calvin.reorderable.ReorderableItem
@@ -309,20 +309,20 @@ private fun EntryTargetsDialog(
                         label = stringResource(R.string.duration_label_min),
                         value = minutes,
                         onValueChange = { minutes = it },
-                        range = 1..MAX_DURATION_MINUTES,
+                        range = TARGET_MINUTES_RANGE,
                     )
                 } else {
                     Stepper(
                         label = stringResource(R.string.target_sets),
                         value = sets,
                         onValueChange = { sets = it },
-                        range = 1..20,
+                        range = TARGET_SETS_RANGE,
                     )
                     Stepper(
                         label = stringResource(R.string.target_reps),
                         value = reps,
                         onValueChange = { reps = it },
-                        range = 1..100,
+                        range = TARGET_REPS_RANGE,
                     )
                 }
             }
@@ -343,40 +343,4 @@ private fun EntryTargetsDialog(
             }
         },
     )
-}
-
-@Composable
-private fun Stepper(
-    label: String,
-    value: Int,
-    onValueChange: (Int) -> Unit,
-    range: IntRange,
-) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(text = label, modifier = Modifier.weight(1f))
-        FilledTonalIconButton(
-            onClick = { onValueChange(value - 1) },
-            enabled = value > range.first,
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_remove),
-                contentDescription = stringResource(R.string.action_decrease),
-            )
-        }
-        Text(
-            text = value.toString(),
-            style = MaterialTheme.typography.titleLarge,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.widthIn(min = 48.dp),
-        )
-        FilledTonalIconButton(
-            onClick = { onValueChange(value + 1) },
-            enabled = value < range.last,
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.ic_add),
-                contentDescription = stringResource(R.string.action_increase),
-            )
-        }
-    }
 }

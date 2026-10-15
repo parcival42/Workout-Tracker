@@ -46,6 +46,16 @@ abstract class PlanDao {
     )
     abstract fun observeEntries(planId: Long): Flow<List<PlanEntryItem>>
 
+    // Which device was trained in which plan, over all time; logs without a plan are left out.
+    @Query(
+        """
+        SELECT device_id AS deviceId, plan_id AS planId FROM set_log WHERE plan_id IS NOT NULL
+        UNION
+        SELECT device_id AS deviceId, plan_id AS planId FROM cardio_log WHERE plan_id IS NOT NULL
+        """
+    )
+    abstract fun observeLoggedDevicePlans(): Flow<List<DevicePlan>>
+
     @Query("SELECT COALESCE(MAX(sort_order), -1) + 1 FROM plan_entry WHERE plan_id = :planId")
     protected abstract suspend fun nextSortOrder(planId: Long): Int
 
@@ -53,7 +63,13 @@ abstract class PlanDao {
     protected abstract suspend fun insertEntry(entry: PlanEntry): Long
 
     @Transaction
-    open suspend fun addEntry(planId: Long, deviceId: Long, targetSets: Int, targetReps: Int) {
+    open suspend fun addEntry(
+        planId: Long,
+        deviceId: Long,
+        targetSets: Int,
+        targetReps: Int,
+        targetDurationSeconds: Int,
+    ) {
         insertEntry(
             PlanEntry(
                 planId = planId,
@@ -61,6 +77,7 @@ abstract class PlanDao {
                 sortOrder = nextSortOrder(planId),
                 targetSets = targetSets,
                 targetReps = targetReps,
+                targetDurationSeconds = targetDurationSeconds,
             )
         )
     }

@@ -1,6 +1,5 @@
 package io.github.parcival42.workouttracker.ui.workout
 
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -18,8 +17,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
@@ -43,6 +40,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -260,101 +258,79 @@ private fun WorkoutCard(
     onUndo: () -> Unit,
     onSetClick: (setNumber: Int, set: SetLog) -> Unit,
 ) {
-    val cardModifier = if (item.isComplete) {
-        Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CardDefaults.elevatedShape)
-    } else {
-        Modifier
-    }
-    ElevatedCard(modifier = Modifier.fillMaxWidth().then(cardModifier)) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = item.deviceName,
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.weight(1f),
-                )
-                if (item.isComplete) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_check),
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(end = 8.dp),
-                    )
-                }
-                Text(
-                    text = stringResource(R.string.workout_progress, item.todaySets.size, item.targetSets),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-            }
-
-            if (item.todaySets.isNotEmpty()) {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    item.todaySets.forEachIndexed { index, set ->
-                        SuggestionChip(
-                            onClick = { onSetClick(index + 1, set) },
-                            label = {
-                                Text(stringResource(R.string.workout_set_summary, formatKg(set.weightGrams), set.reps))
-                            },
-                        )
-                    }
-                }
-            }
-
-            // Values are only editable in the sheet, so a stray tap on the card can't change them.
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp)
-                    .clickable(
-                        onClickLabel = stringResource(R.string.action_edit_next_set),
-                        onClick = onEditNextSet,
-                    ),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.workout_next_set, formatKg(item.weightGrams), item.reps),
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f),
-                )
-                Icon(
-                    painter = painterResource(R.drawable.ic_edit),
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                IconButton(onClick = onUndo, enabled = item.todaySets.isNotEmpty()) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_undo),
-                        contentDescription = stringResource(R.string.action_undo_set),
-                    )
-                }
-                OutlinedButton(onClick = onCompleteOneSet, modifier = Modifier.weight(1f)) {
-                    val nextSet = item.todaySets.size + 1
-                    Text(
-                        text = if (nextSet <= item.targetSets) {
-                            stringResource(R.string.action_set_n_of_m, nextSet, item.targetSets)
-                        } else {
-                            stringResource(R.string.action_extra_set)
+    val resources = LocalResources.current
+    DeviceCard(
+        deviceName = item.deviceName,
+        isComplete = item.isComplete,
+        progress = stringResource(R.string.workout_progress, item.todaySets.size, item.targetSets),
+        summary = item.todaySets.joinToString("  ·  ") {
+            resources.getString(R.string.workout_set_summary, formatKg(it.weightGrams), it.reps)
+        },
+    ) {
+        if (item.todaySets.isNotEmpty()) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                item.todaySets.forEachIndexed { index, set ->
+                    SuggestionChip(
+                        onClick = { onSetClick(index + 1, set) },
+                        label = {
+                            Text(stringResource(R.string.workout_set_summary, formatKg(set.weightGrams), set.reps))
                         },
-                        maxLines = 1,
                     )
                 }
-                Button(
-                    onClick = onCompleteDevice,
-                    enabled = !item.isComplete,
-                    modifier = Modifier.weight(1f),
-                ) {
-                    Text(stringResource(R.string.action_device_done))
-                }
+            }
+        }
+
+        // Values are only editable in the sheet, so a stray tap on the card can't change them.
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .clickable(
+                    onClickLabel = stringResource(R.string.action_edit_next_set),
+                    onClick = onEditNextSet,
+                ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.workout_next_set, formatKg(item.weightGrams), item.reps),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.weight(1f),
+            )
+            Icon(
+                painter = painterResource(R.drawable.ic_edit),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            IconButton(onClick = onUndo, enabled = item.todaySets.isNotEmpty()) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_undo),
+                    contentDescription = stringResource(R.string.action_undo_set),
+                )
+            }
+            OutlinedButton(onClick = onCompleteOneSet, modifier = Modifier.weight(1f)) {
+                val nextSet = item.todaySets.size + 1
+                Text(
+                    text = if (nextSet <= item.targetSets) {
+                        stringResource(R.string.action_set_n_of_m, nextSet, item.targetSets)
+                    } else {
+                        stringResource(R.string.action_extra_set)
+                    },
+                    maxLines = 1,
+                )
+            }
+            Button(
+                onClick = onCompleteDevice,
+                enabled = !item.isComplete,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(stringResource(R.string.action_device_done))
             }
         }
     }

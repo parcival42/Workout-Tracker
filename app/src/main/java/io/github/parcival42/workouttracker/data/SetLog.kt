@@ -14,8 +14,14 @@ import androidx.room.PrimaryKey
             parentColumns = ["id"],
             childColumns = ["device_id"],
         ),
+        ForeignKey(
+            entity = TrainingPlan::class,
+            parentColumns = ["id"],
+            childColumns = ["plan_id"],
+            onDelete = ForeignKey.SET_NULL,
+        ),
     ],
-    indices = [Index("device_id"), Index("performed_at")],
+    indices = [Index("device_id"), Index("performed_at"), Index("plan_id")],
 )
 data class SetLog(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -24,4 +30,6 @@ data class SetLog(
     // Stored as integer grams to avoid floating point rounding.
     @ColumnInfo(name = "weight_grams") val weightGrams: Int,
     val reps: Int,
+    // Plan the set was logged in; null for sets without a known plan (deleted plan, old data).
+    @ColumnInfo(name = "plan_id") val planId: Long? = null,
 )
