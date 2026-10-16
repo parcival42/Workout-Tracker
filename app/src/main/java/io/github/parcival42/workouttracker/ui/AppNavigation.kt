@@ -29,6 +29,7 @@ import io.github.parcival42.workouttracker.ui.devices.DeviceListScreen
 import io.github.parcival42.workouttracker.ui.history.HistoryScreen
 import io.github.parcival42.workouttracker.ui.history.LogEntriesScreen
 import io.github.parcival42.workouttracker.ui.quicklog.QuickLogScreen
+import io.github.parcival42.workouttracker.ui.settings.LicensesScreen
 import io.github.parcival42.workouttracker.ui.settings.SettingsScreen
 import io.github.parcival42.workouttracker.ui.training.TrainingScreen
 import io.github.parcival42.workouttracker.ui.plans.PlanEditorScreen
@@ -46,6 +47,7 @@ private object Routes {
     const val QUICK_LOG = "quicklog"
     const val ARCHIVED_DEVICES = "devices/archived"
     const val LOG_ENTRIES = "history/entries"
+    const val LICENSES = "settings/licenses"
     const val PLAN_EDITOR = "plan/{${PlanEditorViewModel.PLAN_ID_ARG}}/edit"
     const val WORKOUT = "plan/{${WorkoutViewModel.PLAN_ID_ARG}}/workout"
 
@@ -137,7 +139,10 @@ fun AppNavigation() {
                 ArchivedDevicesScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.SETTINGS) {
-                SettingsScreen()
+                SettingsScreen(onShowLicenses = { navController.navigate(Routes.LICENSES) })
+            }
+            composable(Routes.LICENSES) {
+                LicensesScreen(onBack = { navController.popBackStack() })
             }
             composable(
                 route = Routes.WORKOUT,
