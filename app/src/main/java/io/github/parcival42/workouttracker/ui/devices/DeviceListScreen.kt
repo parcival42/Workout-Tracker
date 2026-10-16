@@ -231,7 +231,6 @@ private fun AddDeviceSheet(onOwnDevice: () -> Unit, onTemplates: () -> Unit, onD
             )
             ListItem(
                 headlineContent = { Text(stringResource(R.string.template_open_action)) },
-                supportingContent = { Text(stringResource(R.string.device_add_templates_description)) },
                 leadingContent = { Icon(painterResource(R.drawable.ic_list), contentDescription = null) },
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier.clickable(onClick = onTemplates),
