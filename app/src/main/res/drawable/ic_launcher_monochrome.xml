@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Silhouette of ic_launcher_foreground for themed icons. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M41,51H67A1,1 0 0,1 68,52V56A1,1 0 0,1 67,57H41A1,1 0 0,1 40,56V52A1,1 0 0,1 41,51zM23,51H24A1,1 0 0,1 25,52V56A1,1 0 0,1 24,57H23A1,1 0 0,1 22,56V52A1,1 0 0,1 23,51zM84,51H85A1,1 0 0,1 86,52V56A1,1 0 0,1 85,57H84A1,1 0 0,1 83,56V52A1,1 0 0,1 84,51zM34.5,36H37.5A2.5,2.5 0 0,1 40,38.5V69.5A2.5,2.5 0 0,1 37.5,72H34.5A2.5,2.5 0 0,1 32,69.5V38.5A2.5,2.5 0 0,1 34.5,36zM70.5,36H73.5A2.5,2.5 0 0,1 76,38.5V69.5A2.5,2.5 0 0,1 73.5,72H70.5A2.5,2.5 0 0,1 68,69.5V38.5A2.5,2.5 0 0,1 70.5,36zM27.5,42H28.5A2.5,2.5 0 0,1 31,44.5V63.5A2.5,2.5 0 0,1 28.5,66H27.5A2.5,2.5 0 0,1 25,63.5V44.5A2.5,2.5 0 0,1 27.5,42zM79.5,42H80.5A2.5,2.5 0 0,1 83,44.5V63.5A2.5,2.5 0 0,1 80.5,66H79.5A2.5,2.5 0 0,1 77,63.5V44.5A2.5,2.5 0 0,1 79.5,42z" />
+</vector>
