@@ -42,11 +42,21 @@ interface SetLogDao {
     @Update
     suspend fun update(set: SetLog)
 
+    // Newest first; by time, not id (imported ids are not chronological).
+    @Query("SELECT * FROM set_log ORDER BY performed_at DESC, id DESC")
+    fun observeAll(): Flow<List<SetLog>>
+
+    @Insert
+    suspend fun insert(set: SetLog): Long
+
     @Query("SELECT * FROM set_log ORDER BY id")
     suspend fun getAll(): List<SetLog>
 
     @Query("DELETE FROM set_log")
     suspend fun deleteAll()
+
+    @Query("DELETE FROM set_log WHERE device_id = :deviceId")
+    suspend fun deleteForDevice(deviceId: Long)
 
     @Delete
     suspend fun delete(set: SetLog)

@@ -19,6 +19,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
@@ -36,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -52,12 +55,27 @@ import java.time.format.FormatStyle
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(
+    onShowEntries: () -> Unit,
     viewModel: HistoryViewModel = viewModel(factory = HistoryViewModel.Factory),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text(stringResource(R.string.history_title)) }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(stringResource(R.string.history_title)) },
+                actions = {
+                    if (state.devices.isNotEmpty()) {
+                        IconButton(onClick = onShowEntries) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_list),
+                                contentDescription = stringResource(R.string.entries_title),
+                            )
+                        }
+                    }
+                },
+            )
+        },
     ) { innerPadding ->
         if (state.devices.isEmpty()) {
             EmptyHint(

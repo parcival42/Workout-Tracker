@@ -32,8 +32,27 @@
     <string name="device_add_title">Gerät anlegen</string>
     <string name="device_add_own">Eigenes Gerät</string>
     <string name="device_add_own_description">Name und Gewichte selbst festlegen</string>
-    <string name="devices_archived_show">Archivierte Geräte anzeigen (%1$d)</string>
-    <string name="devices_archived_hide">Archivierte Geräte ausblenden</string>
+    <string name="devices_archived_title">Archivierte Geräte</string>
+    <string name="devices_archived_empty">Keine archivierten Geräte.</string>
+    <string name="log_count_none">Kein Training eingetragen</string>
+    <plurals name="log_count_sets">
+        <item quantity="one">%d Satz eingetragen</item>
+        <item quantity="other">%d Sätze eingetragen</item>
+    </plurals>
+    <plurals name="log_count_sessions">
+        <item quantity="one">%d Einheit eingetragen</item>
+        <item quantity="other">%d Einheiten eingetragen</item>
+    </plurals>
+    <string name="device_delete_title">Gerät löschen?</string>
+    <string name="device_delete_message_no_logs">„%1$s“ wird endgültig gelöscht und aus allen Plänen entfernt.</string>
+    <plurals name="device_delete_message_sets">
+        <item quantity="one">„%1$s“ und %2$d eingetragener Satz werden endgültig gelöscht, das Gerät wird aus allen Plänen entfernt. Das kann nicht rückgängig gemacht werden.</item>
+        <item quantity="other">„%1$s“ und %2$d eingetragene Sätze werden endgültig gelöscht, das Gerät wird aus allen Plänen entfernt. Das kann nicht rückgängig gemacht werden.</item>
+    </plurals>
+    <plurals name="device_delete_message_sessions">
+        <item quantity="one">„%1$s“ und %2$d eingetragene Einheit werden endgültig gelöscht, das Gerät wird aus allen Plänen entfernt. Das kann nicht rückgängig gemacht werden.</item>
+        <item quantity="other">„%1$s“ und %2$d eingetragene Einheiten werden endgültig gelöscht, das Gerät wird aus allen Plänen entfernt. Das kann nicht rückgängig gemacht werden.</item>
+    </plurals>
     <string name="device_archived_message">„%1$s“ archiviert</string>
     <string name="action_restore">Wiederherstellen</string>
     <string name="action_undo">Rückgängig</string>
@@ -61,7 +80,7 @@
     <string name="quick_log_no_devices">Noch keine Geräte. Lege Geräte im Tab Geräte an.</string>
     <string name="quick_log_no_match">Kein Gerät passt zur Suche.</string>
     <string name="quick_log_sheet_subtitle">Wird ohne Plan eingetragen</string>
-    <string name="quick_log_logged">\"%1$s\" eingetragen</string>
+    <string name="quick_log_logged">„%1$s“ eingetragen</string>
     <string name="action_log">Eintragen</string>
     <string name="action_switch_plan">Plan wechseln</string>
     <string name="action_set_default_plan">Als Standardplan festlegen</string>
@@ -117,6 +136,12 @@
     <string name="history_range_1y">1 J</string>
     <string name="history_range_all">Alle</string>
     <string name="history_plan_all">Alle Pläne</string>
+    <string name="entries_title">Alle Einträge</string>
+    <string name="entry_no_plan">Ohne Plan</string>
+    <string name="entry_deleted">Eintrag gelöscht</string>
+    <string name="entry_edit_set_title">Satz bearbeiten</string>
+    <string name="entry_edit_session_title">Einheit bearbeiten</string>
+    <string name="action_edit_entry">Eintrag bearbeiten</string>
 
     <string name="settings_title">Einstellungen</string>
     <string name="settings_language_title">Sprache</string>

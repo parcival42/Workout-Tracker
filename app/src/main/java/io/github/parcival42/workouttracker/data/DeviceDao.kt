@@ -1,6 +1,7 @@
 package io.github.parcival42.workouttracker.data
 
 import androidx.room.Dao
+import androidx.room.Embedded
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
@@ -28,6 +29,16 @@ interface DeviceDao {
     )
     fun observeWithHistory(): Flow<List<Device>>
 
+    @Query(
+        """
+        SELECT d.*,
+               (SELECT COUNT(*) FROM set_log s WHERE s.device_id = d.id) AS setCount,
+               (SELECT COUNT(*) FROM cardio_log c WHERE c.device_id = d.id) AS sessionCount
+        FROM device d WHERE d.archived = 1 ORDER BY d.name COLLATE NOCASE
+        """
+    )
+    fun observeArchivedWithLogCounts(): Flow<List<ArchivedDevice>>
+
     @Query("SELECT device_id FROM set_log UNION SELECT device_id FROM cardio_log")
     fun observeIdsWithLogs(): Flow<List<Long>>
 
@@ -45,4 +56,14 @@ interface DeviceDao {
 
     @Query("DELETE FROM device")
     suspend fun deleteAll()
+
+    // Callers must delete the device's logs and plan entries first (foreign keys).
+    @Query("DELETE FROM device WHERE id = :deviceId")
+    suspend fun deleteById(deviceId: Long)
 }
+
+data class ArchivedDevice(
+    @Embedded val device: Device,
+    val setCount: Int,
+    val sessionCount: Int,
+)

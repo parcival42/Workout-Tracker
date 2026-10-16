@@ -112,6 +112,9 @@ abstract class PlanDao {
     @Query("DELETE FROM plan_entry")
     abstract suspend fun deleteAllEntries()
 
+    @Query("DELETE FROM plan_entry WHERE device_id = :deviceId")
+    abstract suspend fun deleteEntriesForDevice(deviceId: Long)
+
     @Query("DELETE FROM training_plan")
     abstract suspend fun deleteAllPlans()
 

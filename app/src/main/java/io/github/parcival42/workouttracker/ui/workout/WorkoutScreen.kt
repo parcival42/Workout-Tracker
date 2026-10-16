@@ -223,7 +223,7 @@ fun WorkoutScreen(
 
     editingSession?.let { (number, session) ->
         EditSessionDialog(
-            sessionNumber = number,
+            title = stringResource(R.string.edit_session_title, number),
             session = session,
             onConfirm = { minutes ->
                 viewModel.updateSession(session, minutes)
@@ -239,7 +239,7 @@ fun WorkoutScreen(
 
     editingSet?.let { (number, set) ->
         EditSetDialog(
-            setNumber = number,
+            title = stringResource(R.string.edit_set_title, number),
             set = set,
             onConfirm = { weightGrams, reps ->
                 viewModel.updateSet(set, weightGrams, reps)
@@ -255,8 +255,8 @@ fun WorkoutScreen(
 }
 
 @Composable
-private fun EditSetDialog(
-    setNumber: Int,
+internal fun EditSetDialog(
+    title: String,
     set: SetLog,
     onConfirm: (weightGrams: Int, reps: Int) -> Unit,
     onDelete: () -> Unit,
@@ -269,7 +269,7 @@ private fun EditSetDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.edit_set_title, setNumber)) },
+        title = { Text(title) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(

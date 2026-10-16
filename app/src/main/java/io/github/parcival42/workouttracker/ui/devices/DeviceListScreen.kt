@@ -2,7 +2,6 @@ package io.github.parcival42.workouttracker.ui.devices
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -10,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -22,7 +22,6 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,7 +30,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
@@ -49,6 +47,7 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun DeviceListScreen(
+    onShowArchived: () -> Unit,
     viewModel: DeviceListViewModel = viewModel(factory = DeviceListViewModel.Factory),
 ) {
     val devices by viewModel.devices.collectAsStateWithLifecycle()
@@ -64,12 +63,12 @@ fun DeviceListScreen(
 
     DeviceListContent(
         devices = devices,
-        archivedDevices = archivedDevices,
+        hasArchivedDevices = archivedDevices.isNotEmpty(),
         snackbarHostState = snackbarHostState,
         onAddClick = { showAddChoice = true },
         onTemplatesClick = { showTemplateDialog = true },
         onDeviceClick = { editingDevice = it },
-        onRestore = viewModel::restore,
+        onShowArchived = onShowArchived,
     )
 
     if (showAddChoice) {
@@ -139,19 +138,27 @@ fun DeviceListScreen(
 @Composable
 private fun DeviceListContent(
     devices: List<Device>,
-    archivedDevices: List<Device>,
+    hasArchivedDevices: Boolean,
     snackbarHostState: SnackbarHostState,
     onAddClick: () -> Unit,
     onTemplatesClick: () -> Unit,
     onDeviceClick: (Device) -> Unit,
-    onRestore: (Device) -> Unit,
+    onShowArchived: () -> Unit,
 ) {
-    var showArchived by rememberSaveable { mutableStateOf(false) }
-
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.devices_title)) },
+                actions = {
+                    if (hasArchivedDevices) {
+                        IconButton(onClick = onShowArchived) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_archive),
+                                contentDescription = stringResource(R.string.devices_archived_title),
+                            )
+                        }
+                    }
+                },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -164,7 +171,7 @@ private fun DeviceListContent(
             }
         },
     ) { innerPadding ->
-        if (devices.isEmpty() && archivedDevices.isEmpty()) {
+        if (devices.isEmpty()) {
             EmptyHint(
                 text = stringResource(R.string.devices_empty),
                 modifier = Modifier.padding(innerPadding),
@@ -176,40 +183,9 @@ private fun DeviceListContent(
             )
         } else {
             LazyColumn(modifier = Modifier.padding(innerPadding)) {
-                if (devices.isEmpty()) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.devices_empty),
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.padding(16.dp),
-                        )
-                    }
-                }
                 items(devices, key = { it.id }) { device ->
                     DeviceRow(device = device, onClick = { onDeviceClick(device) })
                     HorizontalDivider()
-                }
-                if (archivedDevices.isNotEmpty()) {
-                    item(key = "archived-toggle") {
-                        TextButton(
-                            onClick = { showArchived = !showArchived },
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp),
-                        ) {
-                            Text(
-                                if (showArchived) {
-                                    stringResource(R.string.devices_archived_hide)
-                                } else {
-                                    stringResource(R.string.devices_archived_show, archivedDevices.size)
-                                }
-                            )
-                        }
-                    }
-                    if (showArchived) {
-                        items(archivedDevices, key = { "archived-${it.id}" }) { device ->
-                            ArchivedDeviceRow(device = device, onRestore = { onRestore(device) })
-                            HorizontalDivider()
-                        }
-                    }
                 }
             }
         }
@@ -235,26 +211,6 @@ private fun AddDeviceSheet(onOwnDevice: () -> Unit, onTemplates: () -> Unit, onD
                 colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                 modifier = Modifier.clickable(onClick = onTemplates),
             )
-        }
-    }
-}
-
-@Composable
-private fun ArchivedDeviceRow(device: Device, onRestore: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = device.name,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
-        TextButton(onClick = onRestore) {
-            Text(stringResource(R.string.action_restore))
         }
     }
 }

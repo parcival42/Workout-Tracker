@@ -178,14 +178,14 @@ internal fun NextSessionSheet(
 
 @Composable
 internal fun EditSessionDialog(
-    sessionNumber: Int,
+    title: String,
     session: CardioLog,
     onConfirm: (minutes: Int) -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     MinutesDialog(
-        title = stringResource(R.string.edit_session_title, sessionNumber),
+        title = title,
         initialMinutes = secondsToMinutes(session.durationSeconds),
         onConfirm = onConfirm,
         onDismiss = onDismiss,
