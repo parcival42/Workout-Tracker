@@ -51,11 +51,18 @@ interface CardioLogDao {
     @Query("DELETE FROM cardio_log WHERE id = :id")
     suspend fun deleteById(id: Long)
 
+    // Newest first; by time, not id (imported ids are not chronological).
+    @Query("SELECT * FROM cardio_log ORDER BY performed_at DESC, id DESC")
+    fun observeAll(): Flow<List<CardioLog>>
+
     @Query("SELECT * FROM cardio_log ORDER BY id")
     suspend fun getAll(): List<CardioLog>
 
     @Query("DELETE FROM cardio_log")
     suspend fun deleteAll()
+
+    @Query("DELETE FROM cardio_log WHERE device_id = :deviceId")
+    suspend fun deleteForDevice(deviceId: Long)
 
     @Query(
         """

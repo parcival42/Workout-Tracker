@@ -34,8 +34,27 @@
     <string name="device_add_title">Add device</string>
     <string name="device_add_own">Own device</string>
     <string name="device_add_own_description">Set name and weights yourself</string>
-    <string name="devices_archived_show">Show archived devices (%1$d)</string>
-    <string name="devices_archived_hide">Hide archived devices</string>
+    <string name="devices_archived_title">Archived devices</string>
+    <string name="devices_archived_empty">No archived devices.</string>
+    <string name="log_count_none">No training logged</string>
+    <plurals name="log_count_sets">
+        <item quantity="one">%d set logged</item>
+        <item quantity="other">%d sets logged</item>
+    </plurals>
+    <plurals name="log_count_sessions">
+        <item quantity="one">%d session logged</item>
+        <item quantity="other">%d sessions logged</item>
+    </plurals>
+    <string name="device_delete_title">Delete device?</string>
+    <string name="device_delete_message_no_logs">\"%1$s\" will be deleted permanently and removed from all plans.</string>
+    <plurals name="device_delete_message_sets">
+        <item quantity="one">\"%1$s\" and its %2$d logged set will be deleted permanently and removed from all plans. This cannot be undone.</item>
+        <item quantity="other">\"%1$s\" and its %2$d logged sets will be deleted permanently and removed from all plans. This cannot be undone.</item>
+    </plurals>
+    <plurals name="device_delete_message_sessions">
+        <item quantity="one">\"%1$s\" and its %2$d logged session will be deleted permanently and removed from all plans. This cannot be undone.</item>
+        <item quantity="other">\"%1$s\" and its %2$d logged sessions will be deleted permanently and removed from all plans. This cannot be undone.</item>
+    </plurals>
     <string name="device_archived_message">\"%1$s\" archived</string>
     <string name="action_restore">Restore</string>
     <string name="action_undo">Undo</string>
@@ -128,6 +147,13 @@
     <string name="history_range_1y">1 Y</string>
     <string name="history_range_all">All</string>
     <string name="history_plan_all">All plans</string>
+    <string name="entries_title">All entries</string>
+    <string name="entry_summary" translatable="false">%1$s · %2$s</string>
+    <string name="entry_no_plan">Without plan</string>
+    <string name="entry_deleted">Entry deleted</string>
+    <string name="entry_edit_set_title">Edit set</string>
+    <string name="entry_edit_session_title">Edit session</string>
+    <string name="action_edit_entry">Edit entry</string>
 
     <string name="settings_title">Settings</string>
     <string name="settings_language_title">Language</string>
