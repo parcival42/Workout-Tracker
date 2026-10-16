@@ -32,7 +32,6 @@
     <string name="device_add_title">Gerät anlegen</string>
     <string name="device_add_own">Eigenes Gerät</string>
     <string name="device_add_own_description">Name und Gewichte selbst festlegen</string>
-    <string name="device_add_templates_description">Mehrere gängige Geräte auf einmal hinzufügen</string>
     <string name="devices_archived_show">Archivierte Geräte anzeigen (%1$d)</string>
     <string name="devices_archived_hide">Archivierte Geräte ausblenden</string>
     <string name="device_archived_message">„%1$s“ archiviert</string>
