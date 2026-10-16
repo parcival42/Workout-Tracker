@@ -1,6 +1,7 @@
 package io.github.parcival42.workouttracker.ui.plans
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -36,6 +37,7 @@ import io.github.parcival42.workouttracker.ui.components.NameDialog
 fun PlanListScreen(
     onOpenPlan: (Long) -> Unit,
     onPlanCreated: (Long) -> Unit,
+    onQuickLog: () -> Unit,
     onBack: (() -> Unit)? = null,
     viewModel: PlanListViewModel = viewModel(factory = PlanListViewModel.Factory),
 ) {
@@ -76,6 +78,10 @@ fun PlanListScreen(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
+            item(key = "quick-log") {
+                QuickLogRow(onClick = onQuickLog)
+                HorizontalDivider()
+            }
             items(plans.orEmpty(), key = { it.id }) { plan ->
                 PlanRow(
                     plan = plan,
@@ -97,6 +103,31 @@ fun PlanListScreen(
             },
             onDismiss = { showAddDialog = false },
         )
+    }
+}
+
+@Composable
+private fun QuickLogRow(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_fitness),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Column(modifier = Modifier.padding(start = 16.dp)) {
+            Text(stringResource(R.string.quick_log_title), style = MaterialTheme.typography.titleMedium)
+            Text(
+                text = stringResource(R.string.quick_log_description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 

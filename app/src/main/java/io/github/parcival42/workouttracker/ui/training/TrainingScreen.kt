@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -37,6 +38,7 @@ fun TrainingScreen(
     onPlanCreated: (Long) -> Unit,
     onEditPlan: (Long) -> Unit,
     onShowPlanList: () -> Unit,
+    onQuickLog: () -> Unit,
     viewModel: PlanListViewModel = viewModel(factory = PlanListViewModel.Factory),
 ) {
     val plans by viewModel.plans.collectAsStateWithLifecycle()
@@ -46,6 +48,7 @@ fun TrainingScreen(
     when {
         loadedPlans.isEmpty() -> NoPlanContent(
             onCreate = { name -> viewModel.create(name, onCreated = onPlanCreated) },
+            onQuickLog = onQuickLog,
         )
         autoPlan != null -> WorkoutScreen(
             planId = autoPlan.id,
@@ -55,6 +58,7 @@ fun TrainingScreen(
         else -> PlanListScreen(
             onOpenPlan = onOpenPlan,
             onPlanCreated = onPlanCreated,
+            onQuickLog = onQuickLog,
             viewModel = viewModel,
         )
     }
@@ -62,7 +66,7 @@ fun TrainingScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun NoPlanContent(onCreate: (String) -> Unit) {
+private fun NoPlanContent(onCreate: (String) -> Unit, onQuickLog: () -> Unit) {
     var showDialog by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
@@ -86,6 +90,9 @@ private fun NoPlanContent(onCreate: (String) -> Unit) {
                 )
                 Button(onClick = { showDialog = true }) {
                     Text(stringResource(R.string.plan_add_title))
+                }
+                OutlinedButton(onClick = onQuickLog) {
+                    Text(stringResource(R.string.quick_log_title))
                 }
             }
         }

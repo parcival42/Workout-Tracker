@@ -55,6 +55,14 @@
     <string name="training_title">Training</string>
     <string name="training_no_plan">You don\'t have a training plan yet. Create one to start training.</string>
     <string name="plans_default_hint">Mark a plan with the star to start it automatically in the Training tab.</string>
+    <string name="quick_log_title">Quick log</string>
+    <string name="quick_log_description">Log training without a plan</string>
+    <string name="quick_log_search">Search device</string>
+    <string name="quick_log_no_devices">No devices yet. Create devices in the Devices tab.</string>
+    <string name="quick_log_no_match">No device matches your search.</string>
+    <string name="quick_log_sheet_subtitle">Logged without a plan</string>
+    <string name="quick_log_logged">\"%1$s\" logged</string>
+    <string name="action_log">Log</string>
     <string name="action_switch_plan">Switch plan</string>
     <string name="action_set_default_plan">Set as default plan</string>
     <string name="action_unset_default_plan">Remove default plan</string>

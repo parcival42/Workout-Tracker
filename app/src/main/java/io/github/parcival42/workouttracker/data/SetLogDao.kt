@@ -37,7 +37,7 @@ interface SetLogDao {
     fun observeLastSetPerDeviceInPlan(planId: Long): Flow<List<SetLog>>
 
     @Insert
-    suspend fun insertAll(sets: List<SetLog>)
+    suspend fun insertAll(sets: List<SetLog>): List<Long>
 
     @Update
     suspend fun update(set: SetLog)
@@ -50,6 +50,9 @@ interface SetLogDao {
 
     @Delete
     suspend fun delete(set: SetLog)
+
+    @Query("DELETE FROM set_log WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
 
     @Query(
         """

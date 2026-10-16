@@ -26,6 +26,7 @@ import androidx.navigation.navArgument
 import io.github.parcival42.workouttracker.R
 import io.github.parcival42.workouttracker.ui.devices.DeviceListScreen
 import io.github.parcival42.workouttracker.ui.history.HistoryScreen
+import io.github.parcival42.workouttracker.ui.quicklog.QuickLogScreen
 import io.github.parcival42.workouttracker.ui.settings.SettingsScreen
 import io.github.parcival42.workouttracker.ui.training.TrainingScreen
 import io.github.parcival42.workouttracker.ui.plans.PlanEditorScreen
@@ -40,6 +41,7 @@ private object Routes {
     const val DEVICES = "devices"
     const val HISTORY = "history"
     const val SETTINGS = "settings"
+    const val QUICK_LOG = "quicklog"
     const val PLAN_EDITOR = "plan/{${PlanEditorViewModel.PLAN_ID_ARG}}/edit"
     const val WORKOUT = "plan/{${WorkoutViewModel.PLAN_ID_ARG}}/workout"
 
@@ -104,14 +106,19 @@ fun AppNavigation() {
                     onPlanCreated = { navController.navigate(Routes.planEditor(it)) },
                     onEditPlan = { navController.navigate(Routes.planEditor(it)) },
                     onShowPlanList = { navController.navigate(Routes.PLANS) },
+                    onQuickLog = { navController.navigate(Routes.QUICK_LOG) },
                 )
             }
             composable(Routes.PLANS) {
                 PlanListScreen(
                     onOpenPlan = { navController.navigate(Routes.workout(it)) },
                     onPlanCreated = { navController.navigate(Routes.planEditor(it)) },
+                    onQuickLog = { navController.navigate(Routes.QUICK_LOG) },
                     onBack = { navController.popBackStack() },
                 )
+            }
+            composable(Routes.QUICK_LOG) {
+                QuickLogScreen(onBack = { navController.popBackStack() })
             }
             composable(Routes.HISTORY) {
                 HistoryScreen()

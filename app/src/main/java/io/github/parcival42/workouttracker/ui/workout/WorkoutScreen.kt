@@ -495,7 +495,7 @@ internal fun ValueStepper(
 }
 
 @Composable
-private fun WeightDialog(
+internal fun WeightDialog(
     initialWeightGrams: Int,
     onConfirm: (Int) -> Unit,
     onDismiss: () -> Unit,
