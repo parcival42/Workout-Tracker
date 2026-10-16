@@ -53,23 +53,28 @@ val WeightScale = ValueScale(minRange = 5_000, stepFactors = listOf(1.0, 2.0, 2.
 // Whole minutes; integer factors only, so ticks stay whole minutes.
 val MinutesScale = ValueScale(minRange = 10, stepFactors = listOf(1.0, 2.0, 5.0, 10.0), format = Int::toString)
 
+/**
+ * One training day of one device. [value] is the top weight (strength) or the total minutes
+ * (cardio); [low] is the lightest weight of the day, below [value] only if the weight changed.
+ */
 data class ChartPoint(
     val deviceId: Long,
     val deviceName: String,
-    val date: LocalDate,
-    val entry: HistoryEntry,
-    /** Position on the x axis in day slots; entries of one day are spread inside their slot. */
+    val day: DayEntries,
+    val value: Int,
+    val low: Int,
+    /** Position on the x axis in day slots; the point sits in the middle of its slot. */
     val x: Float,
 )
 
-fun buildChartPoints(dates: List<LocalDate>, series: List<HistorySeries>): Map<Long, List<ChartPoint>> {
+fun buildChartPoints(dates: List<LocalDate>, series: List<HistorySeries>, isCardio: Boolean): Map<Long, List<ChartPoint>> {
     val dayIndex = dates.withIndex().associate { (index, date) -> date to index }
     return series.associate { s ->
-        s.deviceId to s.days.flatMap { day ->
-            val slot = dayIndex.getValue(day.date)
-            day.entries.mapIndexed { i, entry ->
-                ChartPoint(s.deviceId, s.deviceName, day.date, entry, slot + (i + 1f) / (day.entries.size + 1f))
-            }
+        s.deviceId to s.days.map { day ->
+            val values = day.entries.map { it.value }
+            val value = if (isCardio) values.sum() else values.max()
+            val low = if (isCardio) value else values.min()
+            ChartPoint(s.deviceId, s.deviceName, day, value, low, dayIndex.getValue(day.date) + 0.5f)
         }
     }
 }
@@ -105,7 +110,7 @@ fun HistoryChart(
     val labelStyle = TextStyle(color = MutedInk, fontSize = 11.sp)
     val allPoints = remember(points) { points.values.flatten() }
     val yAxis = remember(allPoints, scale) {
-        niceYAxis(allPoints.minOf { it.entry.value }, allPoints.maxOf { it.entry.value }, scale)
+        niceYAxis(allPoints.minOf { it.low }, allPoints.maxOf { it.value }, scale)
     }
 
     Canvas(
@@ -141,6 +146,11 @@ fun HistoryChart(
 
         points.forEach { (deviceId, seriesPoints) ->
             val color = SeriesColors[colorSlots.getValue(deviceId)]
+            // Weight changed within the day: a thin bar from the lightest to the top weight.
+            seriesPoints.filter { it.low < it.value }.forEach { p ->
+                val o = layout.position(p)
+                drawLine(color, o, Offset(o.x, layout.y(p.low)), strokeWidth = 2.dp.toPx(), cap = StrokeCap.Round)
+            }
             if (seriesPoints.size > 1) {
                 val path = Path()
                 seriesPoints.forEachIndexed { i, p ->
@@ -192,5 +202,5 @@ private class ChartLayout(
         return bottom - fraction * (bottom - top)
     }
 
-    fun position(point: ChartPoint) = Offset(x(point.x), y(point.entry.value))
+    fun position(point: ChartPoint) = Offset(x(point.x), y(point.value))
 }

@@ -106,11 +106,13 @@
     <string name="history_empty">No training logged yet. Your history appears here after your first workout.</string>
     <string name="history_select_device">Select a device to see its history.</string>
     <string name="history_no_data_in_range">No training in this time range.</string>
-    <string name="history_chart_title">Weight per set (kg)</string>
-    <string name="history_chart_title_cardio">Duration per session (min)</string>
+    <string name="history_chart_title">Top weight per day (kg)</string>
+    <string name="history_chart_title_cardio">Duration per day (min)</string>
     <string name="history_tap_hint">Tap a point for details.</string>
-    <string name="history_point_detail" translatable="false">%1$s · %2$s · %3$s kg × %4$d</string>
-    <string name="history_point_detail_cardio" translatable="false">%1$s · %2$s · %3$d min</string>
+    <string name="history_point_detail" translatable="false">%1$s, %2$s: %3$s</string>
+    <string name="history_cardio_total" translatable="false">%1$d min (%2$s)</string>
+    <string name="history_group_strength" translatable="false">%1$d × %2$d · %3$s kg</string>
+    <string name="history_group_cardio" translatable="false">%1$d × %2$d min</string>
     <string name="history_range_1m">1 M</string>
     <string name="history_range_3m">3 M</string>
     <string name="history_range_1y">1 Y</string>

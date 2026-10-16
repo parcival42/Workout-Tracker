@@ -49,7 +49,21 @@ data class HistoryEntry(
     val planId: Long?,
 )
 
-data class DayEntries(val date: LocalDate, val entries: List<HistoryEntry>)
+/** [count] consecutive entries of one day with the same value and reps, e.g. "3 × 10 · 17.5 kg". */
+data class EntryGroup(val value: Int, val reps: Int?, val count: Int)
+
+data class DayEntries(val date: LocalDate, val entries: List<HistoryEntry>) {
+    val groups: List<EntryGroup> = buildList {
+        entries.forEach { entry ->
+            val last = lastOrNull()
+            if (last != null && last.value == entry.value && last.reps == entry.reps) {
+                set(lastIndex, last.copy(count = last.count + 1))
+            } else {
+                add(EntryGroup(entry.value, entry.reps, 1))
+            }
+        }
+    }
+}
 
 data class HistorySeries(val deviceId: Long, val deviceName: String, val colorSlot: Int, val days: List<DayEntries>)
 
