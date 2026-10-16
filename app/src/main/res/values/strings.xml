@@ -32,6 +32,9 @@
     <string name="template_rowing_machine">Rowing machine</string>
     <string name="template_stair_climber">Stair climber</string>
     <string name="device_add_title">Add device</string>
+    <string name="device_add_own">Own device</string>
+    <string name="device_add_own_description">Set name and weights yourself</string>
+    <string name="device_add_templates_description">Add several common machines at once</string>
     <string name="devices_archived_show">Show archived devices (%1$d)</string>
     <string name="devices_archived_hide">Hide archived devices</string>
     <string name="device_archived_message">\"%1$s\" archived</string>
