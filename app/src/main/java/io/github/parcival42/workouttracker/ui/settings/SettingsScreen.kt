@@ -63,6 +63,7 @@ private enum class AppLanguage(val languageTag: String, val labelRes: Int) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    onShowLicenses: () -> Unit,
     viewModel: SettingsViewModel = viewModel(factory = SettingsViewModel.Factory),
 ) {
     val result by viewModel.result.collectAsStateWithLifecycle()
@@ -136,7 +137,7 @@ fun SettingsScreen(
                 }
             }
             HorizontalDivider()
-            AboutSection()
+            AboutSection(onShowLicenses = onShowLicenses)
         }
     }
 
@@ -163,7 +164,7 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun AboutSection() {
+private fun AboutSection(onShowLicenses: () -> Unit) {
     val uriHandler = LocalUriHandler.current
     val repositoryUrl = stringResource(R.string.settings_repository_url)
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -178,6 +179,9 @@ private fun AboutSection() {
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.settings_repository_action))
+        }
+        OutlinedButton(onClick = onShowLicenses, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.licenses_title))
         }
     }
 }
