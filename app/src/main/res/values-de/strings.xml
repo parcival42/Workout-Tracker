@@ -99,8 +99,8 @@
     <string name="history_empty">Noch keine Trainingsdaten. Dein Verlauf erscheint hier nach dem ersten Training.</string>
     <string name="history_select_device">Wähle ein Gerät, um seinen Verlauf zu sehen.</string>
     <string name="history_no_data_in_range">Kein Training in diesem Zeitraum.</string>
-    <string name="history_chart_title">Gewicht pro Satz (kg)</string>
-    <string name="history_chart_title_cardio">Dauer pro Einheit (min)</string>
+    <string name="history_chart_title">Höchstes Gewicht pro Tag (kg)</string>
+    <string name="history_chart_title_cardio">Dauer pro Tag (min)</string>
     <string name="history_tap_hint">Tippe auf einen Punkt für Details.</string>
     <string name="history_range_1m">1 M</string>
     <string name="history_range_3m">3 M</string>

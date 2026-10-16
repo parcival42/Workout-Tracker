@@ -1,5 +1,6 @@
 package io.github.parcival42.workouttracker.ui.history
 
+import android.content.res.Resources
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -93,7 +94,8 @@ private fun HistoryContent(
     val longDateFormatter = remember(locale) {
         DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale)
     }
-    val points = remember(state.dates, state.series) { buildChartPoints(state.dates, state.series) }
+    val resources = LocalResources.current
+    val points = remember(state.dates, state.series, isCardio) { buildChartPoints(state.dates, state.series, isCardio) }
     val colorSlots = remember(state.series) { state.series.associate { it.deviceId to it.colorSlot } }
     var selectedPoint by remember(points) { mutableStateOf<ChartPoint?>(null) }
 
@@ -206,18 +208,13 @@ private fun HistoryContent(
                     )
                     Text(
                         text = selectedPoint?.let {
-                            val date = it.date.format(shortDateFormatter)
-                            if (it.entry.reps == null) {
-                                stringResource(R.string.history_point_detail_cardio, it.deviceName, date, it.entry.value)
+                            val groups = formatGroups(it.day.groups, resources)
+                            val summary = if (isCardio && it.day.entries.size > 1) {
+                                stringResource(R.string.history_cardio_total, it.value, groups)
                             } else {
-                                stringResource(
-                                    R.string.history_point_detail,
-                                    it.deviceName,
-                                    date,
-                                    formatKg(it.entry.value),
-                                    it.entry.reps,
-                                )
+                                groups
                             }
+                            stringResource(R.string.history_point_detail, it.deviceName, it.day.date.format(shortDateFormatter), summary)
                         } ?: stringResource(R.string.history_tap_hint),
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (selectedPoint != null) {
@@ -262,13 +259,7 @@ private fun HistoryDayEntry(
                 Column(modifier = Modifier.padding(start = 8.dp)) {
                     Text(text = s.deviceName, style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        text = day.entries.joinToString("  ·  ") { entry ->
-                            if (entry.reps == null) {
-                                resources.getString(R.string.duration_min, entry.value)
-                            } else {
-                                resources.getString(R.string.workout_set_summary, formatKg(entry.value), entry.reps)
-                            }
-                        },
+                        text = formatGroups(day.groups, resources),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -277,6 +268,15 @@ private fun HistoryDayEntry(
         }
     }
 }
+
+private fun formatGroups(groups: List<EntryGroup>, resources: Resources): String =
+    groups.joinToString(", ") { group ->
+        when {
+            group.reps != null -> resources.getString(R.string.history_group_strength, group.count, group.reps, formatKg(group.value))
+            group.count == 1 -> resources.getString(R.string.duration_min, group.value)
+            else -> resources.getString(R.string.history_group_cardio, group.count, group.value)
+        }
+    }
 
 @Composable
 private fun SeriesDot(color: Color, modifier: Modifier = Modifier) {
