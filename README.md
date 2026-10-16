@@ -59,6 +59,10 @@ JAVA_HOME="C:\Program Files\Android\Android Studio\jbr" ./gradlew assembleDebug
 - [Reorderable](https://github.com/Calvin-LL/Reorderable) for drag and drop
 - Charts drawn with the Compose Canvas, no chart library
 
+## Privacy
+
+The app collects no data and has no internet access. See the [privacy policy](PRIVACY.md).
+
 ## License
 
 [MIT](LICENSE)

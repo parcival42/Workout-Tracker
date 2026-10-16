@@ -1,0 +1,24 @@
+Simple Workout Tracker ist bewusst schlicht gehalten. Kein Social Feed, keine Challenges, keine Abos, kein Schnickschnack: nur deine Geräte, deine Pläne und dein Fortschritt. Die App ist für das Training an Geräten im Fitnessstudio gemacht. Du legst deine Geräte einmal an, stellst sie zu Trainingsplänen zusammen und trägst eine ganze Übung mit einem Tipp ein.
+
+VOLLSTÄNDIG KOSTENLOS UND WERBEFREI
+Die App kostet nichts, enthält keine Werbung und keine In-App-Käufe, und es gibt keine Premium-Version. Alle Funktionen stehen dir von Anfang an zur Verfügung.
+
+EIN TIPP PRO ÜBUNG
+Tippe auf "Erledigt", und alle offenen Sätze eines Geräts sind eingetragen. Änderst du das Gewicht zwischen den Sätzen, trägst du sie einzeln ein. Gewicht und Wiederholungen werden aus deinem letzten Satz übernommen, meistens musst du also nichts eintippen.
+
+GERÄTE, WIE SIE WIRKLICH SIND
+Jedes Gerät hat ein Mindestgewicht und eine Abstufung, damit +/- immer auf einem Gewicht landet, das das Gerät auch hat. Aus 20 gängigen Geräten wie Beinpresse, Latzug oder Laufband richtest du dein Studio in einem Schritt ein. Cardio-Geräte erfassen die Dauer statt des Gewichts.
+
+TRAININGSPLÄNE
+Lege beliebig viele Pläne an, mit Zielsätzen und Wiederholungen pro Gerät, und bringe die Geräte per Drag & Drop in deine Reihenfolge. Dein Standardplan öffnet sich direkt beim Start. Starte einen Plan neu, um ihn zweimal am selben Tag zu trainieren.
+
+QUICK LOG
+15 Minuten Laufband außerhalb deines Plans? Mit Quick log ist das in wenigen Tipps eingetragen.
+
+VERLAUF
+Sieh deinen Fortschritt pro Gerät im Diagramm: höchstes Gewicht pro Trainingstag, bei Cardio die Minuten. Vergleiche mehrere Geräte in einem Diagramm, filtere nach Plan und Zeitraum und bearbeite oder lösche jeden Eintrag.
+
+DEINE DATEN GEHÖREN DIR
+Kein Konto, keine Cloud: Die App hat keinen Internetzugriff und erhebt keine Daten. Exportiere alle Daten jederzeit in eine Datei und importiere sie auf einem neuen Handy wieder.
+
+Auf Deutsch und Englisch verfügbar. Open Source auf GitHub.
