@@ -53,6 +53,14 @@
     <string name="training_title">Training</string>
     <string name="training_no_plan">Du hast noch keinen Trainingsplan. Lege einen an, um mit dem Training zu starten.</string>
     <string name="plans_default_hint">Markiere einen Plan mit dem Stern, damit er im Tab Training automatisch startet.</string>
+    <string name="quick_log_title">Quick log</string>
+    <string name="quick_log_description">Training ohne Plan eintragen</string>
+    <string name="quick_log_search">Gerät suchen</string>
+    <string name="quick_log_no_devices">Noch keine Geräte. Lege Geräte im Tab Geräte an.</string>
+    <string name="quick_log_no_match">Kein Gerät passt zur Suche.</string>
+    <string name="quick_log_sheet_subtitle">Wird ohne Plan eingetragen</string>
+    <string name="quick_log_logged">\"%1$s\" eingetragen</string>
+    <string name="action_log">Eintragen</string>
     <string name="action_switch_plan">Plan wechseln</string>
     <string name="action_set_default_plan">Als Standardplan festlegen</string>
     <string name="action_unset_default_plan">Standardplan entfernen</string>

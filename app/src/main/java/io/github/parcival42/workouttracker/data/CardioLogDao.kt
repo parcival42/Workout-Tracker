@@ -37,7 +37,7 @@ interface CardioLogDao {
     fun observeLastPerDeviceInPlan(planId: Long): Flow<List<CardioLog>>
 
     @Insert
-    suspend fun insert(session: CardioLog)
+    suspend fun insert(session: CardioLog): Long
 
     @Insert
     suspend fun insertAll(sessions: List<CardioLog>)
@@ -47,6 +47,9 @@ interface CardioLogDao {
 
     @Delete
     suspend fun delete(session: CardioLog)
+
+    @Query("DELETE FROM cardio_log WHERE id = :id")
+    suspend fun deleteById(id: Long)
 
     @Query("SELECT * FROM cardio_log ORDER BY id")
     suspend fun getAll(): List<CardioLog>

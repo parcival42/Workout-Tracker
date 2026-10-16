@@ -194,7 +194,7 @@ internal fun EditSessionDialog(
 }
 
 @Composable
-private fun MinutesDialog(
+internal fun MinutesDialog(
     title: String,
     initialMinutes: Int,
     onConfirm: (Int) -> Unit,
