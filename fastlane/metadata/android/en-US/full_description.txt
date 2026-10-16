@@ -1,0 +1,24 @@
+Simple Workout Tracker is deliberately kept simple. No social feed, no challenges, no subscriptions, no clutter: just your machines, your plans and your progress. The app is made for training on gym machines. Set up your machines once, put them into training plans, and log a whole exercise with a single tap.
+
+COMPLETELY FREE, NO ADS
+The app costs nothing, contains no ads and no in-app purchases, and there is no premium version. Every feature is available from the start.
+
+ONE TAP PER EXERCISE
+Tap "Done" and all open sets of a machine are logged. If you change the weight between sets, log them one by one instead. Weight and reps are prefilled from your last set, so most of the time there is nothing to type.
+
+MACHINES THE WAY THEY ARE
+Each machine has a minimum weight and a weight increment, so +/- always lands on a weight the machine actually offers. Pick from 20 common machines like leg press, lat pulldown or treadmill to set up your gym in one step. Cardio machines log the duration instead of weight.
+
+TRAINING PLANS
+Create as many plans as you like, with target sets and reps per machine, and put the machines in your order by drag and drop. Your default plan opens right away when you start the app. Restart a plan to train it twice on the same day.
+
+QUICK LOG
+Did 15 minutes on the treadmill outside of your plan? Log it with Quick log in a few taps.
+
+HISTORY
+See your progress per machine as a chart: top weight per training day, or minutes for cardio. Compare several machines in one chart, filter by plan and time range, and edit or delete any logged entry.
+
+YOUR DATA STAYS YOURS
+No account, no cloud: the app has no internet access and collects no data. Export all your data to a file at any time and import it again on a new phone.
+
+Available in English and German. Open source on GitHub.
