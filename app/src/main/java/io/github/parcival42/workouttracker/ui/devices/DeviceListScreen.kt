@@ -5,14 +5,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -32,6 +33,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -52,6 +54,7 @@ fun DeviceListScreen(
     val devices by viewModel.devices.collectAsStateWithLifecycle()
     val archivedDevices by viewModel.archivedDevices.collectAsStateWithLifecycle()
     val deviceIdsWithLogs by viewModel.deviceIdsWithLogs.collectAsStateWithLifecycle()
+    var showAddChoice by rememberSaveable { mutableStateOf(false) }
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var showTemplateDialog by rememberSaveable { mutableStateOf(false) }
     var editingDevice by remember { mutableStateOf<Device?>(null) }
@@ -63,11 +66,25 @@ fun DeviceListScreen(
         devices = devices,
         archivedDevices = archivedDevices,
         snackbarHostState = snackbarHostState,
-        onAddClick = { showAddDialog = true },
+        onAddClick = { showAddChoice = true },
         onTemplatesClick = { showTemplateDialog = true },
         onDeviceClick = { editingDevice = it },
         onRestore = viewModel::restore,
     )
+
+    if (showAddChoice) {
+        AddDeviceSheet(
+            onOwnDevice = {
+                showAddChoice = false
+                showAddDialog = true
+            },
+            onTemplates = {
+                showAddChoice = false
+                showTemplateDialog = true
+            },
+            onDismiss = { showAddChoice = false },
+        )
+    }
 
     if (showTemplateDialog) {
         TemplateDialog(
@@ -135,14 +152,6 @@ private fun DeviceListContent(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.devices_title)) },
-                actions = {
-                    IconButton(onClick = onTemplatesClick) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_list),
-                            contentDescription = stringResource(R.string.template_open_action),
-                        )
-                    }
-                },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -207,6 +216,30 @@ private fun DeviceListContent(
     }
 }
 
+// The single entry point for adding devices, so the templates are not hidden behind a separate icon.
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AddDeviceSheet(onOwnDevice: () -> Unit, onTemplates: () -> Unit, onDismiss: () -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(modifier = Modifier.padding(bottom = 24.dp)) {
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.device_add_own)) },
+                supportingContent = { Text(stringResource(R.string.device_add_own_description)) },
+                leadingContent = { Icon(painterResource(R.drawable.ic_add), contentDescription = null) },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                modifier = Modifier.clickable(onClick = onOwnDevice),
+            )
+            ListItem(
+                headlineContent = { Text(stringResource(R.string.template_open_action)) },
+                supportingContent = { Text(stringResource(R.string.device_add_templates_description)) },
+                leadingContent = { Icon(painterResource(R.drawable.ic_list), contentDescription = null) },
+                colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+                modifier = Modifier.clickable(onClick = onTemplates),
+            )
+        }
+    }
+}
+
 @Composable
 private fun ArchivedDeviceRow(device: Device, onRestore: () -> Unit) {
     Row(
@@ -229,33 +262,24 @@ private fun ArchivedDeviceRow(device: Device, onRestore: () -> Unit) {
 
 @Composable
 private fun DeviceRow(device: Device, onClick: () -> Unit) {
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_image_placeholder),
-            contentDescription = null,
-            modifier = Modifier.size(40.dp),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        Text(text = device.name, style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = when (device.type) {
+                DeviceType.STRENGTH -> stringResource(
+                    R.string.device_weight_info,
+                    formatKg(device.minWeightGrams),
+                    formatKg(device.weightStepGrams),
+                )
+                DeviceType.CARDIO -> stringResource(R.string.device_type_cardio)
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Column(modifier = Modifier.padding(start = 16.dp)) {
-            Text(text = device.name, style = MaterialTheme.typography.titleMedium)
-            Text(
-                text = when (device.type) {
-                    DeviceType.STRENGTH -> stringResource(
-                        R.string.device_weight_info,
-                        formatKg(device.minWeightGrams),
-                        formatKg(device.weightStepGrams),
-                    )
-                    DeviceType.CARDIO -> stringResource(R.string.device_type_cardio)
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
     }
 }
