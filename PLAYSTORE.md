@@ -58,7 +58,7 @@ I'm a solo developer looking for testers for my first app, Simple Workout Tracke
 
 - Completely free, no ads, no in-app purchases
 - No account, no internet access, collects no data
-- Android 16 or newer required
+- Android 11 or newer required
 - English and German
 
 How to join (please open the links in Chrome or a desktop browser, not in the Reddit app):

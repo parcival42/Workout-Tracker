@@ -33,7 +33,7 @@ The app is available in English and German and always uses a dark theme.
 
 ## Requirements
 
-- Android 16 (API 36) or newer
+- Android 11 (API 30) or newer
 
 ## Building
 
