@@ -2,9 +2,11 @@ package io.github.parcival42.workouttracker.ui.settings
 
 import android.app.LocaleManager
 import android.net.Uri
+import android.os.Build
 import android.os.LocaleList
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -105,8 +107,11 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            LanguageSection()
-            HorizontalDivider()
+            // LocaleManager needs Android 13 (API 33); older versions follow the system language.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                LanguageSection()
+                HorizontalDivider()
+            }
             PlanDefaultsSection(
                 defaults = planDefaults,
                 onSetsChange = viewModel::changeDefaultTargetSets,
@@ -186,6 +191,7 @@ private fun AboutSection(onShowLicenses: () -> Unit) {
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @Composable
 private fun LanguageSection() {
     val localeManager = LocalContext.current.getSystemService(LocaleManager::class.java)

@@ -22,11 +22,11 @@ android {
 
     defaultConfig {
         applicationId = "io.github.parcival42.workouttracker"
-        minSdk = 36
+        minSdk = 30
         targetSdk = 37
         // Bump both on every release; versionCode must always increase (see CLAUDE.md).
-        versionCode = 4
-        versionName = "1.0.0"
+        versionCode = 5
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
