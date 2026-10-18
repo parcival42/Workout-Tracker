@@ -14,8 +14,8 @@
     <string name="template_leg_press">Leg press</string>
     <string name="template_leg_extension">Leg extension</string>
     <string name="template_leg_curl">Leg curl</string>
-    <string name="template_hip_abduction">Hip abduction</string>
-    <string name="template_hip_adduction">Hip adduction</string>
+    <string name="template_hip_abduction">Hip abduction (outer)</string>
+    <string name="template_hip_adduction">Hip adduction (inner)</string>
     <string name="template_calf_raise">Calf raise</string>
     <string name="template_chest_press">Chest press</string>
     <string name="template_pec_fly">Pec fly</string>
