@@ -12,8 +12,7 @@ import io.github.parcival42.workouttracker.data.DeviceDao
 import io.github.parcival42.workouttracker.data.PlanDao
 import io.github.parcival42.workouttracker.data.SetLog
 import io.github.parcival42.workouttracker.data.SetLogDao
-import io.github.parcival42.workouttracker.ui.components.MAX_DURATION_MINUTES
-import io.github.parcival42.workouttracker.ui.components.SECONDS_PER_MINUTE
+import io.github.parcival42.workouttracker.ui.components.MAX_DURATION_SECONDS
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -70,16 +69,17 @@ class LogEntriesViewModel(
             .map { (date, dayEntries) -> LogEntryDay(date, dayEntries) }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    fun updateSet(set: SetLog, weightGrams: Int, reps: Int) {
+    fun updateSet(set: SetLog, weightGrams: Int, reps: Int?, durationSeconds: Int?) {
         val updated = set.copy(
             weightGrams = weightGrams.coerceIn(0, MAX_WEIGHT_GRAMS),
-            reps = reps.coerceIn(1, MAX_REPS),
+            reps = reps?.coerceIn(1, MAX_REPS),
+            durationSeconds = durationSeconds?.coerceIn(1, MAX_DURATION_SECONDS),
         )
         viewModelScope.launch { setLogDao.update(updated) }
     }
 
-    fun updateSession(session: CardioLog, minutes: Int) {
-        val updated = session.copy(durationSeconds = minutes.coerceIn(1, MAX_DURATION_MINUTES) * SECONDS_PER_MINUTE)
+    fun updateSession(session: CardioLog, seconds: Int) {
+        val updated = session.copy(durationSeconds = seconds.coerceIn(1, MAX_DURATION_SECONDS))
         viewModelScope.launch { cardioLogDao.update(updated) }
     }
 

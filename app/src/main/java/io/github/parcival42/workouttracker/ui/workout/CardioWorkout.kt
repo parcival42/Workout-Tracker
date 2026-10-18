@@ -38,9 +38,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import io.github.parcival42.workouttracker.R
 import io.github.parcival42.workouttracker.data.CardioLog
+import io.github.parcival42.workouttracker.ui.components.DurationDialog
 import io.github.parcival42.workouttracker.ui.components.MAX_DURATION_MINUTES
-import io.github.parcival42.workouttracker.ui.components.parseMinutes
-import io.github.parcival42.workouttracker.ui.components.secondsToMinutes
+import io.github.parcival42.workouttracker.ui.components.formatDuration
+import io.github.parcival42.workouttracker.ui.components.SECONDS_PER_MINUTE
+import io.github.parcival42.workouttracker.ui.components.stepDurationDown
+import io.github.parcival42.workouttracker.ui.components.stepDurationUp
 
 @Composable
 internal fun CardioCard(
@@ -49,14 +52,23 @@ internal fun CardioCard(
     onLogSession: () -> Unit,
     onUndo: () -> Unit,
     onSessionClick: (sessionNumber: Int, session: CardioLog) -> Unit,
+    highlighted: Boolean = false,
+    // Circuit plans log only through the timer, with the station time: the row shows that time, no log buttons.
+    isCircuitPlan: Boolean = false,
 ) {
     val resources = LocalResources.current
     DeviceCard(
         deviceName = item.deviceName,
         isComplete = item.isComplete,
-        progress = null,
+        // Several sessions are only planned in a circuit, one per round.
+        progress = if (item.targetSessions > 1) {
+            stringResource(R.string.workout_progress, item.todaySessions.size, item.targetSessions)
+        } else {
+            null
+        },
+        highlighted = highlighted,
         summary = item.todaySessions.joinToString("  ·  ") {
-            resources.getString(R.string.duration_min, secondsToMinutes(it.durationSeconds))
+            resources.getString(R.string.duration_exact, formatDuration(it.durationSeconds))
         },
     ) {
         if (item.todaySessions.isNotEmpty()) {
@@ -65,7 +77,7 @@ internal fun CardioCard(
                     SuggestionChip(
                         onClick = { onSessionClick(index + 1, session) },
                         label = {
-                            Text(stringResource(R.string.duration_min, secondsToMinutes(session.durationSeconds)))
+                            Text(stringResource(R.string.duration_exact, formatDuration(session.durationSeconds)))
                         },
                     )
                 }
@@ -84,7 +96,11 @@ internal fun CardioCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = stringResource(R.string.workout_next_session, item.minutes),
+                text = if (item.stationSeconds != null) {
+                    stringResource(R.string.workout_station_time, formatDuration(item.stationSeconds))
+                } else {
+                    stringResource(R.string.workout_next_session, formatDuration(item.durationSeconds))
+                },
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.weight(1f),
             )
@@ -110,7 +126,9 @@ internal fun CardioCard(
             // a second button here.
             Spacer(modifier = Modifier.weight(1f))
             // Once done, a further session stays possible but is no longer the prominent action.
-            if (item.isComplete) {
+            if (isCircuitPlan) {
+                Spacer(modifier = Modifier.weight(1f))
+            } else if (item.isComplete) {
                 OutlinedButton(onClick = onLogSession, modifier = Modifier.weight(1f)) {
                     Text(stringResource(R.string.action_extra_session), maxLines = 1)
                 }
@@ -128,11 +146,11 @@ internal fun CardioCard(
 @Composable
 internal fun NextSessionSheet(
     item: CardioItem,
-    onApply: (minutes: Int) -> Unit,
+    onApply: (seconds: Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var minutes by rememberSaveable { mutableIntStateOf(item.minutes) }
-    var showMinutesDialog by rememberSaveable { mutableStateOf(false) }
+    var seconds by rememberSaveable { mutableIntStateOf(item.durationSeconds) }
+    var showDurationDialog by rememberSaveable { mutableStateOf(false) }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -149,85 +167,52 @@ internal fun NextSessionSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            ValueStepper(
-                label = stringResource(R.string.duration_label),
-                value = stringResource(R.string.duration_min, minutes),
-                onDecrease = { minutes = (minutes - 1).coerceAtLeast(1) },
-                onIncrease = { minutes = (minutes + 1).coerceAtMost(MAX_DURATION_MINUTES) },
-                decreaseEnabled = minutes > 1,
-                onValueClick = { showMinutesDialog = true },
-            )
-            Button(onClick = { onApply(minutes) }, modifier = Modifier.fillMaxWidth()) {
+            DurationStepper(seconds = seconds, onSecondsChange = { seconds = it }, onValueClick = { showDurationDialog = true })
+            Button(onClick = { onApply(seconds) }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.action_apply))
             }
         }
     }
 
-    if (showMinutesDialog) {
-        MinutesDialog(
+    if (showDurationDialog) {
+        DurationDialog(
             title = stringResource(R.string.duration_dialog_title),
-            initialMinutes = minutes,
+            initialSeconds = seconds,
             onConfirm = {
-                minutes = it
-                showMinutesDialog = false
+                seconds = it
+                showDurationDialog = false
             },
-            onDismiss = { showMinutesDialog = false },
+            onDismiss = { showDurationDialog = false },
         )
     }
+}
+
+/** Exact duration with +/- one minute; tapping the value opens exact input. */
+@Composable
+internal fun DurationStepper(seconds: Int, onSecondsChange: (Int) -> Unit, onValueClick: () -> Unit) {
+    ValueStepper(
+        label = stringResource(R.string.duration_label),
+        value = stringResource(R.string.duration_exact, formatDuration(seconds)),
+        onDecrease = { onSecondsChange(stepDurationDown(seconds)) },
+        onIncrease = { onSecondsChange(stepDurationUp(seconds)) },
+        decreaseEnabled = seconds > SECONDS_PER_MINUTE,
+        onValueClick = onValueClick,
+    )
 }
 
 @Composable
 internal fun EditSessionDialog(
     title: String,
     session: CardioLog,
-    onConfirm: (minutes: Int) -> Unit,
+    onConfirm: (seconds: Int) -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    MinutesDialog(
+    DurationDialog(
         title = title,
-        initialMinutes = secondsToMinutes(session.durationSeconds),
+        initialSeconds = session.durationSeconds,
         onConfirm = onConfirm,
         onDismiss = onDismiss,
         onDelete = onDelete,
-    )
-}
-
-@Composable
-internal fun MinutesDialog(
-    title: String,
-    initialMinutes: Int,
-    onConfirm: (Int) -> Unit,
-    onDismiss: () -> Unit,
-    onDelete: (() -> Unit)? = null,
-) {
-    var input by rememberSaveable { mutableStateOf(initialMinutes.toString()) }
-    val parsed = parseMinutes(input)
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
-            OutlinedTextField(
-                value = input,
-                onValueChange = { input = it },
-                label = { Text(stringResource(R.string.duration_label_min)) },
-                singleLine = true,
-                isError = parsed == null,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = { parsed?.let(onConfirm) }, enabled = parsed != null) {
-                Text(stringResource(R.string.action_save))
-            }
-        },
-        dismissButton = {
-            Row {
-                if (onDelete != null) {
-                    TextButton(onClick = onDelete) { Text(stringResource(R.string.action_delete)) }
-                }
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-            }
-        },
     )
 }

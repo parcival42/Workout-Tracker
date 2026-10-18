@@ -29,7 +29,10 @@ data class SetLog(
     @ColumnInfo(name = "performed_at") val performedAt: Long,
     // Stored as integer grams to avoid floating point rounding.
     @ColumnInfo(name = "weight_grams") val weightGrams: Int,
-    val reps: Int,
+    // Always set in normal plans. A timed circuit station logs no reps (they can be added later).
+    val reps: Int?,
     // Plan the set was logged in; null for sets without a known plan (deleted plan, old data).
     @ColumnInfo(name = "plan_id") val planId: Long? = null,
+    // Circuit stations only: how long the set lasted. A set has reps, a duration or both.
+    @ColumnInfo(name = "duration_seconds") val durationSeconds: Int? = null,
 )

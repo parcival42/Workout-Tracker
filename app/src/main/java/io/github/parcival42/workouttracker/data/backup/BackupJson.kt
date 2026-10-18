@@ -4,6 +4,7 @@ import io.github.parcival42.workouttracker.data.CardioLog
 import io.github.parcival42.workouttracker.data.Device
 import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.data.PlanEntry
+import io.github.parcival42.workouttracker.data.PlanType
 import io.github.parcival42.workouttracker.data.SetLog
 import io.github.parcival42.workouttracker.data.TrainingPlan
 import io.github.parcival42.workouttracker.data.UserSettings
@@ -28,7 +29,10 @@ object BackupJson {
     //     (absent in older files, read as strength devices / default duration / no sessions).
     // v4: sets and cardio sessions carry "planId" (nullable), plus "settings"
     //     (absent in older files, read as no plan / default settings).
-    const val VERSION = 4
+    // v5: plans carry "type" and the circuit settings, plan entries "stationSeconds", sets a
+    //     nullable "durationSeconds" and nullable "reps" (absent in older files, read as normal
+    //     plans / no circuit values / untimed sets).
+    const val VERSION = 5
 
     fun encode(data: BackupData, exportedAt: Long): String = JSONObject().apply {
         put("format", FORMAT)
@@ -51,6 +55,11 @@ object BackupJson {
                 put("id", p.id)
                 put("name", p.name)
                 put("isDefault", p.isDefault)
+                put("type", p.type.name)
+                put("circuitRounds", p.circuitRounds ?: JSONObject.NULL)
+                put("circuitStationSeconds", p.circuitStationSeconds ?: JSONObject.NULL)
+                put("circuitRestSeconds", p.circuitRestSeconds ?: JSONObject.NULL)
+                put("circuitCountdownSeconds", p.circuitCountdownSeconds ?: JSONObject.NULL)
             }
         }))
         put("planEntries", JSONArray(data.planEntries.map { e ->
@@ -62,6 +71,7 @@ object BackupJson {
                 put("targetSets", e.targetSets)
                 put("targetReps", e.targetReps)
                 put("targetDurationSeconds", e.targetDurationSeconds)
+                put("stationSeconds", e.stationSeconds ?: JSONObject.NULL)
             }
         }))
         put("sets", JSONArray(data.sets.map { s ->
@@ -70,8 +80,9 @@ object BackupJson {
                 put("deviceId", s.deviceId)
                 put("performedAt", s.performedAt)
                 put("weightGrams", s.weightGrams)
-                put("reps", s.reps)
+                put("reps", s.reps ?: JSONObject.NULL)
                 put("planId", s.planId ?: JSONObject.NULL)
+                put("durationSeconds", s.durationSeconds ?: JSONObject.NULL)
             }
         }))
         put("cardioSessions", JSONArray(data.cardioSessions.map { c ->
@@ -115,6 +126,11 @@ object BackupJson {
                         id = o.getLong("id"),
                         name = o.getString("name"),
                         isDefault = o.optBoolean("isDefault", false),
+                        type = PlanType.valueOf(o.optString("type", PlanType.NORMAL.name)),
+                        circuitRounds = o.optIntOrNull("circuitRounds"),
+                        circuitStationSeconds = o.optIntOrNull("circuitStationSeconds"),
+                        circuitRestSeconds = o.optIntOrNull("circuitRestSeconds"),
+                        circuitCountdownSeconds = o.optIntOrNull("circuitCountdownSeconds"),
                     )
                 },
                 planEntries = root.getJSONArray("planEntries").objects().map { o ->
@@ -129,6 +145,7 @@ object BackupJson {
                             "targetDurationSeconds",
                             PlanEntry.DEFAULT_TARGET_DURATION_SECONDS,
                         ),
+                        stationSeconds = o.optIntOrNull("stationSeconds"),
                     )
                 },
                 sets = root.getJSONArray("sets").objects().map { o ->
@@ -137,8 +154,9 @@ object BackupJson {
                         deviceId = o.getLong("deviceId"),
                         performedAt = o.getLong("performedAt"),
                         weightGrams = o.getInt("weightGrams"),
-                        reps = o.getInt("reps"),
+                        reps = o.optIntOrNull("reps"),
                         planId = o.optPlanId(),
+                        durationSeconds = o.optIntOrNull("durationSeconds"),
                     )
                 },
                 cardioSessions = (root.optJSONArray("cardioSessions") ?: JSONArray()).objects().map { o ->
@@ -186,14 +204,29 @@ object BackupJson {
         check(data.sets.map { it.id }.areValidIds(), "Invalid set ids")
         check(data.cardioSessions.map { it.id }.areValidIds(), "Invalid cardio session ids")
         check(data.plans.count { it.isDefault } <= 1, "More than one default plan")
+        check(
+            data.plans.all { p ->
+                (p.circuitRounds ?: 1) > 0 && (p.circuitStationSeconds ?: 1) > 0 &&
+                    (p.circuitRestSeconds ?: 0) >= 0 && (p.circuitCountdownSeconds ?: 0) >= 0
+            },
+            "Invalid circuit settings",
+        )
         check(data.devices.all { it.name.isNotBlank() && it.minWeightGrams >= 0 && it.weightStepGrams > 0 }, "Invalid device values")
         check(data.planEntries.all { it.planId in planIds && it.deviceId in deviceIds }, "Plan entry references a missing plan or device")
         check(
-            data.planEntries.all { it.targetSets > 0 && it.targetReps > 0 && it.targetDurationSeconds > 0 },
+            data.planEntries.all {
+                it.targetSets > 0 && it.targetReps > 0 && it.targetDurationSeconds > 0 && (it.stationSeconds ?: 1) > 0
+            },
             "Invalid plan entry targets",
         )
         check(data.sets.all { it.deviceId in strengthDeviceIds }, "Set references a missing or non-strength device")
-        check(data.sets.all { it.weightGrams >= 0 && it.reps > 0 }, "Invalid set values")
+        check(
+            data.sets.all {
+                it.weightGrams >= 0 && (it.reps ?: 1) > 0 && (it.durationSeconds ?: 1) > 0 &&
+                    (it.reps != null || it.durationSeconds != null)
+            },
+            "Invalid set values",
+        )
         check(
             data.cardioSessions.all { it.deviceId in cardioDeviceIds },
             "Cardio session references a missing or non-cardio device",
@@ -215,4 +248,7 @@ object BackupJson {
     private fun JSONArray.objects(): List<JSONObject> = List(length()) { getJSONObject(it) }
 
     private fun JSONObject.optPlanId(): Long? = if (isNull("planId")) null else getLong("planId")
+
+    // Missing and null both read as null.
+    private fun JSONObject.optIntOrNull(key: String): Int? = if (isNull(key)) null else getInt(key)
 }

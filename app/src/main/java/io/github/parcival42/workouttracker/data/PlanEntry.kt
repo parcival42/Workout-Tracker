@@ -33,6 +33,8 @@ data class PlanEntry(
     // Only used for cardio devices; sets/reps are only used for strength devices.
     @ColumnInfo(name = "target_duration_seconds", defaultValue = "1200")
     val targetDurationSeconds: Int = DEFAULT_TARGET_DURATION_SECONDS,
+    // Circuit plans only: own station duration; null uses the plan's station duration.
+    @ColumnInfo(name = "station_seconds") val stationSeconds: Int? = null,
 ) {
     companion object {
         const val DEFAULT_TARGET_DURATION_SECONDS = 1_200
@@ -47,6 +49,7 @@ data class PlanEntryItem(
     val targetSets: Int,
     val targetReps: Int,
     val targetDurationSeconds: Int,
+    val stationSeconds: Int?,
     val minWeightGrams: Int,
     val weightStepGrams: Int,
 )

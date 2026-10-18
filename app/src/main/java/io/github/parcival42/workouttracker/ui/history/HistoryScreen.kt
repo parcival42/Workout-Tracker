@@ -47,6 +47,7 @@ import io.github.parcival42.workouttracker.R
 import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.ui.components.EmptyHint
 import io.github.parcival42.workouttracker.ui.devices.labelRes
+import io.github.parcival42.workouttracker.ui.components.formatDuration
 import io.github.parcival42.workouttracker.ui.components.formatKg
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -228,7 +229,7 @@ private fun HistoryContent(
                         text = selectedPoint?.let {
                             val groups = formatGroups(it.day.groups, resources)
                             val summary = if (isCardio && it.day.entries.size > 1) {
-                                stringResource(R.string.history_cardio_total, it.value, groups)
+                                stringResource(R.string.history_cardio_total, formatDuration(it.value), groups)
                             } else {
                                 groups
                             }
@@ -290,9 +291,22 @@ private fun HistoryDayEntry(
 private fun formatGroups(groups: List<EntryGroup>, resources: Resources): String =
     groups.joinToString(", ") { group ->
         when {
+            group.durationSeconds != null && group.reps != null -> resources.getString(
+                R.string.history_group_strength_timed_reps,
+                group.count,
+                group.reps,
+                formatDuration(group.durationSeconds),
+                formatKg(group.value),
+            )
+            group.durationSeconds != null -> resources.getString(
+                R.string.history_group_strength_timed,
+                group.count,
+                formatDuration(group.durationSeconds),
+                formatKg(group.value),
+            )
             group.reps != null -> resources.getString(R.string.history_group_strength, group.count, group.reps, formatKg(group.value))
-            group.count == 1 -> resources.getString(R.string.duration_min, group.value)
-            else -> resources.getString(R.string.history_group_cardio, group.count, group.value)
+            group.count == 1 -> resources.getString(R.string.duration_exact, formatDuration(group.value))
+            else -> resources.getString(R.string.history_group_cardio, group.count, formatDuration(group.value))
         }
     }
 

@@ -14,7 +14,6 @@ import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.data.PlanDao
 import io.github.parcival42.workouttracker.data.SetLogDao
 import io.github.parcival42.workouttracker.data.TrainingPlan
-import io.github.parcival42.workouttracker.ui.components.secondsToMinutes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -37,8 +36,9 @@ enum class HistoryRange(val months: Long?) {
 data class HistoryDevice(val device: Device, val colorSlot: Int?)
 
 /**
- * One logged set or cardio session. [value] is in chart units: grams for strength,
- * whole minutes for cardio. [reps] is null for cardio.
+ * One logged set or cardio session. [value] is in chart units: grams for strength, seconds
+ * for cardio. [reps] is null for cardio and timed sets; [durationSeconds] is only set for
+ * timed strength sets (circuit stations).
  */
 data class HistoryEntry(
     val id: Long,
@@ -47,19 +47,22 @@ data class HistoryEntry(
     val value: Int,
     val reps: Int?,
     val planId: Long?,
+    val durationSeconds: Int? = null,
 )
 
-/** [count] consecutive entries of one day with the same value and reps, e.g. "3 × 10 · 17.5 kg". */
-data class EntryGroup(val value: Int, val reps: Int?, val count: Int)
+/** [count] consecutive entries of one day with the same values, e.g. "3 × 10 · 17.5 kg". */
+data class EntryGroup(val value: Int, val reps: Int?, val durationSeconds: Int?, val count: Int)
 
 data class DayEntries(val date: LocalDate, val entries: List<HistoryEntry>) {
     val groups: List<EntryGroup> = buildList {
         entries.forEach { entry ->
             val last = lastOrNull()
-            if (last != null && last.value == entry.value && last.reps == entry.reps) {
+            if (last != null && last.value == entry.value && last.reps == entry.reps &&
+                last.durationSeconds == entry.durationSeconds
+            ) {
                 set(lastIndex, last.copy(count = last.count + 1))
             } else {
-                add(EntryGroup(entry.value, entry.reps, 1))
+                add(EntryGroup(entry.value, entry.reps, entry.durationSeconds, 1))
             }
         }
     }
@@ -110,9 +113,11 @@ class HistoryViewModel(
         val since = range.startMillis()
         combine(setLogDao.observeSince(since), cardioLogDao.observeSince(since)) { sets, sessions ->
             mapOf(
-                DeviceType.STRENGTH to sets.map { HistoryEntry(it.id, it.deviceId, it.performedAt, it.weightGrams, it.reps, it.planId) },
+                DeviceType.STRENGTH to sets.map {
+                    HistoryEntry(it.id, it.deviceId, it.performedAt, it.weightGrams, it.reps, it.planId, it.durationSeconds)
+                },
                 DeviceType.CARDIO to sessions.map {
-                    HistoryEntry(it.id, it.deviceId, it.performedAt, secondsToMinutes(it.durationSeconds), null, it.planId)
+                    HistoryEntry(it.id, it.deviceId, it.performedAt, it.durationSeconds, null, it.planId)
                 },
             )
         }

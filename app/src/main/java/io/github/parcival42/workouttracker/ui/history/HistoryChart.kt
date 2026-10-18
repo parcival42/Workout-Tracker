@@ -19,6 +19,7 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import io.github.parcival42.workouttracker.ui.components.SECONDS_PER_MINUTE
 import io.github.parcival42.workouttracker.ui.components.formatKg
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -27,6 +28,7 @@ import kotlin.math.floor
 import kotlin.math.log10
 import kotlin.math.max
 import kotlin.math.pow
+import kotlin.math.roundToInt
 
 // Validated categorical palette (dark mode), assigned by fixed slot, never cycled.
 val SeriesColors = listOf(
@@ -44,16 +46,24 @@ private val GridColor = Color(0xFF2C2C2A)
 private val AxisColor = Color(0xFF383835)
 private val MutedInk = Color(0xFF898781)
 
-/** Y axis units of a chart: the smallest visible range, allowed tick step factors and label format. */
-class ValueScale(val minRange: Int, val stepFactors: List<Double>, val format: (Int) -> String)
+/**
+ * Y axis units of a chart: the smallest visible range, allowed tick step factors and label
+ * format. Ticks are multiples of [unit] (in value units), e.g. whole minutes for seconds.
+ */
+class ValueScale(val minRange: Int, val stepFactors: List<Double>, val format: (Int) -> String, val unit: Int = 1)
 
 // Grams; 2.5 kg steps are common on machines.
 val WeightScale = ValueScale(minRange = 5_000, stepFactors = listOf(1.0, 2.0, 2.5, 5.0, 10.0), format = ::formatKg)
 
-// Whole minutes; integer factors only, so ticks stay whole minutes.
-val MinutesScale = ValueScale(minRange = 10, stepFactors = listOf(1.0, 2.0, 5.0, 10.0), format = Int::toString)
+// Values in seconds, ticks in whole minutes; integer factors only, so ticks stay whole minutes.
+val MinutesScale = ValueScale(
+    minRange = 10,
+    stepFactors = listOf(1.0, 2.0, 5.0, 10.0),
+    format = { (it / SECONDS_PER_MINUTE).toString() },
+    unit = SECONDS_PER_MINUTE,
+)
 
-/** One training day of one device. [value] is the top weight (strength) or the total minutes (cardio). */
+/** One training day of one device. [value] is the top weight (strength) or the total seconds (cardio). */
 data class ChartPoint(
     val deviceId: Long,
     val deviceName: String,
@@ -76,15 +86,21 @@ fun buildChartPoints(dates: List<LocalDate>, series: List<HistorySeries>, isCard
 
 private data class YAxis(val min: Int, val max: Int, val ticks: List<Int>)
 
-private fun niceYAxis(minValue: Int, maxValue: Int, scale: ValueScale): YAxis {
-    val rawRange = max(maxValue - minValue, scale.minRange).toDouble()
+private fun niceYAxis(minValueRaw: Int, maxValueRaw: Int, scale: ValueScale): YAxis {
+    // Computed in units, so ticks land on whole units.
+    val minValue = minValueRaw.toDouble() / scale.unit
+    val maxValue = maxValueRaw.toDouble() / scale.unit
+    val rawRange = max(maxValue - minValue, scale.minRange.toDouble())
     val roughStep = rawRange / 4
     val magnitude = 10.0.pow(floor(log10(roughStep)))
     val step = scale.stepFactors.map { it * magnitude }.first { it >= roughStep }
     val low = floor(minValue / step) * step
     val high = max(ceil(maxValue / step) * step, low + 2 * step)
-    val ticks = generateSequence(low) { it + step }.takeWhile { it <= high + step / 2 }.map { it.toInt() }.toList()
-    return YAxis(low.toInt(), high.toInt(), ticks)
+    val ticks = generateSequence(low) { it + step }
+        .takeWhile { it <= high + step / 2 }
+        .map { (it * scale.unit).roundToInt() }
+        .toList()
+    return YAxis((low * scale.unit).roundToInt(), (high * scale.unit).roundToInt(), ticks)
 }
 
 @Composable

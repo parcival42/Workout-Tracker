@@ -39,7 +39,7 @@ abstract class PlanDao {
         """
         SELECT pe.id, pe.device_id AS deviceId, d.name AS deviceName, d.type AS deviceType,
                pe.target_sets AS targetSets, pe.target_reps AS targetReps,
-               pe.target_duration_seconds AS targetDurationSeconds,
+               pe.target_duration_seconds AS targetDurationSeconds, pe.station_seconds AS stationSeconds,
                d.start_weight_grams AS minWeightGrams, d.weight_step_grams AS weightStepGrams
         FROM plan_entry pe
         JOIN device d ON d.id = pe.device_id
@@ -90,6 +90,9 @@ abstract class PlanDao {
 
     @Query("UPDATE plan_entry SET target_duration_seconds = :targetDurationSeconds WHERE id = :entryId")
     abstract suspend fun updateTargetDuration(entryId: Long, targetDurationSeconds: Int)
+
+    @Query("UPDATE plan_entry SET station_seconds = :stationSeconds WHERE id = :entryId")
+    abstract suspend fun updateStationSeconds(entryId: Long, stationSeconds: Int?)
 
     @Query("DELETE FROM plan_entry WHERE id = :entryId")
     abstract suspend fun deleteEntry(entryId: Long)

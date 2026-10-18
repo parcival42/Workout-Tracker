@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.parcival42.workouttracker.WorkoutTrackerApplication
+import io.github.parcival42.workouttracker.data.CircuitSettings
 import io.github.parcival42.workouttracker.data.Device
 import io.github.parcival42.workouttracker.data.DeviceDao
 import io.github.parcival42.workouttracker.data.PlanDao
@@ -15,6 +16,7 @@ import io.github.parcival42.workouttracker.data.PlanEntryItem
 import io.github.parcival42.workouttracker.data.TrainingPlan
 import io.github.parcival42.workouttracker.data.UserSettings
 import io.github.parcival42.workouttracker.data.UserSettingsDao
+import io.github.parcival42.workouttracker.data.withCircuitSettings
 import io.github.parcival42.workouttracker.ui.components.SECONDS_PER_MINUTE
 import io.github.parcival42.workouttracker.ui.components.TARGET_MINUTES_RANGE
 import io.github.parcival42.workouttracker.ui.components.TARGET_REPS_RANGE
@@ -83,6 +85,16 @@ class PlanEditorViewModel(
 
     fun updateTargetDuration(entryId: Long, targetMinutes: Int) {
         viewModelScope.launch { planDao.updateTargetDuration(entryId, targetMinutes * SECONDS_PER_MINUTE) }
+    }
+
+    fun updateCircuitSettings(settings: CircuitSettings) {
+        val current = plan.value ?: return
+        viewModelScope.launch { planDao.updatePlan(current.withCircuitSettings(settings)) }
+    }
+
+    /** Null uses the plan's station time again. */
+    fun updateStationSeconds(entryId: Long, stationSeconds: Int?) {
+        viewModelScope.launch { planDao.updateStationSeconds(entryId, stationSeconds) }
     }
 
     fun removeEntry(entryId: Long) {
