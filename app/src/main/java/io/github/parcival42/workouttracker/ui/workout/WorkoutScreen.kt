@@ -35,7 +35,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -68,8 +67,7 @@ import kotlinx.coroutines.launch
 fun WorkoutScreen(
     planId: Long,
     onEditPlan: () -> Unit,
-    onBack: (() -> Unit)? = null,
-    onSwitchPlan: (() -> Unit)? = null,
+    onSwitchPlan: () -> Unit,
     viewModel: WorkoutViewModel = viewModel(key = "workout-$planId", factory = WorkoutViewModel.factory(planId)),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -93,32 +91,16 @@ fun WorkoutScreen(
         }
     }
 
-    LaunchedEffect(state.planExists) {
-        if (!state.planExists) onBack?.invoke()
-    }
-
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(state.planName) },
-                navigationIcon = {
-                    if (onBack != null) {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_arrow_back),
-                                contentDescription = stringResource(R.string.action_back),
-                            )
-                        }
-                    }
-                },
                 actions = {
-                    if (onSwitchPlan != null) {
-                        IconButton(onClick = onSwitchPlan) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_list),
-                                contentDescription = stringResource(R.string.action_switch_plan),
-                            )
-                        }
+                    IconButton(onClick = onSwitchPlan) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_list),
+                            contentDescription = stringResource(R.string.action_switch_plan),
+                        )
                     }
                     if (state.items.isNotEmpty()) {
                         IconButton(onClick = restartPlan) {
