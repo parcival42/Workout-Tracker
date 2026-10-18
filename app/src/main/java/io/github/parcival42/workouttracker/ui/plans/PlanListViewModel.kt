@@ -6,8 +6,11 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.parcival42.workouttracker.WorkoutTrackerApplication
+import io.github.parcival42.workouttracker.data.CircuitSettings
 import io.github.parcival42.workouttracker.data.PlanDao
+import io.github.parcival42.workouttracker.data.PlanType
 import io.github.parcival42.workouttracker.data.TrainingPlan
+import io.github.parcival42.workouttracker.data.withCircuitSettings
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -19,10 +22,13 @@ class PlanListViewModel(private val planDao: PlanDao) : ViewModel() {
     val plans: StateFlow<List<TrainingPlan>?> = planDao.observePlans()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    fun create(name: String, onCreated: (Long) -> Unit) {
+    fun create(name: String, type: PlanType, onCreated: (Long) -> Unit) {
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return
-        viewModelScope.launch { onCreated(planDao.insertPlan(TrainingPlan(name = trimmed))) }
+        val plan = TrainingPlan(name = trimmed, type = type).let {
+            if (type == PlanType.CIRCUIT) it.withCircuitSettings(CircuitSettings()) else it
+        }
+        viewModelScope.launch { onCreated(planDao.insertPlan(plan)) }
     }
 
     fun toggleDefault(plan: TrainingPlan) {

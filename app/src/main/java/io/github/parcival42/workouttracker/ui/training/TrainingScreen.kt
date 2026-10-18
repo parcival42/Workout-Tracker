@@ -25,7 +25,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.parcival42.workouttracker.R
-import io.github.parcival42.workouttracker.ui.components.NameDialog
+import io.github.parcival42.workouttracker.data.PlanType
+import io.github.parcival42.workouttracker.ui.plans.NewPlanDialog
 import io.github.parcival42.workouttracker.ui.plans.PlanListScreen
 import io.github.parcival42.workouttracker.ui.plans.PlanListViewModel
 import io.github.parcival42.workouttracker.ui.plans.autoStartPlan
@@ -50,7 +51,7 @@ fun TrainingScreen(
 
     when {
         loadedPlans.isEmpty() -> NoPlanContent(
-            onCreate = { name -> viewModel.create(name, onCreated = onPlanCreated) },
+            onCreate = { name, type -> viewModel.create(name, type, onCreated = onPlanCreated) },
             onQuickLog = onQuickLog,
         )
         activePlan != null -> WorkoutScreen(
@@ -69,7 +70,7 @@ fun TrainingScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun NoPlanContent(onCreate: (String) -> Unit, onQuickLog: () -> Unit) {
+private fun NoPlanContent(onCreate: (String, PlanType) -> Unit, onQuickLog: () -> Unit) {
     var showDialog by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
@@ -102,12 +103,10 @@ private fun NoPlanContent(onCreate: (String) -> Unit, onQuickLog: () -> Unit) {
     }
 
     if (showDialog) {
-        NameDialog(
-            title = stringResource(R.string.plan_add_title),
-            initialName = "",
-            onConfirm = { name ->
+        NewPlanDialog(
+            onConfirm = { name, type ->
                 showDialog = false
-                onCreate(name)
+                onCreate(name, type)
             },
             onDismiss = { showDialog = false },
         )

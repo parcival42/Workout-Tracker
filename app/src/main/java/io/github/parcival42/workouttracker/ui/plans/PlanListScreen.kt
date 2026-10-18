@@ -29,8 +29,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.parcival42.workouttracker.R
+import io.github.parcival42.workouttracker.data.PlanType
 import io.github.parcival42.workouttracker.data.TrainingPlan
-import io.github.parcival42.workouttracker.ui.components.NameDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,12 +94,10 @@ fun PlanListScreen(
     }
 
     if (showAddDialog) {
-        NameDialog(
-            title = stringResource(R.string.plan_add_title),
-            initialName = "",
-            onConfirm = { name ->
+        NewPlanDialog(
+            onConfirm = { name, type ->
                 showAddDialog = false
-                viewModel.create(name, onCreated = onPlanCreated)
+                viewModel.create(name, type, onCreated = onPlanCreated)
             },
             onDismiss = { showAddDialog = false },
         )
@@ -140,11 +138,16 @@ private fun PlanRow(plan: TrainingPlan, onClick: () -> Unit, onToggleDefault: ()
             .padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = plan.name,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.weight(1f),
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = plan.name, style = MaterialTheme.typography.titleMedium)
+            if (plan.type == PlanType.CIRCUIT) {
+                Text(
+                    text = stringResource(R.string.plan_circuit_label),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
         IconButton(onClick = onToggleDefault) {
             Icon(
                 painter = painterResource(if (plan.isDefault) R.drawable.ic_star else R.drawable.ic_star_border),

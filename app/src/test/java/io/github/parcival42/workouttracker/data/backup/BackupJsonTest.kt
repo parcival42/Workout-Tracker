@@ -4,6 +4,7 @@ import io.github.parcival42.workouttracker.data.CardioLog
 import io.github.parcival42.workouttracker.data.Device
 import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.data.PlanEntry
+import io.github.parcival42.workouttracker.data.PlanType
 import io.github.parcival42.workouttracker.data.SetLog
 import io.github.parcival42.workouttracker.data.TrainingPlan
 import io.github.parcival42.workouttracker.data.UserSettings
@@ -20,17 +21,30 @@ class BackupJsonTest {
             Device(id = 2, name = "Old Rowing", imageUri = "content://image", archived = true),
             Device(id = 3, name = "Treadmill", type = DeviceType.CARDIO),
         ),
-        plans = listOf(TrainingPlan(id = 7, name = "Upper Body", isDefault = true), TrainingPlan(id = 8, name = "Legs")),
+        plans = listOf(
+            TrainingPlan(id = 7, name = "Upper Body", isDefault = true),
+            TrainingPlan(
+                id = 8, name = "Legs", type = PlanType.CIRCUIT, circuitRounds = 2, circuitStationSeconds = 45,
+                circuitRestSeconds = 0, circuitCountdownSeconds = 5,
+            ),
+        ),
         planEntries = listOf(
             PlanEntry(id = 3, planId = 7, deviceId = 1, sortOrder = 0, targetSets = 3, targetReps = 12),
             PlanEntry(
                 id = 4, planId = 7, deviceId = 3, sortOrder = 1, targetSets = 3, targetReps = 10,
                 targetDurationSeconds = 1_800,
             ),
+            PlanEntry(
+                id = 5, planId = 8, deviceId = 1, sortOrder = 0, targetSets = 3, targetReps = 15, stationSeconds = 60,
+            ),
         ),
         sets = listOf(
             SetLog(id = 10, deviceId = 1, performedAt = 1_760_000_000_000, weightGrams = 20_000, reps = 10, planId = 7),
             SetLog(id = 11, deviceId = 2, performedAt = 1_760_000_000_001, weightGrams = 22_500, reps = 10),
+            SetLog(
+                id = 12, deviceId = 1, performedAt = 1_760_000_000_003, weightGrams = 10_000, reps = null, planId = 8,
+                durationSeconds = 120,
+            ),
         ),
         cardioSessions = listOf(
             CardioLog(id = 20, deviceId = 3, performedAt = 1_760_000_000_002, durationSeconds = 1_500, planId = 8),
@@ -68,7 +82,10 @@ class BackupJsonTest {
              "plans":[{"id":7,"name":"Upper Body"}],
              "planEntries":[],"sets":[]}
         """.trimIndent()
-        assertEquals(false, BackupJson.decode(v1).plans.single().isDefault)
+        val plan = BackupJson.decode(v1).plans.single()
+        assertEquals(false, plan.isDefault)
+        assertEquals(PlanType.NORMAL, plan.type)
+        assertNull(plan.circuitRounds)
     }
 
     @Test

@@ -14,9 +14,7 @@ import io.github.parcival42.workouttracker.data.SetLog
 import io.github.parcival42.workouttracker.data.SetLogDao
 import io.github.parcival42.workouttracker.data.UserSettings
 import io.github.parcival42.workouttracker.data.UserSettingsDao
-import io.github.parcival42.workouttracker.ui.components.MAX_DURATION_MINUTES
-import io.github.parcival42.workouttracker.ui.components.SECONDS_PER_MINUTE
-import io.github.parcival42.workouttracker.ui.components.secondsToMinutes
+import io.github.parcival42.workouttracker.ui.components.MAX_DURATION_SECONDS
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -34,7 +32,8 @@ data class QuickLogDevice(
     val weightGrams: Int,
     val reps: Int,
     val sets: Int,
-    val minutes: Int,
+    // Exact duration: the last session, or the personal default.
+    val durationSeconds: Int,
 )
 
 /** What was just logged, so it can be undone. */
@@ -73,9 +72,7 @@ class QuickLogViewModel(
                 weightGrams = lastSet?.weightGrams ?: device.minWeightGrams,
                 reps = lastSet?.reps ?: settings.defaultTargetReps,
                 sets = settings.defaultTargetSets,
-                minutes = secondsToMinutes(
-                    lastSessionByDevice[device.id]?.durationSeconds ?: settings.defaultTargetDurationSeconds
-                ),
+                durationSeconds = lastSessionByDevice[device.id]?.durationSeconds ?: settings.defaultTargetDurationSeconds,
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -95,11 +92,11 @@ class QuickLogViewModel(
         viewModelScope.launch { onLogged(QuickLogResult.Sets(device.name, setLogDao.insertAll(logs))) }
     }
 
-    fun logSession(device: QuickLogDevice, minutes: Int, onLogged: (QuickLogResult) -> Unit) {
+    fun logSession(device: QuickLogDevice, seconds: Int, onLogged: (QuickLogResult) -> Unit) {
         val session = CardioLog(
             deviceId = device.id,
             performedAt = System.currentTimeMillis(),
-            durationSeconds = minutes.coerceIn(1, MAX_DURATION_MINUTES) * SECONDS_PER_MINUTE,
+            durationSeconds = seconds.coerceIn(1, MAX_DURATION_SECONDS),
             planId = null,
         )
         viewModelScope.launch { onLogged(QuickLogResult.Session(device.name, cardioLogDao.insert(session))) }

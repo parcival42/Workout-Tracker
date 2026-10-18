@@ -37,8 +37,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.parcival42.workouttracker.R
 import io.github.parcival42.workouttracker.ui.components.EmptyHint
-import io.github.parcival42.workouttracker.ui.components.formatKg
-import io.github.parcival42.workouttracker.ui.components.secondsToMinutes
+import io.github.parcival42.workouttracker.ui.components.formatDuration
+import io.github.parcival42.workouttracker.ui.components.setSummary
 import io.github.parcival42.workouttracker.ui.workout.EditSessionDialog
 import io.github.parcival42.workouttracker.ui.workout.EditSetDialog
 import kotlinx.coroutines.launch
@@ -127,8 +127,8 @@ fun LogEntriesScreen(
         is LogEntry.Strength -> EditSetDialog(
             title = stringResource(R.string.entry_edit_set_title),
             set = entry.set,
-            onConfirm = { weightGrams, reps ->
-                viewModel.updateSet(entry.set, weightGrams, reps)
+            onConfirm = { weightGrams, reps, durationSeconds ->
+                viewModel.updateSet(entry.set, weightGrams, reps, durationSeconds)
                 editingKey = null
             },
             onDelete = { delete(entry) },
@@ -137,8 +137,8 @@ fun LogEntriesScreen(
         is LogEntry.Cardio -> EditSessionDialog(
             title = stringResource(R.string.entry_edit_session_title),
             session = entry.session,
-            onConfirm = { minutes ->
-                viewModel.updateSession(entry.session, minutes)
+            onConfirm = { seconds ->
+                viewModel.updateSession(entry.session, seconds)
                 editingKey = null
             },
             onDelete = { delete(entry) },
@@ -151,8 +151,8 @@ fun LogEntriesScreen(
 @Composable
 private fun EntryRow(entry: LogEntry, time: String, onClick: () -> Unit) {
     val value = when (entry) {
-        is LogEntry.Strength -> stringResource(R.string.workout_set_summary, formatKg(entry.set.weightGrams), entry.set.reps)
-        is LogEntry.Cardio -> stringResource(R.string.duration_min, secondsToMinutes(entry.session.durationSeconds))
+        is LogEntry.Strength -> LocalResources.current.setSummary(entry.set)
+        is LogEntry.Cardio -> stringResource(R.string.duration_exact, formatDuration(entry.session.durationSeconds))
     }
     Row(
         modifier = Modifier

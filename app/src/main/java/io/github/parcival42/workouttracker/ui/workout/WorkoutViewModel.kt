@@ -1,5 +1,6 @@
 package io.github.parcival42.workouttracker.ui.workout
 
+import android.os.SystemClock
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
@@ -7,16 +8,27 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.parcival42.workouttracker.WorkoutTrackerApplication
 import io.github.parcival42.workouttracker.data.CardioLog
+import io.github.parcival42.workouttracker.data.CircuitSettings
 import io.github.parcival42.workouttracker.data.CardioLogDao
 import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.data.PlanDao
+import io.github.parcival42.workouttracker.data.PlanEntryItem
+import io.github.parcival42.workouttracker.data.PlanType
 import io.github.parcival42.workouttracker.data.SetLog
 import io.github.parcival42.workouttracker.data.SetLogDao
-import io.github.parcival42.workouttracker.ui.components.MAX_DURATION_MINUTES
-import io.github.parcival42.workouttracker.ui.components.SECONDS_PER_MINUTE
-import io.github.parcival42.workouttracker.ui.components.secondsToMinutes
+import io.github.parcival42.workouttracker.data.circuitSettings
+import io.github.parcival42.workouttracker.ui.circuit.CircuitController
+import io.github.parcival42.workouttracker.ui.circuit.CircuitEvent
+import io.github.parcival42.workouttracker.ui.circuit.CircuitPhase
+import io.github.parcival42.workouttracker.ui.circuit.CircuitPreview
+import io.github.parcival42.workouttracker.ui.circuit.CircuitStation
+import io.github.parcival42.workouttracker.ui.circuit.CircuitUiState
+import io.github.parcival42.workouttracker.ui.circuit.buildCircuitPhases
+import io.github.parcival42.workouttracker.ui.components.MAX_DURATION_SECONDS
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -34,6 +46,9 @@ sealed interface WorkoutItem {
     val deviceId: Long
     val deviceName: String
     val isComplete: Boolean
+    val hasSessionLogs: Boolean
+    // Circuit plans only: the station time of this device; null in normal plans.
+    val stationSeconds: Int?
 }
 
 data class StrengthItem(
@@ -46,29 +61,41 @@ data class StrengthItem(
     val minWeightGrams: Int,
     val weightStepGrams: Int,
     val reps: Int,
+    override val stationSeconds: Int? = null,
 ) : WorkoutItem {
+    // Circuit stations are timed: they log weight and duration, no reps.
+    val isTimed: Boolean get() = stationSeconds != null
     val openSets: Int get() = (targetSets - todaySets.size).coerceAtLeast(0)
     override val isComplete: Boolean get() = openSets == 0
+    override val hasSessionLogs: Boolean get() = todaySets.isNotEmpty()
 }
 
 data class CardioItem(
     override val deviceId: Long,
     override val deviceName: String,
     val todaySessions: List<CardioLog>,
-    val minutes: Int,
+    // Exact duration of the next session: the last one, or the plan target.
+    val durationSeconds: Int,
+    // One per round in a circuit plan, otherwise one.
+    val targetSessions: Int = 1,
+    override val stationSeconds: Int? = null,
 ) : WorkoutItem {
-    override val isComplete: Boolean get() = todaySessions.isNotEmpty()
+    override val isComplete: Boolean get() = todaySessions.size >= targetSessions
+    override val hasSessionLogs: Boolean get() = todaySessions.isNotEmpty()
 }
 
 data class WorkoutUiState(
     val planName: String = "",
     val items: List<WorkoutItem> = emptyList(),
+    // Only set for circuit plans; normal plans show nothing of the circuit.
+    val circuitPreview: CircuitPreview? = null,
+    val circuit: CircuitUiState? = null,
 ) {
     val isComplete: Boolean get() = items.isNotEmpty() && items.all { it.isComplete }
 }
 
 /** Unsaved edits; null fields fall back to the last logged set or session (see [strengthLogs]). */
-private data class Draft(val weightGrams: Int? = null, val reps: Int? = null, val minutes: Int? = null)
+private data class Draft(val weightGrams: Int? = null, val reps: Int? = null, val durationSeconds: Int? = null)
 
 private data class LogsByDevice<T>(val today: Map<Long, List<T>>, val last: Map<Long, T>)
 
@@ -78,6 +105,8 @@ class WorkoutViewModel(
     private val planDao: PlanDao,
     private val setLogDao: SetLogDao,
     private val cardioLogDao: CardioLogDao,
+    // Monotonic clock for the circuit timer.
+    private val clock: () -> Long = SystemClock::elapsedRealtime,
 ) : ViewModel() {
 
     // The set counter resets per calendar day (or on a restart); "today" is fixed when the screen opens.
@@ -120,15 +149,24 @@ class WorkoutViewModel(
         )
     }
 
-    val uiState: StateFlow<WorkoutUiState> = combine(
+    // Cold, so the circuit reads live values even while no screen collects [uiState].
+    private val workoutState: Flow<WorkoutUiState> = combine(
         plan,
         planDao.observeEntries(planId),
         strengthLogs,
         cardioLogs,
         drafts,
     ) { plan, entries, strengthLogs, cardioLogs, drafts ->
+        val circuitSettings = plan?.takeIf { it.type == PlanType.CIRCUIT }?.circuitSettings
         WorkoutUiState(
             planName = plan?.name.orEmpty(),
+            circuitPreview = circuitSettings?.let { settings ->
+                CircuitPreview(
+                    stations = entries.size,
+                    rounds = settings.rounds,
+                    totalSeconds = circuitPhases(circuitStations(entries, settings), settings).sumOf { it.durationSeconds },
+                )
+            },
             items = entries.map { entry ->
                 val draft = drafts[entry.deviceId]
                 when (entry.deviceType) {
@@ -137,27 +175,39 @@ class WorkoutViewModel(
                         StrengthItem(
                             deviceId = entry.deviceId,
                             deviceName = entry.deviceName,
-                            targetSets = entry.targetSets,
+                            targetSets = circuitSettings?.rounds ?: entry.targetSets,
                             targetReps = entry.targetReps,
                             todaySets = strengthLogs.today[entry.deviceId].orEmpty(),
                             weightGrams = draft?.weightGrams ?: last?.weightGrams ?: entry.minWeightGrams,
                             minWeightGrams = entry.minWeightGrams,
                             weightStepGrams = entry.weightStepGrams,
                             reps = draft?.reps ?: last?.reps ?: entry.targetReps,
+                            stationSeconds = circuitSettings?.let { entry.stationSeconds ?: it.stationSeconds },
                         )
                     }
                     DeviceType.CARDIO -> CardioItem(
                         deviceId = entry.deviceId,
                         deviceName = entry.deviceName,
                         todaySessions = cardioLogs.today[entry.deviceId].orEmpty(),
-                        minutes = draft?.minutes
-                            ?: secondsToMinutes(
-                                cardioLogs.last[entry.deviceId]?.durationSeconds ?: entry.targetDurationSeconds
-                            ),
+                        durationSeconds = draft?.durationSeconds
+                            ?: cardioLogs.last[entry.deviceId]?.durationSeconds
+                            ?: entry.targetDurationSeconds,
+                        targetSessions = circuitSettings?.rounds ?: 1,
+                        stationSeconds = circuitSettings?.let { entry.stationSeconds ?: it.stationSeconds },
                     )
                 }
             },
         )
+    }
+
+    // Only started for circuit plans.
+    private val circuit = CircuitController(viewModelScope, clock, onStationDone = ::logStation)
+    private var circuitStarting = false
+
+    val circuitEvents: SharedFlow<CircuitEvent> get() = circuit.events
+
+    val uiState: StateFlow<WorkoutUiState> = combine(workoutState, circuit.state) { state, circuitState ->
+        state.copy(circuit = circuitState)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WorkoutUiState())
 
     fun setWeight(deviceId: Long, weightGrams: Int) {
@@ -170,9 +220,9 @@ class WorkoutViewModel(
         drafts.update { it + (deviceId to (it[deviceId] ?: Draft()).copy(reps = clamped)) }
     }
 
-    fun setMinutes(deviceId: Long, minutes: Int) {
-        val clamped = minutes.coerceIn(1, MAX_DURATION_MINUTES)
-        drafts.update { it + (deviceId to (it[deviceId] ?: Draft()).copy(minutes = clamped)) }
+    fun setDuration(deviceId: Long, seconds: Int) {
+        val clamped = seconds.coerceIn(1, MAX_DURATION_SECONDS)
+        drafts.update { it + (deviceId to (it[deviceId] ?: Draft()).copy(durationSeconds = clamped)) }
     }
 
     fun completeDevice(item: StrengthItem) = logSets(item, item.openSets)
@@ -185,10 +235,11 @@ class WorkoutViewModel(
         viewModelScope.launch { setLogDao.deleteLastSinceInPlan(item.deviceId, planId, sessionStart.first()) }
     }
 
-    fun updateSet(set: SetLog, weightGrams: Int, reps: Int) {
+    fun updateSet(set: SetLog, weightGrams: Int, reps: Int?, durationSeconds: Int?) {
         val updated = set.copy(
             weightGrams = weightGrams.coerceIn(0, MAX_WEIGHT_GRAMS),
-            reps = reps.coerceIn(1, MAX_REPS),
+            reps = reps?.coerceIn(1, MAX_REPS),
+            durationSeconds = durationSeconds?.coerceIn(1, MAX_DURATION_SECONDS),
         )
         viewModelScope.launch { setLogDao.update(updated) }
     }
@@ -201,7 +252,7 @@ class WorkoutViewModel(
         val session = CardioLog(
             deviceId = item.deviceId,
             performedAt = System.currentTimeMillis(),
-            durationSeconds = item.minutes * SECONDS_PER_MINUTE,
+            durationSeconds = item.durationSeconds,
             planId = planId,
         )
         viewModelScope.launch {
@@ -213,12 +264,12 @@ class WorkoutViewModel(
 
     fun undoLastSession(item: CardioItem) {
         // Pin the displayed duration so removing the session does not change it.
-        drafts.update { it + (item.deviceId to Draft(minutes = item.minutes)) }
+        drafts.update { it + (item.deviceId to Draft(durationSeconds = item.durationSeconds)) }
         viewModelScope.launch { cardioLogDao.deleteLastSinceInPlan(item.deviceId, planId, sessionStart.first()) }
     }
 
-    fun updateSession(session: CardioLog, minutes: Int) {
-        val updated = session.copy(durationSeconds = minutes.coerceIn(1, MAX_DURATION_MINUTES) * SECONDS_PER_MINUTE)
+    fun updateSession(session: CardioLog, seconds: Int) {
+        val updated = session.copy(durationSeconds = seconds.coerceIn(1, MAX_DURATION_SECONDS))
         viewModelScope.launch { cardioLogDao.update(updated) }
     }
 
@@ -236,6 +287,80 @@ class WorkoutViewModel(
 
     fun undoRestartPlan() {
         viewModelScope.launch { planDao.setSessionStart(planId, previousSessionStartedAt) }
+    }
+
+    fun startCircuit() {
+        if (circuit.isRunning || circuitStarting) return
+        circuitStarting = true
+        viewModelScope.launch {
+            try {
+                val settings = plan.first()?.takeIf { it.type == PlanType.CIRCUIT }?.circuitSettings ?: return@launch
+                val stations = circuitStations(planDao.observeEntries(planId).first(), settings)
+                if (stations.isEmpty()) return@launch
+                // A further circuit on the same day starts a new session, so its progress counts from zero.
+                if (workoutState.first().items.any { it.hasSessionLogs }) {
+                    planDao.setSessionStart(planId, System.currentTimeMillis())
+                }
+                circuit.start(stations, settings.rounds, settings.restSeconds, settings.countdownSeconds)
+            } finally {
+                circuitStarting = false
+            }
+        }
+    }
+
+    /** Saves a station time in the plan; a running circuit uses it from the station's next pass. */
+    fun setStationSeconds(deviceId: Long, seconds: Int) {
+        viewModelScope.launch {
+            val settings = plan.first()?.takeIf { it.type == PlanType.CIRCUIT }?.circuitSettings ?: return@launch
+            val entry = planDao.observeEntries(planId).first().firstOrNull { it.deviceId == deviceId } ?: return@launch
+            // The plan's time is stored as "no own time", so the station follows later plan changes.
+            planDao.updateStationSeconds(entry.id, seconds.takeIf { it != settings.stationSeconds })
+            circuit.updateStationSeconds(deviceId, seconds)
+        }
+    }
+
+    fun pauseCircuit() = circuit.pause()
+
+    fun resumeCircuit() = circuit.resume()
+
+    /** Ends the current phase early; a skipped station is not logged. */
+    fun skipCircuitPhase() = circuit.skip()
+
+    /** Ends a running circuit or closes a finished one; logged stations stay. */
+    fun stopCircuit() = circuit.stop()
+
+    // Logs a finished station: the weight the card shows right now (last set, or the user's
+    // edit) and the station time. Reps can be added later through the set chip.
+    private suspend fun logStation(station: CircuitStation, seconds: Int) {
+        when (val item = workoutState.first().items.firstOrNull { it.deviceId == station.deviceId }) {
+            is StrengthItem -> {
+                setLogDao.insertAll(
+                    listOf(
+                        SetLog(
+                            deviceId = item.deviceId,
+                            performedAt = System.currentTimeMillis(),
+                            weightGrams = item.weightGrams,
+                            reps = null,
+                            planId = planId,
+                            durationSeconds = seconds,
+                        )
+                    )
+                )
+                drafts.update { it - item.deviceId }
+            }
+            is CardioItem -> {
+                cardioLogDao.insert(
+                    CardioLog(
+                        deviceId = item.deviceId,
+                        performedAt = System.currentTimeMillis(),
+                        durationSeconds = seconds,
+                        planId = planId,
+                    )
+                )
+                drafts.update { it - item.deviceId }
+            }
+            null -> Unit
+        }
     }
 
     private fun logSets(item: StrengthItem, count: Int) {
@@ -275,3 +400,14 @@ class WorkoutViewModel(
         }
     }
 }
+
+private fun circuitStations(entries: List<PlanEntryItem>, settings: CircuitSettings): List<CircuitStation> =
+    entries.map { CircuitStation(it.deviceId, it.deviceName, it.stationSeconds ?: settings.stationSeconds) }
+
+private fun circuitPhases(stations: List<CircuitStation>, settings: CircuitSettings): List<CircuitPhase> =
+    buildCircuitPhases(
+        stationSeconds = stations.map { it.seconds },
+        rounds = settings.rounds,
+        restSeconds = settings.restSeconds,
+        countdownSeconds = settings.countdownSeconds,
+    )

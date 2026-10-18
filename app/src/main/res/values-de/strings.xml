@@ -117,7 +117,7 @@
     <string name="workout_plan_complete">Trainingsplan abgeschlossen</string>
     <string name="workout_plan_restarted">Trainingsplan neu gestartet</string>
     <string name="action_edit_plan">Plan bearbeiten</string>
-    <string name="workout_next_session">Dauer: %1$d min</string>
+    <string name="workout_next_session">Dauer: %1$s min</string>
     <string name="next_session_sheet_subtitle">Dauer der nächsten Einheit</string>
     <string name="action_edit_next_session">Nächste Einheit bearbeiten</string>
     <string name="action_extra_session">Weitere Einheit</string>
@@ -178,4 +178,45 @@
     <string name="action_reorder">Verschieben</string>
     <string name="action_decrease">Verringern</string>
     <string name="action_increase">Erhöhen</string>
+    <!-- Circuit training -->
+    <string name="plan_type_normal">Normal</string>
+    <string name="plan_type_circuit">Zirkel</string>
+    <string name="plan_type_hint">Die Planart lässt sich später nicht ändern.</string>
+    <string name="plan_circuit_label">Zirkeltraining</string>
+    <string name="circuit_settings_title">Zirkel-Einstellungen</string>
+    <string name="circuit_rounds">Runden</string>
+    <string name="circuit_station_time">Zeit pro Station</string>
+    <string name="circuit_rest_time">Pause</string>
+    <string name="circuit_countdown_time">Countdown</string>
+    <plurals name="circuit_rounds_count">
+        <item quantity="one">%d Runde</item>
+        <item quantity="other">%d Runden</item>
+    </plurals>
+    <plurals name="circuit_stations_count">
+        <item quantity="one">%d Station</item>
+        <item quantity="other">%d Stationen</item>
+    </plurals>
+    <string name="circuit_settings_summary">%1$s · %2$s min pro Station · %3$s min Pause · %4$s Countdown</string>
+    <string name="circuit_own_station_time">Eigene Stationszeit</string>
+    <string name="workout_next_station">Nächste Station: %1$s kg · %2$s min</string>
+    <string name="workout_station_time">Stationszeit: %1$s min</string>
+    <string name="next_station_sheet_subtitle">Für die nächste Station</string>
+    <string name="station_time_plan_hint">Wird im Plan gespeichert; eine laufende Station behält ihre Zeit.</string>
+    <string name="duration_input_label">Dauer (min oder m:ss)</string>
+    <string name="seconds_input_label">Sekunden</string>
+    <string name="reps_optional_label">Wiederholungen (optional)</string>
+    <string name="action_start_circuit">Zirkel starten</string>
+    <string name="circuit_summary">%1$s × %2$s · ca. %3$d min</string>
+    <string name="circuit_phase_countdown">Gleich geht\'s los</string>
+    <string name="circuit_phase_round">Runde %1$d von %2$d</string>
+    <string name="circuit_phase_rest">Pause · als Nächstes: %1$s</string>
+    <string name="circuit_paused">Pausiert</string>
+    <string name="circuit_finished">Zirkel beendet</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_resume">Weiter</string>
+    <string name="action_skip">Überspringen</string>
+    <string name="action_abort">Beenden</string>
+    <string name="action_close">Schließen</string>
+    <string name="circuit_abort_title">Zirkel beenden?</string>
+    <string name="circuit_abort_message">Bereits erledigte Stationen bleiben gespeichert.</string>
 </resources>

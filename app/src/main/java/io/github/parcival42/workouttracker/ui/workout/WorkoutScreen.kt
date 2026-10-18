@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -35,6 +36,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -55,9 +57,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.parcival42.workouttracker.R
 import io.github.parcival42.workouttracker.data.CardioLog
 import io.github.parcival42.workouttracker.data.SetLog
+import io.github.parcival42.workouttracker.ui.circuit.CircuitEffects
+import io.github.parcival42.workouttracker.ui.circuit.CircuitPanel
 import io.github.parcival42.workouttracker.ui.components.EmptyHint
+import io.github.parcival42.workouttracker.ui.components.formatDuration
 import io.github.parcival42.workouttracker.ui.components.formatKg
+import io.github.parcival42.workouttracker.ui.components.parseDuration
 import io.github.parcival42.workouttracker.ui.components.parseKgToGrams
+import io.github.parcival42.workouttracker.ui.components.setSummary
 import io.github.parcival42.workouttracker.ui.components.stepWeightDown
 import io.github.parcival42.workouttracker.ui.components.stepWeightUp
 import kotlinx.coroutines.launch
@@ -77,6 +84,26 @@ fun WorkoutScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val resources = LocalResources.current
+    val listState = rememberLazyListState()
+    val circuit = state.circuit
+    // While a circuit runs, the plan cannot be left or changed from here.
+    val circuitActive = circuit != null && !circuit.isFinished
+    // In a circuit plan only the timer logs; the cards keep their chips and undo.
+    val isCircuitPlan = state.circuitPreview != null
+
+    if (state.circuitPreview != null) {
+        CircuitEffects(
+            events = viewModel.circuitEvents,
+            keepScreenOn = circuitActive && circuit?.isPaused == false,
+            onLeave = viewModel::pauseCircuit,
+        )
+    }
+
+    // Bring the active station into view.
+    LaunchedEffect(circuit?.activeDeviceId) {
+        val index = state.items.indexOfFirst { it.deviceId == circuit?.activeDeviceId }
+        if (index >= 0) listState.animateScrollToItem(index)
+    }
 
     val restartPlan: () -> Unit = {
         viewModel.restartPlan()
@@ -96,25 +123,27 @@ fun WorkoutScreen(
             TopAppBar(
                 title = { Text(state.planName) },
                 actions = {
-                    IconButton(onClick = onSwitchPlan) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_list),
-                            contentDescription = stringResource(R.string.action_switch_plan),
-                        )
-                    }
-                    if (state.items.isNotEmpty()) {
-                        IconButton(onClick = restartPlan) {
+                    if (!circuitActive) {
+                        IconButton(onClick = onSwitchPlan) {
                             Icon(
-                                painter = painterResource(R.drawable.ic_restart),
-                                contentDescription = stringResource(R.string.action_restart_plan),
+                                painter = painterResource(R.drawable.ic_list),
+                                contentDescription = stringResource(R.string.action_switch_plan),
                             )
                         }
-                    }
-                    IconButton(onClick = onEditPlan) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_edit),
-                            contentDescription = stringResource(R.string.action_edit_plan),
-                        )
+                        if (state.items.isNotEmpty()) {
+                            IconButton(onClick = restartPlan) {
+                                Icon(
+                                    painter = painterResource(R.drawable.ic_restart),
+                                    contentDescription = stringResource(R.string.action_restart_plan),
+                                )
+                            }
+                        }
+                        IconButton(onClick = onEditPlan) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_edit),
+                                contentDescription = stringResource(R.string.action_edit_plan),
+                            )
+                        }
                     }
                 },
             )
@@ -127,53 +156,71 @@ fun WorkoutScreen(
                 modifier = Modifier.padding(innerPadding),
             )
         } else {
-            LazyColumn(
-                modifier = Modifier.padding(innerPadding),
-                contentPadding = PaddingValues(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                items(state.items, key = { it.deviceId }) { item ->
-                    when (item) {
-                        is StrengthItem -> WorkoutCard(
-                            item = item,
-                            onEditNextSet = { nextSetDeviceId = item.deviceId },
-                            onCompleteDevice = { viewModel.completeDevice(item) },
-                            onCompleteOneSet = { viewModel.completeOneSet(item) },
-                            onUndo = { viewModel.undoLastSet(item) },
-                            onSetClick = { number, set -> editingSet = number to set },
-                        )
-                        is CardioItem -> CardioCard(
-                            item = item,
-                            onEditNextSession = { nextSetDeviceId = item.deviceId },
-                            onLogSession = { viewModel.logSession(item) },
-                            onUndo = { viewModel.undoLastSession(item) },
-                            onSessionClick = { number, session -> editingSession = number to session },
-                        )
-                    }
+            Column(modifier = Modifier.padding(innerPadding)) {
+                state.circuitPreview?.let { preview ->
+                    CircuitPanel(
+                        preview = preview,
+                        circuit = circuit,
+                        onStart = viewModel::startCircuit,
+                        onPause = viewModel::pauseCircuit,
+                        onResume = viewModel::resumeCircuit,
+                        onSkip = viewModel::skipCircuitPhase,
+                        onStop = viewModel::stopCircuit,
+                    )
                 }
-                if (state.isComplete) {
-                    item(key = "plan-complete") {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 12.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(12.dp),
-                        ) {
-                            Text(
-                                text = stringResource(R.string.workout_plan_complete),
-                                style = MaterialTheme.typography.titleMedium,
+                LazyColumn(
+                    state = listState,
+                    contentPadding = PaddingValues(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    items(state.items, key = { it.deviceId }) { item ->
+                        val highlighted = circuitActive && item.deviceId == circuit?.activeDeviceId
+                        when (item) {
+                            is StrengthItem -> WorkoutCard(
+                                item = item,
+                                onEditNextSet = { nextSetDeviceId = item.deviceId },
+                                onCompleteDevice = { viewModel.completeDevice(item) },
+                                onCompleteOneSet = { viewModel.completeOneSet(item) },
+                                onUndo = { viewModel.undoLastSet(item) },
+                                onSetClick = { number, set -> editingSet = number to set },
+                                highlighted = highlighted,
+                                isCircuitPlan = isCircuitPlan,
                             )
-                            OutlinedButton(onClick = restartPlan) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_restart),
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                )
+                            is CardioItem -> CardioCard(
+                                item = item,
+                                onEditNextSession = { nextSetDeviceId = item.deviceId },
+                                onLogSession = { viewModel.logSession(item) },
+                                onUndo = { viewModel.undoLastSession(item) },
+                                onSessionClick = { number, session -> editingSession = number to session },
+                                highlighted = highlighted,
+                                isCircuitPlan = isCircuitPlan,
+                            )
+                        }
+                    }
+                    if (state.isComplete && !circuitActive) {
+                        item(key = "plan-complete") {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
                                 Text(
-                                    text = stringResource(R.string.action_restart_plan),
-                                    modifier = Modifier.padding(start = 8.dp),
+                                    text = stringResource(R.string.workout_plan_complete),
+                                    style = MaterialTheme.typography.titleMedium,
                                 )
+                                OutlinedButton(onClick = restartPlan) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_restart),
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.action_restart_plan),
+                                        modifier = Modifier.padding(start = 8.dp),
+                                    )
+                                }
                             }
                         }
                     }
@@ -182,33 +229,44 @@ fun WorkoutScreen(
         }
     }
 
-    when (val item = state.items.firstOrNull { it.deviceId == nextSetDeviceId }) {
-        is StrengthItem -> NextSetSheet(
-            item = item,
+    val sheetItem = state.items.firstOrNull { it.deviceId == nextSetDeviceId }
+    val sheetStationSeconds = sheetItem?.stationSeconds
+    when {
+        sheetItem != null && sheetStationSeconds != null -> StationSheet(
+            item = sheetItem,
+            stationSeconds = sheetStationSeconds,
+            onApply = { weightGrams, seconds ->
+                weightGrams?.let { viewModel.setWeight(sheetItem.deviceId, it) }
+                if (seconds != sheetStationSeconds) viewModel.setStationSeconds(sheetItem.deviceId, seconds)
+                nextSetDeviceId = null
+            },
+            onDismiss = { nextSetDeviceId = null },
+        )
+        sheetItem is StrengthItem -> NextSetSheet(
+            item = sheetItem,
             onApply = { weightGrams, reps ->
-                viewModel.setWeight(item.deviceId, weightGrams)
-                viewModel.setReps(item.deviceId, reps)
+                viewModel.setWeight(sheetItem.deviceId, weightGrams)
+                viewModel.setReps(sheetItem.deviceId, reps)
                 nextSetDeviceId = null
             },
             onDismiss = { nextSetDeviceId = null },
         )
-        is CardioItem -> NextSessionSheet(
-            item = item,
-            onApply = { minutes ->
-                viewModel.setMinutes(item.deviceId, minutes)
+        sheetItem is CardioItem -> NextSessionSheet(
+            item = sheetItem,
+            onApply = { seconds ->
+                viewModel.setDuration(sheetItem.deviceId, seconds)
                 nextSetDeviceId = null
             },
             onDismiss = { nextSetDeviceId = null },
         )
-        null -> Unit
     }
 
     editingSession?.let { (number, session) ->
         EditSessionDialog(
             title = stringResource(R.string.edit_session_title, number),
             session = session,
-            onConfirm = { minutes ->
-                viewModel.updateSession(session, minutes)
+            onConfirm = { seconds ->
+                viewModel.updateSession(session, seconds)
                 editingSession = null
             },
             onDelete = {
@@ -223,8 +281,8 @@ fun WorkoutScreen(
         EditSetDialog(
             title = stringResource(R.string.edit_set_title, number),
             set = set,
-            onConfirm = { weightGrams, reps ->
-                viewModel.updateSet(set, weightGrams, reps)
+            onConfirm = { weightGrams, reps, durationSeconds ->
+                viewModel.updateSet(set, weightGrams, reps, durationSeconds)
                 editingSet = null
             },
             onDelete = {
@@ -240,14 +298,20 @@ fun WorkoutScreen(
 internal fun EditSetDialog(
     title: String,
     set: SetLog,
-    onConfirm: (weightGrams: Int, reps: Int) -> Unit,
+    onConfirm: (weightGrams: Int, reps: Int?, durationSeconds: Int?) -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    // Timed circuit sets have a duration, and their reps are optional.
+    val isTimed = set.durationSeconds != null
     var weightInput by rememberSaveable { mutableStateOf(formatKg(set.weightGrams)) }
-    var repsInput by rememberSaveable { mutableStateOf(set.reps.toString()) }
+    var repsInput by rememberSaveable { mutableStateOf(set.reps?.toString().orEmpty()) }
+    var durationInput by rememberSaveable { mutableStateOf(set.durationSeconds?.let(::formatDuration).orEmpty()) }
     val weightGrams = parseKgToGrams(weightInput)
     val reps = repsInput.trim().toIntOrNull()?.takeIf { it in 1..999 }
+    val repsValid = reps != null || (isTimed && repsInput.isBlank())
+    val durationSeconds = if (isTimed) parseDuration(durationInput) else null
+    val valid = weightGrams != null && repsValid && (!isTimed || durationSeconds != null)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -265,17 +329,28 @@ internal fun EditSetDialog(
                 OutlinedTextField(
                     value = repsInput,
                     onValueChange = { repsInput = it },
-                    label = { Text(stringResource(R.string.target_reps)) },
+                    label = { Text(stringResource(if (isTimed) R.string.reps_optional_label else R.string.target_reps)) },
                     singleLine = true,
-                    isError = reps == null,
+                    isError = !repsValid,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 )
+                if (isTimed) {
+                    OutlinedTextField(
+                        value = durationInput,
+                        onValueChange = { durationInput = it },
+                        label = { Text(stringResource(R.string.duration_input_label)) },
+                        singleLine = true,
+                        isError = durationSeconds == null,
+                        // Number and phone keyboards have no colon on many devices.
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    )
+                }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { if (weightGrams != null && reps != null) onConfirm(weightGrams, reps) },
-                enabled = weightGrams != null && reps != null,
+                onClick = { weightGrams?.let { onConfirm(it, reps, durationSeconds) } },
+                enabled = valid,
             ) {
                 Text(stringResource(R.string.action_save))
             }
@@ -297,24 +372,24 @@ private fun WorkoutCard(
     onCompleteOneSet: () -> Unit,
     onUndo: () -> Unit,
     onSetClick: (setNumber: Int, set: SetLog) -> Unit,
+    highlighted: Boolean = false,
+    // Circuit plans log only through the timer: no log buttons, and the next station only has a weight.
+    isCircuitPlan: Boolean = false,
 ) {
     val resources = LocalResources.current
     DeviceCard(
         deviceName = item.deviceName,
         isComplete = item.isComplete,
         progress = stringResource(R.string.workout_progress, item.todaySets.size, item.targetSets),
-        summary = item.todaySets.joinToString("  ·  ") {
-            resources.getString(R.string.workout_set_summary, formatKg(it.weightGrams), it.reps)
-        },
+        summary = item.todaySets.joinToString("  ·  ") { resources.setSummary(it) },
+        highlighted = highlighted,
     ) {
         if (item.todaySets.isNotEmpty()) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 item.todaySets.forEachIndexed { index, set ->
                     SuggestionChip(
                         onClick = { onSetClick(index + 1, set) },
-                        label = {
-                            Text(stringResource(R.string.workout_set_summary, formatKg(set.weightGrams), set.reps))
-                        },
+                        label = { Text(resources.setSummary(set)) },
                     )
                 }
             }
@@ -332,7 +407,11 @@ private fun WorkoutCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = stringResource(R.string.workout_next_set, formatKg(item.weightGrams), item.reps),
+                text = if (item.stationSeconds != null) {
+                    stringResource(R.string.workout_next_station, formatKg(item.weightGrams), formatDuration(item.stationSeconds))
+                } else {
+                    stringResource(R.string.workout_next_set, formatKg(item.weightGrams), item.reps)
+                },
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.weight(1f),
             )
@@ -354,23 +433,25 @@ private fun WorkoutCard(
                     contentDescription = stringResource(R.string.action_undo_set),
                 )
             }
-            OutlinedButton(onClick = onCompleteOneSet, modifier = Modifier.weight(1f)) {
-                val nextSet = item.todaySets.size + 1
-                Text(
-                    text = if (nextSet <= item.targetSets) {
-                        stringResource(R.string.action_set_n_of_m, nextSet, item.targetSets)
-                    } else {
-                        stringResource(R.string.action_extra_set)
-                    },
-                    maxLines = 1,
-                )
-            }
-            Button(
-                onClick = onCompleteDevice,
-                enabled = !item.isComplete,
-                modifier = Modifier.weight(1f),
-            ) {
-                Text(stringResource(R.string.action_device_done))
+            if (!isCircuitPlan) {
+                OutlinedButton(onClick = onCompleteOneSet, modifier = Modifier.weight(1f)) {
+                    val nextSet = item.todaySets.size + 1
+                    Text(
+                        text = if (nextSet <= item.targetSets) {
+                            stringResource(R.string.action_set_n_of_m, nextSet, item.targetSets)
+                        } else {
+                            stringResource(R.string.action_extra_set)
+                        },
+                        maxLines = 1,
+                    )
+                }
+                Button(
+                    onClick = onCompleteDevice,
+                    enabled = !item.isComplete,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(stringResource(R.string.action_device_done))
+                }
             }
         }
     }

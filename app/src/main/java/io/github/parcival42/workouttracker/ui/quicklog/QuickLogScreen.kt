@@ -40,11 +40,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.parcival42.workouttracker.R
 import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.ui.components.EmptyHint
-import io.github.parcival42.workouttracker.ui.components.MAX_DURATION_MINUTES
 import io.github.parcival42.workouttracker.ui.components.formatKg
 import io.github.parcival42.workouttracker.ui.components.stepWeightDown
 import io.github.parcival42.workouttracker.ui.components.stepWeightUp
-import io.github.parcival42.workouttracker.ui.workout.MinutesDialog
+import io.github.parcival42.workouttracker.ui.components.DurationDialog
+import io.github.parcival42.workouttracker.ui.workout.DurationStepper
 import io.github.parcival42.workouttracker.ui.workout.ValueStepper
 import io.github.parcival42.workouttracker.ui.workout.WeightDialog
 import kotlinx.coroutines.launch
@@ -136,8 +136,8 @@ fun QuickLogScreen(
             )
             DeviceType.CARDIO -> QuickLogCardioSheet(
                 device = selected,
-                onLog = { minutes ->
-                    viewModel.logSession(selected, minutes, onLogged)
+                onLog = { seconds ->
+                    viewModel.logSession(selected, seconds, onLogged)
                     selectedDeviceId = null
                 },
                 onDismiss = { selectedDeviceId = null },
@@ -227,37 +227,30 @@ private fun QuickLogStrengthSheet(
 @Composable
 private fun QuickLogCardioSheet(
     device: QuickLogDevice,
-    onLog: (minutes: Int) -> Unit,
+    onLog: (seconds: Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var minutes by rememberSaveable { mutableIntStateOf(device.minutes) }
-    var showMinutesDialog by rememberSaveable { mutableStateOf(false) }
+    var seconds by rememberSaveable { mutableIntStateOf(device.durationSeconds) }
+    var showDurationDialog by rememberSaveable { mutableStateOf(false) }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         SheetContent(deviceName = device.name) {
-            ValueStepper(
-                label = stringResource(R.string.duration_label),
-                value = stringResource(R.string.duration_min, minutes),
-                onDecrease = { minutes = (minutes - 1).coerceAtLeast(1) },
-                onIncrease = { minutes = (minutes + 1).coerceAtMost(MAX_DURATION_MINUTES) },
-                decreaseEnabled = minutes > 1,
-                onValueClick = { showMinutesDialog = true },
-            )
-            Button(onClick = { onLog(minutes) }, modifier = Modifier.fillMaxWidth()) {
+            DurationStepper(seconds = seconds, onSecondsChange = { seconds = it }, onValueClick = { showDurationDialog = true })
+            Button(onClick = { onLog(seconds) }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.action_log))
             }
         }
     }
 
-    if (showMinutesDialog) {
-        MinutesDialog(
+    if (showDurationDialog) {
+        DurationDialog(
             title = stringResource(R.string.duration_dialog_title),
-            initialMinutes = minutes,
+            initialSeconds = seconds,
             onConfirm = {
-                minutes = it
-                showMinutesDialog = false
+                seconds = it
+                showDurationDialog = false
             },
-            onDismiss = { showMinutesDialog = false },
+            onDismiss = { showDurationDialog = false },
         )
     }
 }

@@ -100,11 +100,15 @@
     <string name="duration_label">Duration</string>
     <string name="duration_label_min">Duration (min)</string>
     <string name="duration_min" translatable="false">%1$d min</string>
+    <!-- Exact logged duration, see formatDuration: "20 min" or "2:30 min". -->
+    <string name="duration_exact" translatable="false">%1$s min</string>
     <string name="duration_dialog_title">Set duration</string>
 
     <string name="workout_empty">This plan has no devices yet. Add devices with the edit button.</string>
     <string name="workout_progress" translatable="false">%1$d/%2$d</string>
     <string name="workout_set_summary" translatable="false">%1$s kg × %2$d</string>
+    <string name="set_summary_timed" translatable="false">%1$s kg · %2$s min</string>
+    <string name="set_summary_timed_reps" translatable="false">%1$s kg × %2$d · %3$s min</string>
     <string name="action_show_details">Show details</string>
     <string name="action_hide_details">Hide details</string>
     <string name="action_restart_plan">Restart plan</string>
@@ -124,7 +128,7 @@
     <string name="edit_set_title">Edit set %1$d</string>
     <string name="action_undo_set">Undo last set</string>
     <string name="action_edit_plan">Edit plan</string>
-    <string name="workout_next_session">Duration: %1$d min</string>
+    <string name="workout_next_session">Duration: %1$s min</string>
     <string name="next_session_sheet_subtitle">Duration of the next session</string>
     <string name="action_edit_next_session">Edit next session</string>
     <string name="action_extra_session">Extra session</string>
@@ -139,9 +143,11 @@
     <string name="history_chart_title_cardio">Duration per day (min)</string>
     <string name="history_tap_hint">Tap a point for details.</string>
     <string name="history_point_detail" translatable="false">%1$s, %2$s: %3$s</string>
-    <string name="history_cardio_total" translatable="false">%1$d min (%2$s)</string>
+    <string name="history_cardio_total" translatable="false">%1$s min (%2$s)</string>
     <string name="history_group_strength" translatable="false">%1$d × %2$d · %3$s kg</string>
-    <string name="history_group_cardio" translatable="false">%1$d × %2$d min</string>
+    <string name="history_group_cardio" translatable="false">%1$d × %2$s min</string>
+    <string name="history_group_strength_timed" translatable="false">%1$d × %2$s min · %3$s kg</string>
+    <string name="history_group_strength_timed_reps" translatable="false">%1$d × %2$d · %3$s min · %4$s kg</string>
     <string name="history_range_1m">1 M</string>
     <string name="history_range_3m">3 M</string>
     <string name="history_range_1y">1 Y</string>
@@ -193,4 +199,46 @@
     <string name="action_reorder">Reorder</string>
     <string name="action_decrease">Decrease</string>
     <string name="action_increase">Increase</string>
+    <!-- Circuit training -->
+    <string name="plan_type_normal">Normal</string>
+    <string name="plan_type_circuit">Circuit</string>
+    <string name="plan_type_hint">The plan type can\'t be changed later.</string>
+    <string name="plan_circuit_label">Circuit training</string>
+    <string name="circuit_settings_title">Circuit settings</string>
+    <string name="circuit_rounds">Rounds</string>
+    <string name="circuit_station_time">Time per station</string>
+    <string name="circuit_rest_time">Rest</string>
+    <string name="circuit_countdown_time">Countdown</string>
+    <plurals name="circuit_rounds_count">
+        <item quantity="one">%d round</item>
+        <item quantity="other">%d rounds</item>
+    </plurals>
+    <plurals name="circuit_stations_count">
+        <item quantity="one">%d station</item>
+        <item quantity="other">%d stations</item>
+    </plurals>
+    <string name="circuit_settings_summary">%1$s · %2$s min per station · %3$s min rest · %4$s countdown</string>
+    <string name="circuit_own_station_time">Own station time</string>
+    <string name="workout_next_station">Next station: %1$s kg · %2$s min</string>
+    <string name="workout_station_time">Station time: %1$s min</string>
+    <string name="next_station_sheet_subtitle">For the next station</string>
+    <string name="station_time_plan_hint">Saved in the plan; a running station keeps its time.</string>
+    <string name="duration_input_label">Duration (min or m:ss)</string>
+    <string name="seconds_input_label">Seconds</string>
+    <string name="reps_optional_label">Reps (optional)</string>
+    <string name="duration_seconds" translatable="false">%1$d s</string>
+    <string name="action_start_circuit">Start circuit</string>
+    <string name="circuit_summary">%1$s × %2$s · about %3$d min</string>
+    <string name="circuit_phase_countdown">Get ready</string>
+    <string name="circuit_phase_round">Round %1$d of %2$d</string>
+    <string name="circuit_phase_rest">Rest · next: %1$s</string>
+    <string name="circuit_paused">Paused</string>
+    <string name="circuit_finished">Circuit complete</string>
+    <string name="action_pause">Pause</string>
+    <string name="action_resume">Resume</string>
+    <string name="action_skip">Skip</string>
+    <string name="action_abort">End</string>
+    <string name="action_close">Close</string>
+    <string name="circuit_abort_title">End circuit?</string>
+    <string name="circuit_abort_message">Stations already done stay logged.</string>
 </resources>

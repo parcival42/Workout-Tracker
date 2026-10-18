@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Circuit timer: vibrates at station changes. Install-time permission, no prompt. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <application
         android:name=".WorkoutTrackerApplication"
         android:allowBackup="true"

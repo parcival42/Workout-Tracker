@@ -1,6 +1,7 @@
 package io.github.parcival42.workouttracker.ui.workout
 
 import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +44,7 @@ internal fun DeviceCard(
     isComplete: Boolean,
     progress: String?,
     summary: String,
+    highlighted: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
@@ -53,6 +56,13 @@ internal fun DeviceCard(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (isComplete) Modifier.alpha(COMPLETED_CARD_ALPHA) else Modifier)
+            .then(
+                if (highlighted) {
+                    Modifier.border(2.dp, MaterialTheme.colorScheme.primary, CardDefaults.elevatedShape)
+                } else {
+                    Modifier
+                }
+            )
             .animateContentSize(),
     ) {
         Column(
