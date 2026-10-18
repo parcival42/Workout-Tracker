@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -35,8 +36,6 @@ import io.github.parcival42.workouttracker.ui.training.TrainingScreen
 import io.github.parcival42.workouttracker.ui.plans.PlanEditorScreen
 import io.github.parcival42.workouttracker.ui.plans.PlanEditorViewModel
 import io.github.parcival42.workouttracker.ui.plans.PlanListScreen
-import io.github.parcival42.workouttracker.ui.workout.WorkoutScreen
-import io.github.parcival42.workouttracker.ui.workout.WorkoutViewModel
 
 private object Routes {
     const val TRAINING = "training"
@@ -49,11 +48,12 @@ private object Routes {
     const val LOG_ENTRIES = "history/entries"
     const val LICENSES = "settings/licenses"
     const val PLAN_EDITOR = "plan/{${PlanEditorViewModel.PLAN_ID_ARG}}/edit"
-    const val WORKOUT = "plan/{${WorkoutViewModel.PLAN_ID_ARG}}/workout"
 
     fun planEditor(planId: Long) = "plan/$planId/edit"
-    fun workout(planId: Long) = "plan/$planId/workout"
 }
+
+// Plan picked from a plan list, kept in the Training entry's saved state while the app runs.
+private const val SELECTED_PLAN_KEY = "selectedPlanId"
 
 private enum class TopLevelDestination(
     val route: String,
@@ -106,9 +106,13 @@ fun AppNavigation() {
                 .padding(bottomPadding)
                 .consumeWindowInsets(bottomPadding),
         ) {
-            composable(Routes.TRAINING) {
+            composable(Routes.TRAINING) { entry ->
+                val selectedPlanId by entry.savedStateHandle
+                    .getStateFlow<Long?>(SELECTED_PLAN_KEY, null)
+                    .collectAsStateWithLifecycle()
                 TrainingScreen(
-                    onOpenPlan = { navController.navigate(Routes.workout(it)) },
+                    selectedPlanId = selectedPlanId,
+                    onSelectPlan = { entry.savedStateHandle[SELECTED_PLAN_KEY] = it },
                     onPlanCreated = { navController.navigate(Routes.planEditor(it)) },
                     onEditPlan = { navController.navigate(Routes.planEditor(it)) },
                     onShowPlanList = { navController.navigate(Routes.PLANS) },
@@ -117,7 +121,10 @@ fun AppNavigation() {
             }
             composable(Routes.PLANS) {
                 PlanListScreen(
-                    onOpenPlan = { navController.navigate(Routes.workout(it)) },
+                    onOpenPlan = { planId ->
+                        navController.getBackStackEntry(Routes.TRAINING).savedStateHandle[SELECTED_PLAN_KEY] = planId
+                        navController.popBackStack(Routes.TRAINING, inclusive = false)
+                    },
                     onPlanCreated = { navController.navigate(Routes.planEditor(it)) },
                     onQuickLog = { navController.navigate(Routes.QUICK_LOG) },
                     onBack = { navController.popBackStack() },
@@ -143,17 +150,6 @@ fun AppNavigation() {
             }
             composable(Routes.LICENSES) {
                 LicensesScreen(onBack = { navController.popBackStack() })
-            }
-            composable(
-                route = Routes.WORKOUT,
-                arguments = listOf(navArgument(WorkoutViewModel.PLAN_ID_ARG) { type = NavType.LongType }),
-            ) { entry ->
-                val planId = entry.arguments?.getLong(WorkoutViewModel.PLAN_ID_ARG) ?: return@composable
-                WorkoutScreen(
-                    planId = planId,
-                    onEditPlan = { navController.navigate(Routes.planEditor(planId)) },
-                    onBack = { navController.popBackStack() },
-                )
             }
             composable(
                 route = Routes.PLAN_EDITOR,

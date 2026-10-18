@@ -31,10 +31,12 @@ import io.github.parcival42.workouttracker.ui.plans.PlanListViewModel
 import io.github.parcival42.workouttracker.ui.plans.autoStartPlan
 import io.github.parcival42.workouttracker.ui.workout.WorkoutScreen
 
-// No plan -> create one; default or single plan -> start it; otherwise choose from the list.
+// No plan -> create one; selected, default or single plan -> start it; otherwise choose from the list.
+// The workout only lives here, so it always has the same top bar, however the plan was chosen.
 @Composable
 fun TrainingScreen(
-    onOpenPlan: (Long) -> Unit,
+    selectedPlanId: Long?,
+    onSelectPlan: (Long) -> Unit,
     onPlanCreated: (Long) -> Unit,
     onEditPlan: (Long) -> Unit,
     onShowPlanList: () -> Unit,
@@ -43,20 +45,21 @@ fun TrainingScreen(
 ) {
     val plans by viewModel.plans.collectAsStateWithLifecycle()
     val loadedPlans = plans ?: return
-    val autoPlan = loadedPlans.autoStartPlan()
+    // A deleted selection falls back to the automatic choice.
+    val activePlan = loadedPlans.firstOrNull { it.id == selectedPlanId } ?: loadedPlans.autoStartPlan()
 
     when {
         loadedPlans.isEmpty() -> NoPlanContent(
             onCreate = { name -> viewModel.create(name, onCreated = onPlanCreated) },
             onQuickLog = onQuickLog,
         )
-        autoPlan != null -> WorkoutScreen(
-            planId = autoPlan.id,
-            onEditPlan = { onEditPlan(autoPlan.id) },
+        activePlan != null -> WorkoutScreen(
+            planId = activePlan.id,
+            onEditPlan = { onEditPlan(activePlan.id) },
             onSwitchPlan = onShowPlanList,
         )
         else -> PlanListScreen(
-            onOpenPlan = onOpenPlan,
+            onOpenPlan = onSelectPlan,
             onPlanCreated = onPlanCreated,
             onQuickLog = onQuickLog,
             viewModel = viewModel,

@@ -62,7 +62,6 @@ data class CardioItem(
 
 data class WorkoutUiState(
     val planName: String = "",
-    val planExists: Boolean = true,
     val items: List<WorkoutItem> = emptyList(),
 ) {
     val isComplete: Boolean get() = items.isNotEmpty() && items.all { it.isComplete }
@@ -130,7 +129,6 @@ class WorkoutViewModel(
     ) { plan, entries, strengthLogs, cardioLogs, drafts ->
         WorkoutUiState(
             planName = plan?.name.orEmpty(),
-            planExists = plan != null,
             items = entries.map { entry ->
                 val draft = drafts[entry.deviceId]
                 when (entry.deviceType) {
@@ -261,7 +259,6 @@ class WorkoutViewModel(
     }
 
     companion object {
-        const val PLAN_ID_ARG = "planId"
         private const val MAX_WEIGHT_GRAMS = 1_000_000
         private const val MAX_REPS = 999
 
