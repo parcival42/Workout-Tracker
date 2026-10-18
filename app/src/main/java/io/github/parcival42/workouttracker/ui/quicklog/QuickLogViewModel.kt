@@ -6,10 +6,12 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.parcival42.workouttracker.WorkoutTrackerApplication
+import io.github.parcival42.workouttracker.data.BodyweightMeasure
 import io.github.parcival42.workouttracker.data.CardioLog
 import io.github.parcival42.workouttracker.data.CardioLogDao
 import io.github.parcival42.workouttracker.data.DeviceDao
 import io.github.parcival42.workouttracker.data.DeviceType
+import io.github.parcival42.workouttracker.data.PlanEntry
 import io.github.parcival42.workouttracker.data.SetLog
 import io.github.parcival42.workouttracker.data.SetLogDao
 import io.github.parcival42.workouttracker.data.UserSettings
@@ -27,6 +29,7 @@ data class QuickLogDevice(
     val id: Long,
     val name: String,
     val type: DeviceType,
+    val measure: BodyweightMeasure,
     val minWeightGrams: Int,
     val weightStepGrams: Int,
     val weightGrams: Int,
@@ -34,6 +37,8 @@ data class QuickLogDevice(
     val sets: Int,
     // Exact duration: the last session, or the personal default.
     val durationSeconds: Int,
+    // Bodyweight measured by time: the last set's duration, or a short default.
+    val holdSeconds: Int,
 )
 
 /** What was just logged, so it can be undone. */
@@ -67,17 +72,28 @@ class QuickLogViewModel(
                 id = device.id,
                 name = device.name,
                 type = device.type,
+                measure = device.measure,
                 minWeightGrams = device.minWeightGrams,
                 weightStepGrams = device.weightStepGrams,
-                weightGrams = lastSet?.weightGrams ?: device.minWeightGrams,
+                weightGrams = if (device.type == DeviceType.BODYWEIGHT) 0 else lastSet?.weightGrams ?: device.minWeightGrams,
                 reps = lastSet?.reps ?: settings.defaultTargetReps,
                 sets = settings.defaultTargetSets,
                 durationSeconds = lastSessionByDevice[device.id]?.durationSeconds ?: settings.defaultTargetDurationSeconds,
+                holdSeconds = lastSet?.durationSeconds ?: PlanEntry.DEFAULT_HOLD_SECONDS,
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    fun logSets(device: QuickLogDevice, weightGrams: Int, reps: Int, sets: Int, onLogged: (QuickLogResult) -> Unit) {
+    /** [durationSeconds] is only used for bodyweight exercises measured by time, which log no reps. */
+    fun logSets(
+        device: QuickLogDevice,
+        weightGrams: Int,
+        reps: Int,
+        sets: Int,
+        durationSeconds: Int,
+        onLogged: (QuickLogResult) -> Unit,
+    ) {
+        val timed = device.type == DeviceType.BODYWEIGHT && device.measure == BodyweightMeasure.TIME
         val now = System.currentTimeMillis()
         // Offset by 1 ms per set so sets logged in one tap keep a stable order.
         val logs = List(sets.coerceIn(1, MAX_SETS)) { index ->
@@ -85,8 +101,9 @@ class QuickLogViewModel(
                 deviceId = device.id,
                 performedAt = now + index,
                 weightGrams = weightGrams.coerceIn(0, MAX_WEIGHT_GRAMS),
-                reps = reps.coerceIn(1, MAX_REPS),
+                reps = if (timed) null else reps.coerceIn(1, MAX_REPS),
                 planId = null,
+                durationSeconds = if (timed) durationSeconds.coerceIn(1, MAX_DURATION_SECONDS) else null,
             )
         }
         viewModelScope.launch { onLogged(QuickLogResult.Sets(device.name, setLogDao.insertAll(logs))) }

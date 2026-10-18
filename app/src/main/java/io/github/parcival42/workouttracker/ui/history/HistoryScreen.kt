@@ -23,9 +23,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -44,9 +41,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.parcival42.workouttracker.R
+import io.github.parcival42.workouttracker.data.BodyweightMeasure
 import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.ui.components.EmptyHint
 import io.github.parcival42.workouttracker.ui.devices.labelRes
+import io.github.parcival42.workouttracker.ui.components.bodyweightSetSummary
 import io.github.parcival42.workouttracker.ui.components.formatDuration
 import io.github.parcival42.workouttracker.ui.components.formatKg
 import java.time.LocalDate
@@ -106,6 +105,7 @@ private fun HistoryContent(
     modifier: Modifier = Modifier,
 ) {
     val isCardio = state.mode == DeviceType.CARDIO
+    val bodyweightMeasure = state.measure.takeIf { state.mode == DeviceType.BODYWEIGHT }
     val locale = LocalConfiguration.current.locales[0]
     val shortDateFormatter = remember(locale) {
         DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "dMMM"), locale)
@@ -144,15 +144,14 @@ private fun HistoryContent(
 
         if (state.availableModes.size > 1) {
             item {
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    state.availableModes.forEachIndexed { index, mode ->
-                        SegmentedButton(
+                // Chips like the range filter: three segments are too narrow for the labels.
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    state.availableModes.forEach { mode ->
+                        FilterChip(
                             selected = state.mode == mode,
                             onClick = { onModeSelect(mode) },
-                            shape = SegmentedButtonDefaults.itemShape(index, state.availableModes.size),
-                        ) {
-                            Text(stringResource(mode.labelRes()))
-                        }
+                            label = { Text(stringResource(mode.labelRes())) },
+                        )
                     }
                 }
             }
@@ -203,7 +202,12 @@ private fun HistoryContent(
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val chartTitle = stringResource(
-                        if (isCardio) R.string.history_chart_title_cardio else R.string.history_chart_title
+                        when {
+                            isCardio -> R.string.history_chart_title_cardio
+                            bodyweightMeasure == BodyweightMeasure.REPS -> R.string.history_chart_title_reps
+                            bodyweightMeasure == BodyweightMeasure.TIME -> R.string.history_chart_title_time
+                            else -> R.string.history_chart_title
+                        }
                     )
                     Text(
                         text = chartTitle,
@@ -213,7 +217,12 @@ private fun HistoryContent(
                     HistoryChart(
                         dates = state.dates,
                         points = points,
-                        scale = if (isCardio) MinutesScale else WeightScale,
+                        scale = when {
+                            isCardio -> MinutesScale
+                            bodyweightMeasure == BodyweightMeasure.REPS -> RepsScale
+                            bodyweightMeasure == BodyweightMeasure.TIME -> SecondsScale
+                            else -> WeightScale
+                        },
                         colorSlots = colorSlots,
                         selected = selectedPoint,
                         onSelect = { selectedPoint = it },
@@ -227,7 +236,7 @@ private fun HistoryContent(
                     )
                     Text(
                         text = selectedPoint?.let {
-                            val groups = formatGroups(it.day.groups, resources)
+                            val groups = formatGroups(it.day.groups, resources, bodyweightMeasure)
                             val summary = if (isCardio && it.day.entries.size > 1) {
                                 stringResource(R.string.history_cardio_total, formatDuration(it.value), groups)
                             } else {
@@ -251,6 +260,7 @@ private fun HistoryContent(
             HistoryDayEntry(
                 date = date,
                 series = state.series,
+                bodyweightMeasure = bodyweightMeasure,
                 dateFormatter = longDateFormatter,
             )
         }
@@ -262,6 +272,7 @@ private fun HistoryDayEntry(
     date: LocalDate,
     series: List<HistorySeries>,
     dateFormatter: DateTimeFormatter,
+    bodyweightMeasure: BodyweightMeasure?,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         HorizontalDivider()
@@ -278,7 +289,7 @@ private fun HistoryDayEntry(
                 Column(modifier = Modifier.padding(start = 8.dp)) {
                     Text(text = s.deviceName, style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        text = formatGroups(day.groups, resources),
+                        text = formatGroups(day.groups, resources, bodyweightMeasure),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -288,9 +299,18 @@ private fun HistoryDayEntry(
     }
 }
 
-private fun formatGroups(groups: List<EntryGroup>, resources: Resources): String =
+/** [bodyweightMeasure] is set in bodyweight mode, where the group value is reps or seconds. */
+private fun formatGroups(groups: List<EntryGroup>, resources: Resources, bodyweightMeasure: BodyweightMeasure?): String =
     groups.joinToString(", ") { group ->
         when {
+            bodyweightMeasure != null -> {
+                val value = if (bodyweightMeasure == BodyweightMeasure.TIME) {
+                    resources.bodyweightSetSummary(reps = null, durationSeconds = group.value)
+                } else {
+                    resources.bodyweightSetSummary(reps = group.value, durationSeconds = null)
+                }
+                if (group.count == 1) value else resources.getString(R.string.history_group_bodyweight, group.count, value)
+            }
             group.durationSeconds != null && group.reps != null -> resources.getString(
                 R.string.history_group_strength_timed_reps,
                 group.count,

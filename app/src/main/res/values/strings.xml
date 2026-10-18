@@ -70,6 +70,36 @@
     <string name="device_weight_info">From %1$s kg in %2$s kg increments</string>
     <string name="device_type_strength">Strength</string>
     <string name="device_type_cardio">Cardio</string>
+    <string name="device_type_bodyweight">Bodyweight</string>
+    <!-- Short label for the type switch in the device dialog, where three segments are narrow. -->
+    <string name="device_type_bodyweight_short">Body</string>
+    <string name="bodyweight_measure_label">Measured by</string>
+    <string name="bodyweight_measure_reps">Reps</string>
+    <string name="bodyweight_measure_time">Time</string>
+    <string name="device_bodyweight_info" translatable="false">%1$s · %2$s</string>
+    <plurals name="reps_count">
+        <item quantity="one">%d rep</item>
+        <item quantity="other">%d reps</item>
+    </plurals>
+    <string name="workout_next_set_bodyweight">Next set: %1$s</string>
+    <string name="plan_entry_targets_time" translatable="false">%1$d × %2$s min</string>
+    <string name="history_group_bodyweight" translatable="false">%1$d × %2$s</string>
+    <string name="set_summary_bodyweight_both" translatable="false">%1$s · %2$s min</string>
+    <string name="history_chart_title_reps">Best reps per day</string>
+    <string name="history_chart_title_time">Longest time per day</string>
+    <string name="template_pushups">Push-ups</string>
+    <string name="template_situps">Sit-ups</string>
+    <string name="template_crunches">Crunches</string>
+    <string name="template_pullups">Pull-ups</string>
+    <string name="template_dips">Dips</string>
+    <string name="template_squats">Bodyweight squats</string>
+    <string name="template_lunges">Lunges</string>
+    <string name="template_burpees">Burpees</string>
+    <string name="template_jumping_jacks">Jumping jacks</string>
+    <string name="template_mountain_climbers">Mountain climbers</string>
+    <string name="template_floor_back_extension">Floor back extension</string>
+    <string name="template_plank">Plank</string>
+    <string name="template_wall_sit">Wall sit</string>
     <string name="device_type_locked">The type can\'t be changed because training has already been logged on this device.</string>
 
     <string name="plans_title">Training plans</string>

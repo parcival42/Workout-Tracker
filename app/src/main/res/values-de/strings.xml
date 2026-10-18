@@ -68,6 +68,31 @@
     <string name="device_weight_info">Ab %1$s kg in %2$s-kg-Stufen</string>
     <string name="device_type_strength">Kraft</string>
     <string name="device_type_cardio">Cardio</string>
+    <string name="device_type_bodyweight">Eigengewicht</string>
+    <string name="device_type_bodyweight_short">Körper</string>
+    <string name="bodyweight_measure_label">Gemessen in</string>
+    <string name="bodyweight_measure_reps">Wiederholungen</string>
+    <string name="bodyweight_measure_time">Zeit</string>
+    <plurals name="reps_count">
+        <item quantity="one">%d Wdh.</item>
+        <item quantity="other">%d Wdh.</item>
+    </plurals>
+    <string name="workout_next_set_bodyweight">Nächster Satz: %1$s</string>
+    <string name="history_chart_title_reps">Beste Wiederholungen pro Tag</string>
+    <string name="history_chart_title_time">Längste Zeit pro Tag</string>
+    <string name="template_pushups">Liegestütze</string>
+    <string name="template_situps">Sit-ups</string>
+    <string name="template_crunches">Crunches</string>
+    <string name="template_pullups">Klimmzüge</string>
+    <string name="template_dips">Dips</string>
+    <string name="template_squats">Kniebeugen</string>
+    <string name="template_lunges">Ausfallschritte</string>
+    <string name="template_burpees">Burpees</string>
+    <string name="template_jumping_jacks">Hampelmann</string>
+    <string name="template_mountain_climbers">Mountain Climbers</string>
+    <string name="template_floor_back_extension">Rückenstrecken</string>
+    <string name="template_plank">Plank</string>
+    <string name="template_wall_sit">Wandsitzen</string>
     <string name="device_type_locked">Der Typ lässt sich nicht mehr ändern, weil an diesem Gerät schon Training erfasst ist.</string>
 
     <string name="plans_title">Trainingspläne</string>

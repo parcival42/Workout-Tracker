@@ -37,7 +37,7 @@ abstract class PlanDao {
 
     @Query(
         """
-        SELECT pe.id, pe.device_id AS deviceId, d.name AS deviceName, d.type AS deviceType,
+        SELECT pe.id, pe.device_id AS deviceId, d.name AS deviceName, d.type AS deviceType, d.measure AS measure,
                pe.target_sets AS targetSets, pe.target_reps AS targetReps,
                pe.target_duration_seconds AS targetDurationSeconds, pe.station_seconds AS stationSeconds,
                d.start_weight_grams AS minWeightGrams, d.weight_step_grams AS weightStepGrams

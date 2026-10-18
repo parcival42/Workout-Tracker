@@ -1,5 +1,6 @@
 package io.github.parcival42.workouttracker.data.backup
 
+import io.github.parcival42.workouttracker.data.BodyweightMeasure
 import io.github.parcival42.workouttracker.data.CardioLog
 import io.github.parcival42.workouttracker.data.Device
 import io.github.parcival42.workouttracker.data.DeviceType
@@ -20,6 +21,7 @@ class BackupJsonTest {
             Device(id = 1, name = "Leg Press", minWeightGrams = 40_000, weightStepGrams = 5_000),
             Device(id = 2, name = "Old Rowing", imageUri = "content://image", archived = true),
             Device(id = 3, name = "Treadmill", type = DeviceType.CARDIO),
+            Device(id = 4, name = "Plank", type = DeviceType.BODYWEIGHT, measure = BodyweightMeasure.TIME),
         ),
         plans = listOf(
             TrainingPlan(id = 7, name = "Upper Body", isDefault = true),
@@ -41,6 +43,7 @@ class BackupJsonTest {
         sets = listOf(
             SetLog(id = 10, deviceId = 1, performedAt = 1_760_000_000_000, weightGrams = 20_000, reps = 10, planId = 7),
             SetLog(id = 11, deviceId = 2, performedAt = 1_760_000_000_001, weightGrams = 22_500, reps = 10),
+            SetLog(id = 13, deviceId = 4, performedAt = 1_760_000_000_004, weightGrams = 0, reps = null, durationSeconds = 45),
             SetLog(
                 id = 12, deviceId = 1, performedAt = 1_760_000_000_003, weightGrams = 10_000, reps = null, planId = 8,
                 durationSeconds = 120,

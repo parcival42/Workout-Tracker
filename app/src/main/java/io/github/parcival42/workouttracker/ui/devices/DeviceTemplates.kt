@@ -2,6 +2,7 @@ package io.github.parcival42.workouttracker.ui.devices
 
 import androidx.annotation.StringRes
 import io.github.parcival42.workouttracker.R
+import io.github.parcival42.workouttracker.data.BodyweightMeasure
 import io.github.parcival42.workouttracker.data.DeviceType
 
 enum class TemplateGroup(@StringRes val labelRes: Int) {
@@ -9,12 +10,14 @@ enum class TemplateGroup(@StringRes val labelRes: Int) {
     UPPER_BODY(R.string.template_group_upper_body),
     CORE(R.string.template_group_core),
     CARDIO(R.string.device_type_cardio),
+    BODYWEIGHT(R.string.device_type_bodyweight),
 }
 
 /**
- * A common gym machine offered when adding devices. The name is resolved in the current app
- * language at creation time and then belongs to the user. Weights are rough defaults only:
- * they vary by manufacturer and are meant to be adjusted.
+ * A common gym machine or bodyweight exercise offered when adding devices. The name is resolved
+ * in the current app language at creation time and then belongs to the user. Weights are rough
+ * defaults only: they vary by manufacturer and are meant to be adjusted. The measure of a
+ * bodyweight template is a suggestion that can be changed until training is logged.
  */
 data class DeviceTemplate(
     @StringRes val nameRes: Int,
@@ -22,7 +25,11 @@ data class DeviceTemplate(
     val type: DeviceType = DeviceType.STRENGTH,
     val minWeightGrams: Int = 5_000,
     val weightStepGrams: Int = 5_000,
+    val measure: BodyweightMeasure = BodyweightMeasure.REPS,
 )
+
+private fun bodyweight(@StringRes nameRes: Int, measure: BodyweightMeasure = BodyweightMeasure.REPS) =
+    DeviceTemplate(nameRes, TemplateGroup.BODYWEIGHT, type = DeviceType.BODYWEIGHT, minWeightGrams = 0, measure = measure)
 
 val DeviceTemplates = listOf(
     DeviceTemplate(R.string.template_leg_press, TemplateGroup.LEGS, minWeightGrams = 10_000),
@@ -45,4 +52,17 @@ val DeviceTemplates = listOf(
     DeviceTemplate(R.string.template_exercise_bike, TemplateGroup.CARDIO, type = DeviceType.CARDIO),
     DeviceTemplate(R.string.template_rowing_machine, TemplateGroup.CARDIO, type = DeviceType.CARDIO),
     DeviceTemplate(R.string.template_stair_climber, TemplateGroup.CARDIO, type = DeviceType.CARDIO),
+    bodyweight(R.string.template_pushups),
+    bodyweight(R.string.template_situps),
+    bodyweight(R.string.template_crunches),
+    bodyweight(R.string.template_pullups),
+    bodyweight(R.string.template_dips),
+    bodyweight(R.string.template_squats),
+    bodyweight(R.string.template_lunges),
+    bodyweight(R.string.template_burpees),
+    bodyweight(R.string.template_jumping_jacks),
+    bodyweight(R.string.template_mountain_climbers),
+    bodyweight(R.string.template_floor_back_extension),
+    bodyweight(R.string.template_plank, BodyweightMeasure.TIME),
+    bodyweight(R.string.template_wall_sit, BodyweightMeasure.TIME),
 )

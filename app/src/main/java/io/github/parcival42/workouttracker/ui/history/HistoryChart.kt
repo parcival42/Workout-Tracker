@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.parcival42.workouttracker.ui.components.SECONDS_PER_MINUTE
 import io.github.parcival42.workouttracker.ui.components.formatKg
+import io.github.parcival42.workouttracker.ui.components.formatMinutesSeconds
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import kotlin.math.ceil
@@ -63,7 +64,13 @@ val MinutesScale = ValueScale(
     unit = SECONDS_PER_MINUTE,
 )
 
-/** One training day of one device. [value] is the top weight (strength) or the total seconds (cardio). */
+// Bodyweight measured by reps: whole reps.
+val RepsScale = ValueScale(minRange = 10, stepFactors = listOf(1.0, 2.0, 5.0, 10.0), format = Int::toString)
+
+// Bodyweight measured by time: seconds, labelled as m:ss (0:15, 0:30, 1:00).
+val SecondsScale = ValueScale(minRange = 30, stepFactors = listOf(1.0, 1.5, 3.0, 6.0, 10.0), format = ::formatMinutesSeconds)
+
+/** One training day of one device. [value] is the top weight (strength), the best reps or longest time (bodyweight) or the total seconds (cardio). */
 data class ChartPoint(
     val deviceId: Long,
     val deviceName: String,

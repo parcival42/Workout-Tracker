@@ -9,6 +9,7 @@ import io.github.parcival42.workouttracker.WorkoutTrackerApplication
 import io.github.parcival42.workouttracker.data.CardioLog
 import io.github.parcival42.workouttracker.data.CardioLogDao
 import io.github.parcival42.workouttracker.data.DeviceDao
+import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.data.PlanDao
 import io.github.parcival42.workouttracker.data.SetLog
 import io.github.parcival42.workouttracker.data.SetLogDao
@@ -30,7 +31,12 @@ sealed interface LogEntry {
     val deviceName: String
     val planName: String?
 
-    data class Strength(val set: SetLog, override val deviceName: String, override val planName: String?) : LogEntry {
+    data class Strength(
+        val set: SetLog,
+        override val deviceName: String,
+        override val planName: String?,
+        val isBodyweight: Boolean = false,
+    ) : LogEntry {
         override val key get() = "s-${set.id}"
         override val performedAt get() = set.performedAt
     }
@@ -60,7 +66,10 @@ class LogEntriesViewModel(
     ) { sets, sessions, devices, plans ->
         val deviceNames = devices.associate { it.id to it.name }
         val planNames = plans.associate { it.id to it.name }
-        val entries = sets.map { LogEntry.Strength(it, deviceNames[it.deviceId].orEmpty(), planNames[it.planId]) } +
+        val bodyweightIds = devices.filter { it.type == DeviceType.BODYWEIGHT }.mapTo(HashSet()) { it.id }
+        val entries = sets.map {
+            LogEntry.Strength(it, deviceNames[it.deviceId].orEmpty(), planNames[it.planId], it.deviceId in bodyweightIds)
+        } +
             sessions.map { LogEntry.Cardio(it, deviceNames[it.deviceId].orEmpty(), planNames[it.planId]) }
         val zone = ZoneId.systemDefault()
         entries

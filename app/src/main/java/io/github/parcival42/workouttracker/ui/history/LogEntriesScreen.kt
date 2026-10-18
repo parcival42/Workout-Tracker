@@ -127,6 +127,7 @@ fun LogEntriesScreen(
         is LogEntry.Strength -> EditSetDialog(
             title = stringResource(R.string.entry_edit_set_title),
             set = entry.set,
+            isBodyweight = entry.isBodyweight,
             onConfirm = { weightGrams, reps, durationSeconds ->
                 viewModel.updateSet(entry.set, weightGrams, reps, durationSeconds)
                 editingKey = null
@@ -151,7 +152,7 @@ fun LogEntriesScreen(
 @Composable
 private fun EntryRow(entry: LogEntry, time: String, onClick: () -> Unit) {
     val value = when (entry) {
-        is LogEntry.Strength -> LocalResources.current.setSummary(entry.set)
+        is LogEntry.Strength -> LocalResources.current.setSummary(entry.set, entry.isBodyweight)
         is LogEntry.Cardio -> stringResource(R.string.duration_exact, formatDuration(entry.session.durationSeconds))
     }
     Row(

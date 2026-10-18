@@ -36,7 +36,8 @@ internal fun StationSheet(
     onApply: (weightGrams: Int?, stationSeconds: Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val strength = item as? StrengthItem
+    // Only strength devices with a weight; bodyweight stations just have their time.
+    val strength = (item as? StrengthItem)?.takeIf { !it.isBodyweight }
     var weightGrams by rememberSaveable { mutableIntStateOf(strength?.weightGrams ?: 0) }
     var seconds by rememberSaveable { mutableIntStateOf(stationSeconds) }
     var showWeightDialog by rememberSaveable { mutableStateOf(false) }
