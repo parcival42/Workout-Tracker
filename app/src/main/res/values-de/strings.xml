@@ -12,8 +12,8 @@
     <string name="template_leg_press">Beinpresse</string>
     <string name="template_leg_extension">Beinstrecker</string>
     <string name="template_leg_curl">Beinbeuger</string>
-    <string name="template_hip_abduction">Abduktor</string>
-    <string name="template_hip_adduction">Adduktor</string>
+    <string name="template_hip_abduction">Abduktor (außen)</string>
+    <string name="template_hip_adduction">Adduktor (innen)</string>
     <string name="template_calf_raise">Wadenmaschine</string>
     <string name="template_chest_press">Brustpresse</string>
     <string name="template_pec_fly">Butterfly</string>
