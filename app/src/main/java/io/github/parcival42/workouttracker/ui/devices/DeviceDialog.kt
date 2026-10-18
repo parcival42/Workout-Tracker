@@ -25,6 +25,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import io.github.parcival42.workouttracker.R
+import io.github.parcival42.workouttracker.data.BodyweightMeasure
 import io.github.parcival42.workouttracker.data.Device
 import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.ui.components.formatKg
@@ -44,6 +45,7 @@ fun DeviceDialog(
     var type by rememberSaveable { mutableStateOf(initial.type) }
     var minWeight by rememberSaveable { mutableStateOf(formatKg(initial.minWeightGrams)) }
     var weightStep by rememberSaveable { mutableStateOf(formatKg(initial.weightStepGrams)) }
+    var measure by rememberSaveable { mutableStateOf(initial.measure) }
 
     val isStrength = type == DeviceType.STRENGTH
     val minWeightGrams = parseKgToGrams(minWeight)
@@ -72,8 +74,10 @@ fun DeviceDialog(
                             onClick = { type = option },
                             enabled = !typeLocked,
                             shape = SegmentedButtonDefaults.itemShape(index, DeviceType.entries.size),
+                            // No check mark: three labels are tight in a dialog, the colour shows the selection.
+                            icon = {},
                         ) {
-                            Text(stringResource(option.labelRes()))
+                            Text(stringResource(option.shortLabelRes()), maxLines = 1)
                         }
                     }
                 }
@@ -83,6 +87,26 @@ fun DeviceDialog(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+                if (type == DeviceType.BODYWEIGHT) {
+                    Text(
+                        text = stringResource(R.string.bodyweight_measure_label),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        BodyweightMeasure.entries.forEachIndexed { index, option ->
+                            SegmentedButton(
+                                selected = measure == option,
+                                onClick = { measure = option },
+                                enabled = !typeLocked,
+                                shape = SegmentedButtonDefaults.itemShape(index, BodyweightMeasure.entries.size),
+                                // Like the type switch above: the colour shows the selection.
+                                icon = {},
+                            ) {
+                                Text(stringResource(option.labelRes()))
+                            }
+                        }
+                    }
                 }
                 if (isStrength) {
                     OutlinedTextField(
@@ -129,7 +153,7 @@ fun DeviceDialog(
                     } else {
                         initial
                     }
-                    if (valid) onConfirm(device.copy(name = name.trim(), type = type))
+                    if (valid) onConfirm(device.copy(name = name.trim(), type = type, measure = measure))
                 },
                 enabled = valid,
             ) {
@@ -150,4 +174,16 @@ fun DeviceDialog(
 fun DeviceType.labelRes(): Int = when (this) {
     DeviceType.STRENGTH -> R.string.device_type_strength
     DeviceType.CARDIO -> R.string.device_type_cardio
+    DeviceType.BODYWEIGHT -> R.string.device_type_bodyweight
+}
+
+// Short labels for the three narrow segments in the device dialog.
+private fun DeviceType.shortLabelRes(): Int = when (this) {
+    DeviceType.BODYWEIGHT -> R.string.device_type_bodyweight_short
+    else -> labelRes()
+}
+
+fun BodyweightMeasure.labelRes(): Int = when (this) {
+    BodyweightMeasure.REPS -> R.string.bodyweight_measure_reps
+    BodyweightMeasure.TIME -> R.string.bodyweight_measure_time
 }

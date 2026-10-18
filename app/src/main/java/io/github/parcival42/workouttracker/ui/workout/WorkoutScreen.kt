@@ -55,11 +55,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.parcival42.workouttracker.R
+import io.github.parcival42.workouttracker.data.BodyweightMeasure
 import io.github.parcival42.workouttracker.data.CardioLog
 import io.github.parcival42.workouttracker.data.SetLog
 import io.github.parcival42.workouttracker.ui.circuit.CircuitEffects
 import io.github.parcival42.workouttracker.ui.circuit.CircuitPanel
+import io.github.parcival42.workouttracker.ui.components.DurationDialog
 import io.github.parcival42.workouttracker.ui.components.EmptyHint
+import io.github.parcival42.workouttracker.ui.components.bodyweightSetSummary
 import io.github.parcival42.workouttracker.ui.components.formatDuration
 import io.github.parcival42.workouttracker.ui.components.formatKg
 import io.github.parcival42.workouttracker.ui.components.parseDuration
@@ -244,9 +247,13 @@ fun WorkoutScreen(
         )
         sheetItem is StrengthItem -> NextSetSheet(
             item = sheetItem,
-            onApply = { weightGrams, reps ->
-                viewModel.setWeight(sheetItem.deviceId, weightGrams)
-                viewModel.setReps(sheetItem.deviceId, reps)
+            onApply = { weightGrams, reps, durationSeconds ->
+                if (!sheetItem.isBodyweight) viewModel.setWeight(sheetItem.deviceId, weightGrams)
+                if (sheetItem.measure == BodyweightMeasure.TIME) {
+                    viewModel.setDuration(sheetItem.deviceId, durationSeconds)
+                } else {
+                    viewModel.setReps(sheetItem.deviceId, reps)
+                }
                 nextSetDeviceId = null
             },
             onDismiss = { nextSetDeviceId = null },
@@ -281,6 +288,7 @@ fun WorkoutScreen(
         EditSetDialog(
             title = stringResource(R.string.edit_set_title, number),
             set = set,
+            isBodyweight = (state.items.firstOrNull { it.deviceId == set.deviceId } as? StrengthItem)?.isBodyweight == true,
             onConfirm = { weightGrams, reps, durationSeconds ->
                 viewModel.updateSet(set, weightGrams, reps, durationSeconds)
                 editingSet = null
@@ -301,6 +309,8 @@ internal fun EditSetDialog(
     onConfirm: (weightGrams: Int, reps: Int?, durationSeconds: Int?) -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
+    // Bodyweight sets have no weight to edit.
+    isBodyweight: Boolean = false,
 ) {
     // Timed circuit sets have a duration, and their reps are optional.
     val isTimed = set.durationSeconds != null
@@ -318,14 +328,16 @@ internal fun EditSetDialog(
         title = { Text(title) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = weightInput,
-                    onValueChange = { weightInput = it },
-                    label = { Text(stringResource(R.string.weight_label_kg)) },
-                    singleLine = true,
-                    isError = weightGrams == null,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                )
+                if (!isBodyweight) {
+                    OutlinedTextField(
+                        value = weightInput,
+                        onValueChange = { weightInput = it },
+                        label = { Text(stringResource(R.string.weight_label_kg)) },
+                        singleLine = true,
+                        isError = weightGrams == null,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    )
+                }
                 OutlinedTextField(
                     value = repsInput,
                     onValueChange = { repsInput = it },
@@ -381,7 +393,7 @@ private fun WorkoutCard(
         deviceName = item.deviceName,
         isComplete = item.isComplete,
         progress = stringResource(R.string.workout_progress, item.todaySets.size, item.targetSets),
-        summary = item.todaySets.joinToString("  ·  ") { resources.setSummary(it) },
+        summary = item.todaySets.joinToString("  ·  ") { resources.setSummary(it, item.isBodyweight) },
         highlighted = highlighted,
     ) {
         if (item.todaySets.isNotEmpty()) {
@@ -389,7 +401,7 @@ private fun WorkoutCard(
                 item.todaySets.forEachIndexed { index, set ->
                     SuggestionChip(
                         onClick = { onSetClick(index + 1, set) },
-                        label = { Text(resources.setSummary(set)) },
+                        label = { Text(resources.setSummary(set, item.isBodyweight)) },
                     )
                 }
             }
@@ -407,10 +419,20 @@ private fun WorkoutCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = if (item.stationSeconds != null) {
-                    stringResource(R.string.workout_next_station, formatKg(item.weightGrams), formatDuration(item.stationSeconds))
-                } else {
-                    stringResource(R.string.workout_next_set, formatKg(item.weightGrams), item.reps)
+                text = when {
+                    item.stationSeconds != null && item.isBodyweight ->
+                        stringResource(R.string.workout_station_time, formatDuration(item.stationSeconds))
+                    item.stationSeconds != null ->
+                        stringResource(R.string.workout_next_station, formatKg(item.weightGrams), formatDuration(item.stationSeconds))
+                    item.measure == BodyweightMeasure.TIME -> stringResource(
+                        R.string.workout_next_set_bodyweight,
+                        resources.bodyweightSetSummary(reps = null, durationSeconds = item.durationSeconds),
+                    )
+                    item.isBodyweight -> stringResource(
+                        R.string.workout_next_set_bodyweight,
+                        resources.bodyweightSetSummary(reps = item.reps, durationSeconds = null),
+                    )
+                    else -> stringResource(R.string.workout_next_set, formatKg(item.weightGrams), item.reps)
                 },
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.weight(1f),
@@ -462,12 +484,14 @@ private fun WorkoutCard(
 @Composable
 private fun NextSetSheet(
     item: StrengthItem,
-    onApply: (weightGrams: Int, reps: Int) -> Unit,
+    onApply: (weightGrams: Int, reps: Int, durationSeconds: Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var weightGrams by rememberSaveable { mutableIntStateOf(item.weightGrams) }
     var reps by rememberSaveable { mutableIntStateOf(item.reps) }
+    var durationSeconds by rememberSaveable { mutableIntStateOf(item.durationSeconds) }
     var showWeightDialog by rememberSaveable { mutableStateOf(false) }
+    var showDurationDialog by rememberSaveable { mutableStateOf(false) }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -484,22 +508,32 @@ private fun NextSetSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            ValueStepper(
-                label = stringResource(R.string.weight_label),
-                value = stringResource(R.string.weight_kg, formatKg(weightGrams)),
-                onDecrease = { weightGrams = stepWeightDown(weightGrams, item.minWeightGrams, item.weightStepGrams) },
-                onIncrease = { weightGrams = stepWeightUp(weightGrams, item.minWeightGrams, item.weightStepGrams) },
-                decreaseEnabled = weightGrams > item.minWeightGrams,
-                onValueClick = { showWeightDialog = true },
-            )
-            ValueStepper(
-                label = stringResource(R.string.target_reps),
-                value = reps.toString(),
-                onDecrease = { reps = (reps - 1).coerceAtLeast(1) },
-                onIncrease = { reps += 1 },
-                decreaseEnabled = reps > 1,
-            )
-            Button(onClick = { onApply(weightGrams, reps) }, modifier = Modifier.fillMaxWidth()) {
+            if (!item.isBodyweight) {
+                ValueStepper(
+                    label = stringResource(R.string.weight_label),
+                    value = stringResource(R.string.weight_kg, formatKg(weightGrams)),
+                    onDecrease = { weightGrams = stepWeightDown(weightGrams, item.minWeightGrams, item.weightStepGrams) },
+                    onIncrease = { weightGrams = stepWeightUp(weightGrams, item.minWeightGrams, item.weightStepGrams) },
+                    decreaseEnabled = weightGrams > item.minWeightGrams,
+                    onValueClick = { showWeightDialog = true },
+                )
+            }
+            if (item.measure == BodyweightMeasure.TIME) {
+                DurationStepper(
+                    seconds = durationSeconds,
+                    onSecondsChange = { durationSeconds = it },
+                    onValueClick = { showDurationDialog = true },
+                )
+            } else {
+                ValueStepper(
+                    label = stringResource(R.string.target_reps),
+                    value = reps.toString(),
+                    onDecrease = { reps = (reps - 1).coerceAtLeast(1) },
+                    onIncrease = { reps += 1 },
+                    decreaseEnabled = reps > 1,
+                )
+            }
+            Button(onClick = { onApply(weightGrams, reps, durationSeconds) }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.action_apply))
             }
         }
@@ -513,6 +547,18 @@ private fun NextSetSheet(
                 showWeightDialog = false
             },
             onDismiss = { showWeightDialog = false },
+        )
+    }
+
+    if (showDurationDialog) {
+        DurationDialog(
+            title = stringResource(R.string.duration_dialog_title),
+            initialSeconds = durationSeconds,
+            onConfirm = {
+                durationSeconds = it
+                showDurationDialog = false
+            },
+            onDismiss = { showDurationDialog = false },
         )
     }
 }

@@ -122,7 +122,7 @@ private fun ArchivedDeviceRow(archived: ArchivedDevice, onRestore: () -> Unit, o
 private fun logCountLabel(archived: ArchivedDevice): String = when {
     archived.device.type == DeviceType.CARDIO && archived.sessionCount > 0 ->
         pluralStringResource(R.plurals.log_count_sessions, archived.sessionCount, archived.sessionCount)
-    archived.device.type == DeviceType.STRENGTH && archived.setCount > 0 ->
+    archived.device.type != DeviceType.CARDIO && archived.setCount > 0 ->
         pluralStringResource(R.plurals.log_count_sets, archived.setCount, archived.setCount)
     else -> stringResource(R.string.log_count_none)
 }

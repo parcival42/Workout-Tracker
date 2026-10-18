@@ -1,5 +1,6 @@
 package io.github.parcival42.workouttracker.data.backup
 
+import io.github.parcival42.workouttracker.data.BodyweightMeasure
 import io.github.parcival42.workouttracker.data.CardioLog
 import io.github.parcival42.workouttracker.data.Device
 import io.github.parcival42.workouttracker.data.DeviceType
@@ -32,7 +33,8 @@ object BackupJson {
     // v5: plans carry "type" and the circuit settings, plan entries "stationSeconds", sets a
     //     nullable "durationSeconds" and nullable "reps" (absent in older files, read as normal
     //     plans / no circuit values / untimed sets).
-    const val VERSION = 5
+    // v6: devices can have type "BODYWEIGHT" and carry "measure" (absent in older files, read as reps).
+    const val VERSION = 6
 
     fun encode(data: BackupData, exportedAt: Long): String = JSONObject().apply {
         put("format", FORMAT)
@@ -48,6 +50,7 @@ object BackupJson {
                 put("startWeightGrams", d.minWeightGrams)
                 put("weightStepGrams", d.weightStepGrams)
                 put("type", d.type.name)
+                put("measure", d.measure.name)
             }
         }))
         put("plans", JSONArray(data.plans.map { p ->
@@ -119,6 +122,7 @@ object BackupJson {
                         minWeightGrams = o.getInt("startWeightGrams"),
                         weightStepGrams = o.getInt("weightStepGrams"),
                         type = DeviceType.valueOf(o.optString("type", DeviceType.STRENGTH.name)),
+                        measure = BodyweightMeasure.valueOf(o.optString("measure", BodyweightMeasure.REPS.name)),
                     )
                 },
                 plans = root.getJSONArray("plans").objects().map { o ->
@@ -191,7 +195,8 @@ object BackupJson {
 
     private fun validate(data: BackupData) {
         val deviceIds = data.devices.map { it.id }.toSet()
-        val strengthDeviceIds = data.devices.filter { it.type == DeviceType.STRENGTH }.map { it.id }.toSet()
+        // Strength and bodyweight devices log sets, cardio devices log sessions.
+        val setDeviceIds = data.devices.filter { it.type != DeviceType.CARDIO }.map { it.id }.toSet()
         val cardioDeviceIds = data.devices.filter { it.type == DeviceType.CARDIO }.map { it.id }.toSet()
         val planIds = data.plans.map { it.id }.toSet()
         fun check(condition: Boolean, message: String) {
@@ -219,7 +224,7 @@ object BackupJson {
             },
             "Invalid plan entry targets",
         )
-        check(data.sets.all { it.deviceId in strengthDeviceIds }, "Set references a missing or non-strength device")
+        check(data.sets.all { it.deviceId in setDeviceIds }, "Set references a missing or cardio device")
         check(
             data.sets.all {
                 it.weightGrams >= 0 && (it.reps ?: 1) > 0 && (it.durationSeconds ?: 1) > 0 &&

@@ -232,6 +232,11 @@ private fun DeviceRow(device: Device, onClick: () -> Unit) {
                     formatKg(device.weightStepGrams),
                 )
                 DeviceType.CARDIO -> stringResource(R.string.device_type_cardio)
+                DeviceType.BODYWEIGHT -> stringResource(
+                    R.string.device_bodyweight_info,
+                    stringResource(R.string.device_type_bodyweight),
+                    stringResource(device.measure.labelRes()),
+                )
             },
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

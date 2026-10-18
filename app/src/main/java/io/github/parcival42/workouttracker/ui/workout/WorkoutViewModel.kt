@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.parcival42.workouttracker.WorkoutTrackerApplication
+import io.github.parcival42.workouttracker.data.BodyweightMeasure
 import io.github.parcival42.workouttracker.data.CardioLog
 import io.github.parcival42.workouttracker.data.CircuitSettings
 import io.github.parcival42.workouttracker.data.CardioLogDao
@@ -62,7 +63,12 @@ data class StrengthItem(
     val weightStepGrams: Int,
     val reps: Int,
     override val stationSeconds: Int? = null,
+    // Bodyweight exercises: what counts; null for strength devices with a weight.
+    val measure: BodyweightMeasure? = null,
+    // Bodyweight measured by time: duration of the next set.
+    val durationSeconds: Int = 0,
 ) : WorkoutItem {
+    val isBodyweight: Boolean get() = measure != null
     // Circuit stations are timed: they log weight and duration, no reps.
     val isTimed: Boolean get() = stationSeconds != null
     val openSets: Int get() = (targetSets - todaySets.size).coerceAtLeast(0)
@@ -170,19 +176,22 @@ class WorkoutViewModel(
             items = entries.map { entry ->
                 val draft = drafts[entry.deviceId]
                 when (entry.deviceType) {
-                    DeviceType.STRENGTH -> {
+                    DeviceType.STRENGTH, DeviceType.BODYWEIGHT -> {
                         val last = strengthLogs.last[entry.deviceId]
+                        val isBodyweight = entry.deviceType == DeviceType.BODYWEIGHT
                         StrengthItem(
                             deviceId = entry.deviceId,
                             deviceName = entry.deviceName,
                             targetSets = circuitSettings?.rounds ?: entry.targetSets,
                             targetReps = entry.targetReps,
                             todaySets = strengthLogs.today[entry.deviceId].orEmpty(),
-                            weightGrams = draft?.weightGrams ?: last?.weightGrams ?: entry.minWeightGrams,
+                            weightGrams = if (isBodyweight) 0 else draft?.weightGrams ?: last?.weightGrams ?: entry.minWeightGrams,
                             minWeightGrams = entry.minWeightGrams,
                             weightStepGrams = entry.weightStepGrams,
                             reps = draft?.reps ?: last?.reps ?: entry.targetReps,
                             stationSeconds = circuitSettings?.let { entry.stationSeconds ?: it.stationSeconds },
+                            measure = entry.measure.takeIf { isBodyweight },
+                            durationSeconds = draft?.durationSeconds ?: last?.durationSeconds ?: entry.targetDurationSeconds,
                         )
                     }
                     DeviceType.CARDIO -> CardioItem(
@@ -231,7 +240,9 @@ class WorkoutViewModel(
 
     fun undoLastSet(item: StrengthItem) {
         // Pin the displayed values so removing the set does not change the selected weight.
-        drafts.update { it + (item.deviceId to Draft(weightGrams = item.weightGrams, reps = item.reps)) }
+        drafts.update {
+            it + (item.deviceId to Draft(weightGrams = item.weightGrams, reps = item.reps, durationSeconds = item.durationSeconds))
+        }
         viewModelScope.launch { setLogDao.deleteLastSinceInPlan(item.deviceId, planId, sessionStart.first()) }
     }
 
@@ -367,13 +378,15 @@ class WorkoutViewModel(
         if (count <= 0) return
         val now = System.currentTimeMillis()
         // Offset by 1 ms per set so sets logged in one tap keep a stable order.
+        val timed = item.measure == BodyweightMeasure.TIME
         val sets = List(count) { index ->
             SetLog(
                 deviceId = item.deviceId,
                 performedAt = now + index,
                 weightGrams = item.weightGrams,
-                reps = item.reps,
+                reps = if (timed) null else item.reps,
                 planId = planId,
+                durationSeconds = if (timed) item.durationSeconds else null,
             )
         }
         viewModelScope.launch {

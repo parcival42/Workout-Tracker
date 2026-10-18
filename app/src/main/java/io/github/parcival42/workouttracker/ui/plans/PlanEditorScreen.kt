@@ -44,6 +44,7 @@ import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.data.CircuitSettings
 import io.github.parcival42.workouttracker.data.PlanEntryItem
 import io.github.parcival42.workouttracker.data.PlanType
+import io.github.parcival42.workouttracker.data.isTimedBodyweight
 import io.github.parcival42.workouttracker.data.circuitSettings
 import io.github.parcival42.workouttracker.ui.circuit.CircuitEntryDialog
 import io.github.parcival42.workouttracker.ui.circuit.CircuitSettingsDialog
@@ -53,7 +54,9 @@ import io.github.parcival42.workouttracker.ui.components.Stepper
 import io.github.parcival42.workouttracker.ui.components.TARGET_MINUTES_RANGE
 import io.github.parcival42.workouttracker.ui.components.TARGET_REPS_RANGE
 import io.github.parcival42.workouttracker.ui.components.TARGET_SETS_RANGE
+import io.github.parcival42.workouttracker.ui.components.MAX_DURATION_SECONDS
 import io.github.parcival42.workouttracker.ui.components.NameDialog
+import io.github.parcival42.workouttracker.ui.components.TimeField
 import io.github.parcival42.workouttracker.ui.components.formatDuration
 import io.github.parcival42.workouttracker.ui.components.secondsToMinutes
 import sh.calvin.reorderable.ReorderableItem
@@ -256,6 +259,10 @@ fun PlanEditorScreen(
                     viewModel.updateTargetDuration(entry.id, minutes)
                     editingEntry = null
                 },
+                onConfirmTimed = { sets, seconds ->
+                    viewModel.updateTimedTargets(entry.id, sets, entry.targetReps, seconds)
+                    editingEntry = null
+                },
                 onRemove = {
                     viewModel.removeEntry(entry.id)
                     editingEntry = null
@@ -286,9 +293,15 @@ private fun PlanEntryRow(
                 text = if (circuit != null) {
                     stringResource(R.string.duration_exact, formatDuration(entry.stationSeconds ?: circuit.stationSeconds))
                 } else {
-                    when (entry.deviceType) {
-                        DeviceType.STRENGTH -> stringResource(R.string.plan_entry_targets, entry.targetSets, entry.targetReps)
-                        DeviceType.CARDIO -> stringResource(R.string.duration_min, secondsToMinutes(entry.targetDurationSeconds))
+                    when {
+                        entry.deviceType == DeviceType.CARDIO ->
+                            stringResource(R.string.duration_min, secondsToMinutes(entry.targetDurationSeconds))
+                        entry.isTimedBodyweight -> stringResource(
+                            R.string.plan_entry_targets_time,
+                            entry.targetSets,
+                            formatDuration(entry.targetDurationSeconds),
+                        )
+                        else -> stringResource(R.string.plan_entry_targets, entry.targetSets, entry.targetReps)
                     }
                 },
                 style = MaterialTheme.typography.bodyMedium,
@@ -338,6 +351,7 @@ private fun EntryTargetsDialog(
     entry: PlanEntryItem,
     onConfirm: (sets: Int, reps: Int) -> Unit,
     onConfirmDuration: (minutes: Int) -> Unit,
+    onConfirmTimed: (sets: Int, seconds: Int) -> Unit,
     onRemove: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -345,6 +359,7 @@ private fun EntryTargetsDialog(
     var reps by rememberSaveable { mutableIntStateOf(entry.targetReps) }
     var minutes by rememberSaveable { mutableIntStateOf(secondsToMinutes(entry.targetDurationSeconds)) }
     val isCardio = entry.deviceType == DeviceType.CARDIO
+    var holdSeconds by rememberSaveable { mutableIntStateOf(entry.targetDurationSeconds) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(entry.deviceName) },
@@ -364,17 +379,34 @@ private fun EntryTargetsDialog(
                         onValueChange = { sets = it },
                         range = TARGET_SETS_RANGE,
                     )
-                    Stepper(
-                        label = stringResource(R.string.target_reps),
-                        value = reps,
-                        onValueChange = { reps = it },
-                        range = TARGET_REPS_RANGE,
-                    )
+                    if (entry.isTimedBodyweight) {
+                        TimeField(
+                            label = stringResource(R.string.duration_label),
+                            value = holdSeconds,
+                            onValueChange = { holdSeconds = it },
+                            range = 1..MAX_DURATION_SECONDS,
+                        )
+                    } else {
+                        Stepper(
+                            label = stringResource(R.string.target_reps),
+                            value = reps,
+                            onValueChange = { reps = it },
+                            range = TARGET_REPS_RANGE,
+                        )
+                    }
                 }
             }
         },
         confirmButton = {
-            TextButton(onClick = { if (isCardio) onConfirmDuration(minutes) else onConfirm(sets, reps) }) {
+            TextButton(
+                onClick = {
+                    when {
+                        isCardio -> onConfirmDuration(minutes)
+                        entry.isTimedBodyweight -> onConfirmTimed(sets, holdSeconds)
+                        else -> onConfirm(sets, reps)
+                    }
+                },
+            ) {
                 Text(stringResource(R.string.action_save))
             }
         },

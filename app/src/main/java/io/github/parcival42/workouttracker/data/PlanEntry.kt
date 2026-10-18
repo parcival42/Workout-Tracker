@@ -30,7 +30,8 @@ data class PlanEntry(
     @ColumnInfo(name = "sort_order") val sortOrder: Int,
     @ColumnInfo(name = "target_sets") val targetSets: Int,
     @ColumnInfo(name = "target_reps") val targetReps: Int,
-    // Only used for cardio devices; sets/reps are only used for strength devices.
+    // Cardio: session duration. Bodyweight measured by time: duration per set (with target sets).
+    // Sets/reps are used for strength and bodyweight devices.
     @ColumnInfo(name = "target_duration_seconds", defaultValue = "1200")
     val targetDurationSeconds: Int = DEFAULT_TARGET_DURATION_SECONDS,
     // Circuit plans only: own station duration; null uses the plan's station duration.
@@ -38,6 +39,8 @@ data class PlanEntry(
 ) {
     companion object {
         const val DEFAULT_TARGET_DURATION_SECONDS = 1_200
+        // Prefill of a new bodyweight entry measured by time, e.g. a plank.
+        const val DEFAULT_HOLD_SECONDS = 30
     }
 }
 
@@ -46,6 +49,7 @@ data class PlanEntryItem(
     val deviceId: Long,
     val deviceName: String,
     val deviceType: DeviceType,
+    val measure: BodyweightMeasure,
     val targetSets: Int,
     val targetReps: Int,
     val targetDurationSeconds: Int,
@@ -53,6 +57,9 @@ data class PlanEntryItem(
     val minWeightGrams: Int,
     val weightStepGrams: Int,
 )
+
+val PlanEntryItem.isTimedBodyweight: Boolean
+    get() = deviceType == DeviceType.BODYWEIGHT && measure == BodyweightMeasure.TIME
 
 /** A device that has logged training in a plan. */
 data class DevicePlan(val deviceId: Long, val planId: Long)

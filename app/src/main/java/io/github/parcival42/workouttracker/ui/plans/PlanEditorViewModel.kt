@@ -8,10 +8,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.parcival42.workouttracker.WorkoutTrackerApplication
+import io.github.parcival42.workouttracker.data.BodyweightMeasure
 import io.github.parcival42.workouttracker.data.CircuitSettings
 import io.github.parcival42.workouttracker.data.Device
 import io.github.parcival42.workouttracker.data.DeviceDao
+import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.data.PlanDao
+import io.github.parcival42.workouttracker.data.PlanEntry
 import io.github.parcival42.workouttracker.data.PlanEntryItem
 import io.github.parcival42.workouttracker.data.TrainingPlan
 import io.github.parcival42.workouttracker.data.UserSettings
@@ -65,6 +68,8 @@ class PlanEditorViewModel(
     }
 
     fun addDevice(deviceId: Long) {
+        val device = availableDevices.value.firstOrNull { it.id == deviceId }
+        val timedBodyweight = device?.type == DeviceType.BODYWEIGHT && device.measure == BodyweightMeasure.TIME
         viewModelScope.launch {
             // The personal defaults only prefill the new entry; it is edited independently afterwards.
             val defaults = userSettingsDao.get() ?: UserSettings()
@@ -73,9 +78,21 @@ class PlanEditorViewModel(
                 deviceId = deviceId,
                 targetSets = defaults.defaultTargetSets.coerceIn(TARGET_SETS_RANGE),
                 targetReps = defaults.defaultTargetReps.coerceIn(TARGET_REPS_RANGE),
-                targetDurationSeconds = secondsToMinutes(defaults.defaultTargetDurationSeconds)
-                    .coerceIn(TARGET_MINUTES_RANGE) * SECONDS_PER_MINUTE,
+                // The cardio default is a session length; a timed bodyweight set (plank) is much shorter.
+                targetDurationSeconds = if (timedBodyweight) {
+                    PlanEntry.DEFAULT_HOLD_SECONDS
+                } else {
+                    secondsToMinutes(defaults.defaultTargetDurationSeconds).coerceIn(TARGET_MINUTES_RANGE) * SECONDS_PER_MINUTE
+                },
             )
+        }
+    }
+
+    /** Bodyweight measured by time: target sets and the exact duration per set. */
+    fun updateTimedTargets(entryId: Long, targetSets: Int, targetReps: Int, targetSeconds: Int) {
+        viewModelScope.launch {
+            planDao.updateTargets(entryId, targetSets, targetReps)
+            planDao.updateTargetDuration(entryId, targetSeconds)
         }
     }
 

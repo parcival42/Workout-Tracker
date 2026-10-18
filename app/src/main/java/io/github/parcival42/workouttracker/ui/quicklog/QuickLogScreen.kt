@@ -38,12 +38,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.parcival42.workouttracker.R
+import io.github.parcival42.workouttracker.data.BodyweightMeasure
 import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.ui.components.EmptyHint
 import io.github.parcival42.workouttracker.ui.components.formatKg
 import io.github.parcival42.workouttracker.ui.components.stepWeightDown
 import io.github.parcival42.workouttracker.ui.components.stepWeightUp
 import io.github.parcival42.workouttracker.ui.components.DurationDialog
+import io.github.parcival42.workouttracker.ui.devices.labelRes
 import io.github.parcival42.workouttracker.ui.workout.DurationStepper
 import io.github.parcival42.workouttracker.ui.workout.ValueStepper
 import io.github.parcival42.workouttracker.ui.workout.WeightDialog
@@ -126,10 +128,10 @@ fun QuickLogScreen(
     val selected = devices?.firstOrNull { it.id == selectedDeviceId }
     if (selected != null) {
         when (selected.type) {
-            DeviceType.STRENGTH -> QuickLogStrengthSheet(
+            DeviceType.STRENGTH, DeviceType.BODYWEIGHT -> QuickLogStrengthSheet(
                 device = selected,
-                onLog = { weightGrams, reps, sets ->
-                    viewModel.logSets(selected, weightGrams, reps, sets, onLogged)
+                onLog = { weightGrams, reps, sets, durationSeconds ->
+                    viewModel.logSets(selected, weightGrams, reps, sets, durationSeconds, onLogged)
                     selectedDeviceId = null
                 },
                 onDismiss = { selectedDeviceId = null },
@@ -156,12 +158,7 @@ private fun DeviceRow(device: QuickLogDevice, onClick: () -> Unit) {
     ) {
         Text(device.name, style = MaterialTheme.typography.titleMedium)
         Text(
-            text = stringResource(
-                when (device.type) {
-                    DeviceType.STRENGTH -> R.string.device_type_strength
-                    DeviceType.CARDIO -> R.string.device_type_cardio
-                }
-            ),
+            text = stringResource(device.type.labelRes()),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -173,31 +170,46 @@ private fun DeviceRow(device: QuickLogDevice, onClick: () -> Unit) {
 @Composable
 private fun QuickLogStrengthSheet(
     device: QuickLogDevice,
-    onLog: (weightGrams: Int, reps: Int, sets: Int) -> Unit,
+    onLog: (weightGrams: Int, reps: Int, sets: Int, durationSeconds: Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    // Bodyweight exercises have no weight; those measured by time log a duration per set.
+    val isBodyweight = device.type == DeviceType.BODYWEIGHT
+    val timed = isBodyweight && device.measure == BodyweightMeasure.TIME
     var weightGrams by rememberSaveable { mutableIntStateOf(device.weightGrams) }
     var reps by rememberSaveable { mutableIntStateOf(device.reps) }
     var sets by rememberSaveable { mutableIntStateOf(device.sets) }
+    var durationSeconds by rememberSaveable { mutableIntStateOf(device.holdSeconds) }
     var showWeightDialog by rememberSaveable { mutableStateOf(false) }
+    var showDurationDialog by rememberSaveable { mutableStateOf(false) }
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         SheetContent(deviceName = device.name) {
-            ValueStepper(
-                label = stringResource(R.string.weight_label),
-                value = stringResource(R.string.weight_kg, formatKg(weightGrams)),
-                onDecrease = { weightGrams = stepWeightDown(weightGrams, device.minWeightGrams, device.weightStepGrams) },
-                onIncrease = { weightGrams = stepWeightUp(weightGrams, device.minWeightGrams, device.weightStepGrams) },
-                decreaseEnabled = weightGrams > device.minWeightGrams,
-                onValueClick = { showWeightDialog = true },
-            )
-            ValueStepper(
-                label = stringResource(R.string.target_reps),
-                value = reps.toString(),
-                onDecrease = { reps = (reps - 1).coerceAtLeast(1) },
-                onIncrease = { reps += 1 },
-                decreaseEnabled = reps > 1,
-            )
+            if (!isBodyweight) {
+                ValueStepper(
+                    label = stringResource(R.string.weight_label),
+                    value = stringResource(R.string.weight_kg, formatKg(weightGrams)),
+                    onDecrease = { weightGrams = stepWeightDown(weightGrams, device.minWeightGrams, device.weightStepGrams) },
+                    onIncrease = { weightGrams = stepWeightUp(weightGrams, device.minWeightGrams, device.weightStepGrams) },
+                    decreaseEnabled = weightGrams > device.minWeightGrams,
+                    onValueClick = { showWeightDialog = true },
+                )
+            }
+            if (timed) {
+                DurationStepper(
+                    seconds = durationSeconds,
+                    onSecondsChange = { durationSeconds = it },
+                    onValueClick = { showDurationDialog = true },
+                )
+            } else {
+                ValueStepper(
+                    label = stringResource(R.string.target_reps),
+                    value = reps.toString(),
+                    onDecrease = { reps = (reps - 1).coerceAtLeast(1) },
+                    onIncrease = { reps += 1 },
+                    decreaseEnabled = reps > 1,
+                )
+            }
             ValueStepper(
                 label = stringResource(R.string.target_sets),
                 value = sets.toString(),
@@ -205,7 +217,7 @@ private fun QuickLogStrengthSheet(
                 onIncrease = { sets = (sets + 1).coerceAtMost(QuickLogViewModel.MAX_SETS) },
                 decreaseEnabled = sets > 1,
             )
-            Button(onClick = { onLog(weightGrams, reps, sets) }, modifier = Modifier.fillMaxWidth()) {
+            Button(onClick = { onLog(weightGrams, reps, sets, durationSeconds) }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.action_log))
             }
         }
@@ -219,6 +231,18 @@ private fun QuickLogStrengthSheet(
                 showWeightDialog = false
             },
             onDismiss = { showWeightDialog = false },
+        )
+    }
+
+    if (showDurationDialog) {
+        DurationDialog(
+            title = stringResource(R.string.duration_dialog_title),
+            initialSeconds = durationSeconds,
+            onConfirm = {
+                durationSeconds = it
+                showDurationDialog = false
+            },
+            onDismiss = { showDurationDialog = false },
         )
     }
 }

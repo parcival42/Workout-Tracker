@@ -6,12 +6,15 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.parcival42.workouttracker.WorkoutTrackerApplication
+import io.github.parcival42.workouttracker.data.BodyweightMeasure
+import io.github.parcival42.workouttracker.data.CardioLog
 import io.github.parcival42.workouttracker.data.CardioLogDao
 import io.github.parcival42.workouttracker.data.Device
 import io.github.parcival42.workouttracker.data.DeviceDao
 import io.github.parcival42.workouttracker.data.DevicePlan
 import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.data.PlanDao
+import io.github.parcival42.workouttracker.data.SetLog
 import io.github.parcival42.workouttracker.data.SetLogDao
 import io.github.parcival42.workouttracker.data.TrainingPlan
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -77,8 +80,10 @@ data class HistoryUiState(
     val plans: List<TrainingPlan> = emptyList(),
     /** Selected plan filter; null shows all logs, including those without a plan. */
     val planId: Long? = null,
-    /** Strength and cardio are never mixed in one chart: they have different units. */
+    /** Strength, cardio and bodyweight are never mixed in one chart: they have different units. */
     val mode: DeviceType = DeviceType.STRENGTH,
+    /** Bodyweight mode: what the selected devices count (all of them count the same); null otherwise. */
+    val measure: BodyweightMeasure? = null,
     /** Device types that have history; the mode switch is only shown for more than one. */
     val availableModes: List<DeviceType> = emptyList(),
     /** Devices of the current mode. */
@@ -109,18 +114,9 @@ class HistoryViewModel(
     // toggling other devices never repaints the ones already shown.
     private val selections = MutableStateFlow<Map<DeviceType, Map<Long, Int>>>(emptyMap())
 
-    private val entries = range.flatMapLatest { range ->
+    private val logs = range.flatMapLatest { range ->
         val since = range.startMillis()
-        combine(setLogDao.observeSince(since), cardioLogDao.observeSince(since)) { sets, sessions ->
-            mapOf(
-                DeviceType.STRENGTH to sets.map {
-                    HistoryEntry(it.id, it.deviceId, it.performedAt, it.weightGrams, it.reps, it.planId, it.durationSeconds)
-                },
-                DeviceType.CARDIO to sessions.map {
-                    HistoryEntry(it.id, it.deviceId, it.performedAt, it.durationSeconds, null, it.planId)
-                },
-            )
-        }
+        combine(setLogDao.observeSince(since), cardioLogDao.observeSince(since), ::Pair)
     }
 
     private val planData = combine(
@@ -136,8 +132,9 @@ class HistoryViewModel(
         filters,
         mode,
         selections,
-        entries,
-    ) { planData, (range, planFilter), mode, selections, allEntriesByType ->
+        logs,
+    ) { planData, (range, planFilter), mode, selections, (sets, sessions) ->
+        val allEntriesByType = entriesByType(planData.devices, sets, sessions)
         val plansWithHistory = planData.plans.filter { plan -> planData.devicePlans.any { it.planId == plan.id } }
         // Falls back to all plans if the selected plan was deleted.
         val effectivePlanId = planFilter?.takeIf { id -> plansWithHistory.any { it.id == id } }
@@ -187,6 +184,7 @@ class HistoryViewModel(
             plans = plansWithHistory,
             planId = effectivePlanId,
             mode = effectiveMode,
+            measure = modeDevices.firstOrNull { it.id in effectiveSelection && it.type == DeviceType.BODYWEIGHT }?.measure,
             availableModes = availableModes,
             devices = modeDevices.map { HistoryDevice(it, effectiveSelection[it.id]) },
             range = range,
@@ -210,9 +208,15 @@ class HistoryViewModel(
 
     fun toggleDevice(deviceId: Long) {
         val state = uiState.value
-        val current = selections.value[state.mode]
+        var current = selections.value[state.mode]
             ?: state.devices.filter { it.colorSlot != null }
                 .associate { it.device.id to it.colorSlot!! }
+        // Bodyweight reps and times have different units: picking a device of the other measure
+        // starts a new selection.
+        val measure = state.devices.firstOrNull { it.device.id == deviceId }?.device?.measure
+        if (state.mode == DeviceType.BODYWEIGHT) {
+            current = current.filterKeys { id -> state.devices.firstOrNull { it.device.id == id }?.device?.measure == measure }
+        }
         val updated = if (deviceId in current) {
             current - deviceId
         } else {
@@ -225,6 +229,35 @@ class HistoryViewModel(
         // Pin the mode too, so the view doesn't jump to another mode when new training is logged.
         mode.value = state.mode
         selections.update { it + (state.mode to updated) }
+    }
+
+    /**
+     * Chart entries per mode. Strength values are weights; bodyweight values are reps or seconds,
+     * depending on the device's measure (sets without that value, e.g. a circuit station without
+     * reps, are left out); cardio values are seconds.
+     */
+    private fun entriesByType(devices: List<Device>, sets: List<SetLog>, sessions: List<CardioLog>): Map<DeviceType, List<HistoryEntry>> {
+        val deviceById = devices.associateBy { it.id }
+        val strength = mutableListOf<HistoryEntry>()
+        val bodyweight = mutableListOf<HistoryEntry>()
+        sets.forEach { set ->
+            val device = deviceById[set.deviceId] ?: return@forEach
+            when (device.type) {
+                DeviceType.STRENGTH -> strength += HistoryEntry(
+                    set.id, set.deviceId, set.performedAt, set.weightGrams, set.reps, set.planId, set.durationSeconds,
+                )
+                DeviceType.BODYWEIGHT -> {
+                    val value = if (device.measure == BodyweightMeasure.TIME) set.durationSeconds else set.reps
+                    if (value != null) bodyweight += HistoryEntry(set.id, set.deviceId, set.performedAt, value, null, set.planId)
+                }
+                DeviceType.CARDIO -> Unit
+            }
+        }
+        return mapOf(
+            DeviceType.STRENGTH to strength,
+            DeviceType.CARDIO to sessions.map { HistoryEntry(it.id, it.deviceId, it.performedAt, it.durationSeconds, null, it.planId) },
+            DeviceType.BODYWEIGHT to bodyweight,
+        )
     }
 
     private fun HistoryRange.startMillis(): Long {

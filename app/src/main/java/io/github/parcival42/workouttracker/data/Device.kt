@@ -16,6 +16,8 @@ data class Device(
     @ColumnInfo(name = "weight_step_grams", defaultValue = "2500") val weightStepGrams: Int = DEFAULT_WEIGHT_STEP_GRAMS,
     // Weight fields are unused for cardio devices. Fixed once the device has logged training.
     @ColumnInfo(defaultValue = "STRENGTH") val type: DeviceType = DeviceType.STRENGTH,
+    // Only used for bodyweight devices; fixed like the type once the device has logged training.
+    @ColumnInfo(defaultValue = "REPS") val measure: BodyweightMeasure = BodyweightMeasure.REPS,
 ) {
     companion object {
         const val DEFAULT_WEIGHT_STEP_GRAMS = 2_500
