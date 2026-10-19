@@ -90,6 +90,7 @@ fun TemplateDialog(
                             minWeightGrams = template.minWeightGrams,
                             weightStepGrams = template.weightStepGrams,
                             measure = template.measure,
+                            tracksDistance = template.tracksDistance,
                         )
                     }
                     onConfirm(devices)

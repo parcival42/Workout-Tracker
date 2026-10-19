@@ -2,6 +2,7 @@ package io.github.parcival42.workouttracker.ui.components
 
 import android.content.res.Resources
 import io.github.parcival42.workouttracker.R
+import io.github.parcival42.workouttracker.data.CardioLog
 import io.github.parcival42.workouttracker.data.SetLog
 
 /** "17.5 kg × 10"; timed circuit sets show their duration: "17.5 kg · 2:00 min", "17.5 kg × 30 · 2 min". */
@@ -21,6 +22,16 @@ fun Resources.bodyweightSetSummary(reps: Int?, durationSeconds: Int?): String {
         else -> repsText.orEmpty()
     }
 }
+
+/** Cardio session: "30 min", with a distance "30 min · 2.4 km". */
+fun Resources.cardioSummary(durationSeconds: Int, distanceMeters: Int?): String =
+    if (distanceMeters == null) {
+        getString(R.string.duration_exact, formatDuration(durationSeconds))
+    } else {
+        getString(R.string.cardio_session_summary, formatDuration(durationSeconds), formatKm(distanceMeters))
+    }
+
+fun Resources.cardioSummary(session: CardioLog): String = cardioSummary(session.durationSeconds, session.distanceMeters)
 
 fun Resources.setSummary(set: SetLog, isBodyweight: Boolean = false): String =
     if (isBodyweight) {

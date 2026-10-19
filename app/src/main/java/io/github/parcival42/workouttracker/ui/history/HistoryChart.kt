@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.parcival42.workouttracker.ui.components.SECONDS_PER_MINUTE
 import io.github.parcival42.workouttracker.ui.components.formatKg
+import io.github.parcival42.workouttracker.ui.components.formatKm
 import io.github.parcival42.workouttracker.ui.components.formatMinutesSeconds
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -70,7 +71,16 @@ val RepsScale = ValueScale(minRange = 10, stepFactors = listOf(1.0, 2.0, 5.0, 10
 // Bodyweight measured by time: seconds, labelled as m:ss (0:15, 0:30, 1:00).
 val SecondsScale = ValueScale(minRange = 30, stepFactors = listOf(1.0, 1.5, 3.0, 6.0, 10.0), format = ::formatMinutesSeconds)
 
-/** One training day of one device. [value] is the top weight (strength), the best reps or longest time (bodyweight) or the total seconds (cardio). */
+// Meters, labelled as km.
+val DistanceScale = ValueScale(minRange = 1_000, stepFactors = listOf(1.0, 2.0, 2.5, 5.0, 10.0), format = ::formatKm)
+
+// Meters per hour, labelled as km/h.
+val SpeedScale = ValueScale(minRange = 2_000, stepFactors = listOf(1.0, 2.0, 2.5, 5.0, 10.0), format = ::formatKm)
+
+/**
+ * One training day of one device. [value] is the top weight (strength), the best reps or longest
+ * time (bodyweight), or for cardio the total seconds, total meters or average meters per hour.
+ */
 data class ChartPoint(
     val deviceId: Long,
     val deviceName: String,
@@ -80,16 +90,29 @@ data class ChartPoint(
     val x: Float,
 )
 
-fun buildChartPoints(dates: List<LocalDate>, series: List<HistorySeries>, isCardio: Boolean): Map<Long, List<ChartPoint>> {
+/** [cardioMetric] is null outside of cardio mode. Distance and speed expect only sessions with a distance. */
+fun buildChartPoints(dates: List<LocalDate>, series: List<HistorySeries>, cardioMetric: CardioMetric?): Map<Long, List<ChartPoint>> {
     val dayIndex = dates.withIndex().associate { (index, date) -> date to index }
     return series.associate { s ->
         s.deviceId to s.days.map { day ->
-            val values = day.entries.map { it.value }
-            val value = if (isCardio) values.sum() else values.max()
-            ChartPoint(s.deviceId, s.deviceName, day, value, dayIndex.getValue(day.date) + 0.5f)
+            ChartPoint(s.deviceId, s.deviceName, day, dayValue(day.entries, cardioMetric), dayIndex.getValue(day.date) + 0.5f)
         }
     }
 }
+
+private fun dayValue(entries: List<HistoryEntry>, cardioMetric: CardioMetric?): Int = when (cardioMetric) {
+    null -> entries.maxOf { it.value }
+    CardioMetric.DURATION -> entries.sumOf { it.value }
+    CardioMetric.DISTANCE -> entries.sumOf { it.distanceMeters ?: 0 }
+    // Total distance over total time, so a long slow session weighs more than a short fast one.
+    CardioMetric.SPEED -> {
+        val meters = entries.sumOf { (it.distanceMeters ?: 0).toLong() }
+        val seconds = entries.sumOf { it.value.toLong() }.coerceAtLeast(1)
+        (meters * SECONDS_PER_HOUR / seconds).toInt()
+    }
+}
+
+private const val SECONDS_PER_HOUR = 3_600
 
 private data class YAxis(val min: Int, val max: Int, val ticks: List<Int>)
 

@@ -37,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.parcival42.workouttracker.R
 import io.github.parcival42.workouttracker.ui.components.EmptyHint
+import io.github.parcival42.workouttracker.ui.components.cardioSummary
 import io.github.parcival42.workouttracker.ui.components.formatDuration
 import io.github.parcival42.workouttracker.ui.components.setSummary
 import io.github.parcival42.workouttracker.ui.workout.EditSessionDialog
@@ -138,8 +139,9 @@ fun LogEntriesScreen(
         is LogEntry.Cardio -> EditSessionDialog(
             title = stringResource(R.string.entry_edit_session_title),
             session = entry.session,
-            onConfirm = { seconds ->
-                viewModel.updateSession(entry.session, seconds)
+            tracksDistance = entry.tracksDistance,
+            onConfirm = { seconds, distanceMeters ->
+                viewModel.updateSession(entry.session, seconds, distanceMeters)
                 editingKey = null
             },
             onDelete = { delete(entry) },
@@ -153,7 +155,7 @@ fun LogEntriesScreen(
 private fun EntryRow(entry: LogEntry, time: String, onClick: () -> Unit) {
     val value = when (entry) {
         is LogEntry.Strength -> LocalResources.current.setSummary(entry.set, entry.isBodyweight)
-        is LogEntry.Cardio -> stringResource(R.string.duration_exact, formatDuration(entry.session.durationSeconds))
+        is LogEntry.Cardio -> LocalResources.current.cardioSummary(entry.session)
     }
     Row(
         modifier = Modifier

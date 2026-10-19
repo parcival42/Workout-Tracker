@@ -63,6 +63,7 @@ import io.github.parcival42.workouttracker.ui.circuit.CircuitPanel
 import io.github.parcival42.workouttracker.ui.components.DurationDialog
 import io.github.parcival42.workouttracker.ui.components.EmptyHint
 import io.github.parcival42.workouttracker.ui.components.bodyweightSetSummary
+import io.github.parcival42.workouttracker.ui.components.cardioSummary
 import io.github.parcival42.workouttracker.ui.components.formatDuration
 import io.github.parcival42.workouttracker.ui.components.formatKg
 import io.github.parcival42.workouttracker.ui.components.parseDuration
@@ -118,6 +119,25 @@ fun WorkoutScreen(
                 duration = SnackbarDuration.Long,
             )
             if (result == SnackbarResult.ActionPerformed) viewModel.undoRestartPlan()
+        }
+    }
+
+    // The distance is prefilled from the last session, so it may be stale: show what was saved and
+    // offer correcting it right away.
+    val onSessionLogged: (CardioLog) -> Unit = { session ->
+        scope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            val result = snackbarHostState.showSnackbar(
+                message = resources.getString(R.string.workout_session_logged, resources.cardioSummary(session)),
+                actionLabel = resources.getString(R.string.action_adjust),
+                duration = SnackbarDuration.Long,
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                // Number it like its chip; the list may not contain the new session yet.
+                val sessions = (state.items.firstOrNull { it.deviceId == session.deviceId } as? CardioItem)?.todaySessions.orEmpty()
+                val index = sessions.indexOfFirst { it.id == session.id }
+                editingSession = (if (index >= 0) index + 1 else sessions.size + 1) to (sessions.getOrNull(index) ?: session)
+            }
         }
     }
 
@@ -192,7 +212,9 @@ fun WorkoutScreen(
                             is CardioItem -> CardioCard(
                                 item = item,
                                 onEditNextSession = { nextSetDeviceId = item.deviceId },
-                                onLogSession = { viewModel.logSession(item) },
+                                onLogSession = {
+                                    if (item.tracksDistance) viewModel.logSession(item, onSessionLogged) else viewModel.logSession(item)
+                                },
                                 onUndo = { viewModel.undoLastSession(item) },
                                 onSessionClick = { number, session -> editingSession = number to session },
                                 highlighted = highlighted,
@@ -260,8 +282,9 @@ fun WorkoutScreen(
         )
         sheetItem is CardioItem -> NextSessionSheet(
             item = sheetItem,
-            onApply = { seconds ->
+            onApply = { seconds, distanceMeters ->
                 viewModel.setDuration(sheetItem.deviceId, seconds)
+                if (sheetItem.tracksDistance) viewModel.setDistance(sheetItem.deviceId, distanceMeters)
                 nextSetDeviceId = null
             },
             onDismiss = { nextSetDeviceId = null },
@@ -272,8 +295,9 @@ fun WorkoutScreen(
         EditSessionDialog(
             title = stringResource(R.string.edit_session_title, number),
             session = session,
-            onConfirm = { seconds ->
-                viewModel.updateSession(session, seconds)
+            tracksDistance = (state.items.firstOrNull { it.deviceId == session.deviceId } as? CardioItem)?.tracksDistance == true,
+            onConfirm = { seconds, distanceMeters ->
+                viewModel.updateSession(session, seconds, distanceMeters)
                 editingSession = null
             },
             onDelete = {

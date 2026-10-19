@@ -18,6 +18,8 @@ data class Device(
     @ColumnInfo(defaultValue = "STRENGTH") val type: DeviceType = DeviceType.STRENGTH,
     // Only used for bodyweight devices; fixed like the type once the device has logged training.
     @ColumnInfo(defaultValue = "REPS") val measure: BodyweightMeasure = BodyweightMeasure.REPS,
+    // Only used for cardio devices: sessions can carry a distance. Changeable at any time.
+    @ColumnInfo(name = "tracks_distance", defaultValue = "0") val tracksDistance: Boolean = false,
 ) {
     companion object {
         const val DEFAULT_WEIGHT_STEP_GRAMS = 2_500

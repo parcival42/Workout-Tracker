@@ -26,6 +26,7 @@ data class DeviceTemplate(
     val minWeightGrams: Int = 5_000,
     val weightStepGrams: Int = 5_000,
     val measure: BodyweightMeasure = BodyweightMeasure.REPS,
+    val tracksDistance: Boolean = false,
 )
 
 private fun bodyweight(@StringRes nameRes: Int, measure: BodyweightMeasure = BodyweightMeasure.REPS) =
@@ -47,10 +48,10 @@ val DeviceTemplates = listOf(
     DeviceTemplate(R.string.template_triceps_extension, TemplateGroup.UPPER_BODY, weightStepGrams = 2_500),
     DeviceTemplate(R.string.template_abdominal_crunch, TemplateGroup.CORE),
     DeviceTemplate(R.string.template_back_extension, TemplateGroup.CORE),
-    DeviceTemplate(R.string.template_treadmill, TemplateGroup.CARDIO, type = DeviceType.CARDIO),
-    DeviceTemplate(R.string.template_elliptical, TemplateGroup.CARDIO, type = DeviceType.CARDIO),
-    DeviceTemplate(R.string.template_exercise_bike, TemplateGroup.CARDIO, type = DeviceType.CARDIO),
-    DeviceTemplate(R.string.template_rowing_machine, TemplateGroup.CARDIO, type = DeviceType.CARDIO),
+    DeviceTemplate(R.string.template_treadmill, TemplateGroup.CARDIO, type = DeviceType.CARDIO, tracksDistance = true),
+    DeviceTemplate(R.string.template_elliptical, TemplateGroup.CARDIO, type = DeviceType.CARDIO, tracksDistance = true),
+    DeviceTemplate(R.string.template_exercise_bike, TemplateGroup.CARDIO, type = DeviceType.CARDIO, tracksDistance = true),
+    DeviceTemplate(R.string.template_rowing_machine, TemplateGroup.CARDIO, type = DeviceType.CARDIO, tracksDistance = true),
     DeviceTemplate(R.string.template_stair_climber, TemplateGroup.CARDIO, type = DeviceType.CARDIO),
     bodyweight(R.string.template_pushups),
     bodyweight(R.string.template_situps),

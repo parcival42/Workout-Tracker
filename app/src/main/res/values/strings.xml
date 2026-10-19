@@ -271,4 +271,26 @@
     <string name="action_close">Close</string>
     <string name="circuit_abort_title">End circuit?</string>
     <string name="circuit_abort_message">Stations already done stay logged.</string>
+
+    <!-- Cardio distance -->
+    <string name="device_tracks_distance">Track distance</string>
+    <string name="device_tracks_distance_help">Log the distance in km with every session.</string>
+    <string name="device_cardio_distance_info">Cardio · with distance</string>
+    <string name="distance_km" translatable="false">%1$s km</string>
+    <string name="cardio_session_summary" translatable="false">%1$s min · %2$s km</string>
+    <string name="distance_label">Distance</string>
+    <string name="distance_placeholder">e.g. 2.4</string>
+    <string name="unit_km" translatable="false">km</string>
+    <string name="next_session_sheet_subtitle_distance">Duration and distance of the next session</string>
+    <string name="workout_next_session_distance">Duration: %1$s min · %2$s km</string>
+    <string name="workout_session_logged">Saved: %1$s</string>
+    <string name="action_adjust">Adjust</string>
+    <string name="history_metric_duration">Duration</string>
+    <string name="history_metric_distance">Distance</string>
+    <string name="history_metric_speed" translatable="false">km/h</string>
+    <string name="history_chart_title_distance">Distance per day (km)</string>
+    <string name="history_chart_title_speed">Average speed per day (km/h)</string>
+    <string name="history_distance_total" translatable="false">%1$s km (%2$s)</string>
+    <string name="history_speed_detail" translatable="false">%1$s km/h (%2$s)</string>
+    <string name="history_group_cardio_distance" translatable="false">%1$d × %2$s min · %3$s km</string>
 </resources>

@@ -13,6 +13,7 @@ import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.data.PlanDao
 import io.github.parcival42.workouttracker.data.SetLog
 import io.github.parcival42.workouttracker.data.SetLogDao
+import io.github.parcival42.workouttracker.ui.components.MAX_DISTANCE_METERS
 import io.github.parcival42.workouttracker.ui.components.MAX_DURATION_SECONDS
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -41,7 +42,12 @@ sealed interface LogEntry {
         override val performedAt get() = set.performedAt
     }
 
-    data class Cardio(val session: CardioLog, override val deviceName: String, override val planName: String?) : LogEntry {
+    data class Cardio(
+        val session: CardioLog,
+        override val deviceName: String,
+        override val planName: String?,
+        val tracksDistance: Boolean = false,
+    ) : LogEntry {
         override val key get() = "c-${session.id}"
         override val performedAt get() = session.performedAt
     }
@@ -67,10 +73,13 @@ class LogEntriesViewModel(
         val deviceNames = devices.associate { it.id to it.name }
         val planNames = plans.associate { it.id to it.name }
         val bodyweightIds = devices.filter { it.type == DeviceType.BODYWEIGHT }.mapTo(HashSet()) { it.id }
+        val distanceIds = devices.filter { it.tracksDistance }.mapTo(HashSet()) { it.id }
         val entries = sets.map {
             LogEntry.Strength(it, deviceNames[it.deviceId].orEmpty(), planNames[it.planId], it.deviceId in bodyweightIds)
         } +
-            sessions.map { LogEntry.Cardio(it, deviceNames[it.deviceId].orEmpty(), planNames[it.planId]) }
+            sessions.map {
+                LogEntry.Cardio(it, deviceNames[it.deviceId].orEmpty(), planNames[it.planId], it.deviceId in distanceIds)
+            }
         val zone = ZoneId.systemDefault()
         entries
             .sortedByDescending { it.performedAt }
@@ -87,8 +96,11 @@ class LogEntriesViewModel(
         viewModelScope.launch { setLogDao.update(updated) }
     }
 
-    fun updateSession(session: CardioLog, seconds: Int) {
-        val updated = session.copy(durationSeconds = seconds.coerceIn(1, MAX_DURATION_SECONDS))
+    fun updateSession(session: CardioLog, seconds: Int, distanceMeters: Int?) {
+        val updated = session.copy(
+            durationSeconds = seconds.coerceIn(1, MAX_DURATION_SECONDS),
+            distanceMeters = distanceMeters?.coerceIn(1, MAX_DISTANCE_METERS),
+        )
         viewModelScope.launch { cardioLogDao.update(updated) }
     }
 

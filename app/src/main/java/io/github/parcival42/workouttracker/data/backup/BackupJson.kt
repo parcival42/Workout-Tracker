@@ -34,7 +34,9 @@ object BackupJson {
     //     nullable "durationSeconds" and nullable "reps" (absent in older files, read as normal
     //     plans / no circuit values / untimed sets).
     // v6: devices can have type "BODYWEIGHT" and carry "measure" (absent in older files, read as reps).
-    const val VERSION = 6
+    // v7: devices carry "tracksDistance", cardio sessions a nullable "distanceMeters" (absent in
+    //     older files, read as no distance).
+    const val VERSION = 7
 
     fun encode(data: BackupData, exportedAt: Long): String = JSONObject().apply {
         put("format", FORMAT)
@@ -51,6 +53,7 @@ object BackupJson {
                 put("weightStepGrams", d.weightStepGrams)
                 put("type", d.type.name)
                 put("measure", d.measure.name)
+                put("tracksDistance", d.tracksDistance)
             }
         }))
         put("plans", JSONArray(data.plans.map { p ->
@@ -95,6 +98,7 @@ object BackupJson {
                 put("performedAt", c.performedAt)
                 put("durationSeconds", c.durationSeconds)
                 put("planId", c.planId ?: JSONObject.NULL)
+                put("distanceMeters", c.distanceMeters ?: JSONObject.NULL)
             }
         }))
         put("settings", JSONObject().apply {
@@ -123,6 +127,7 @@ object BackupJson {
                         weightStepGrams = o.getInt("weightStepGrams"),
                         type = DeviceType.valueOf(o.optString("type", DeviceType.STRENGTH.name)),
                         measure = BodyweightMeasure.valueOf(o.optString("measure", BodyweightMeasure.REPS.name)),
+                        tracksDistance = o.optBoolean("tracksDistance", false),
                     )
                 },
                 plans = root.getJSONArray("plans").objects().map { o ->
@@ -170,6 +175,7 @@ object BackupJson {
                         performedAt = o.getLong("performedAt"),
                         durationSeconds = o.getInt("durationSeconds"),
                         planId = o.optPlanId(),
+                        distanceMeters = o.optIntOrNull("distanceMeters"),
                     )
                 },
                 settings = root.optJSONObject("settings")?.let { o ->
@@ -236,7 +242,10 @@ object BackupJson {
             data.cardioSessions.all { it.deviceId in cardioDeviceIds },
             "Cardio session references a missing or non-cardio device",
         )
-        check(data.cardioSessions.all { it.durationSeconds > 0 }, "Invalid cardio session values")
+        check(
+            data.cardioSessions.all { it.durationSeconds > 0 && (it.distanceMeters ?: 1) > 0 },
+            "Invalid cardio session values",
+        )
         check(
             data.sets.all { it.planId == null || it.planId in planIds } &&
                 data.cardioSessions.all { it.planId == null || it.planId in planIds },
