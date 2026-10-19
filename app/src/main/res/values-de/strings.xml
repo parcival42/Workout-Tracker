@@ -244,4 +244,19 @@
     <string name="action_close">Schließen</string>
     <string name="circuit_abort_title">Zirkel beenden?</string>
     <string name="circuit_abort_message">Bereits erledigte Stationen bleiben gespeichert.</string>
+
+    <!-- Cardio distance -->
+    <string name="device_tracks_distance">Distanz erfassen</string>
+    <string name="device_tracks_distance_help">Zu jeder Einheit die Distanz in km eintragen.</string>
+    <string name="device_cardio_distance_info">Cardio · mit Distanz</string>
+    <string name="distance_label">Distanz</string>
+    <string name="distance_placeholder">z. B. 2,4</string>
+    <string name="next_session_sheet_subtitle_distance">Dauer und Distanz der nächsten Einheit</string>
+    <string name="workout_next_session_distance">Dauer: %1$s min · %2$s km</string>
+    <string name="workout_session_logged">Gespeichert: %1$s</string>
+    <string name="action_adjust">Anpassen</string>
+    <string name="history_metric_duration">Dauer</string>
+    <string name="history_metric_distance">Distanz</string>
+    <string name="history_chart_title_distance">Distanz pro Tag (km)</string>
+    <string name="history_chart_title_speed">Durchschnittstempo pro Tag (km/h)</string>
 </resources>

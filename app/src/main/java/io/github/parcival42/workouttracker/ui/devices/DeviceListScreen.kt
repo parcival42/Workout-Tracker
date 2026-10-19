@@ -231,7 +231,9 @@ private fun DeviceRow(device: Device, onClick: () -> Unit) {
                     formatKg(device.minWeightGrams),
                     formatKg(device.weightStepGrams),
                 )
-                DeviceType.CARDIO -> stringResource(R.string.device_type_cardio)
+                DeviceType.CARDIO -> stringResource(
+                    if (device.tracksDistance) R.string.device_cardio_distance_info else R.string.device_type_cardio
+                )
                 DeviceType.BODYWEIGHT -> stringResource(
                     R.string.device_bodyweight_info,
                     stringResource(R.string.device_type_bodyweight),

@@ -46,6 +46,8 @@ import io.github.parcival42.workouttracker.ui.components.stepWeightDown
 import io.github.parcival42.workouttracker.ui.components.stepWeightUp
 import io.github.parcival42.workouttracker.ui.components.DurationDialog
 import io.github.parcival42.workouttracker.ui.devices.labelRes
+import io.github.parcival42.workouttracker.ui.components.parseKmToMeters
+import io.github.parcival42.workouttracker.ui.workout.DistanceField
 import io.github.parcival42.workouttracker.ui.workout.DurationStepper
 import io.github.parcival42.workouttracker.ui.workout.ValueStepper
 import io.github.parcival42.workouttracker.ui.workout.WeightDialog
@@ -138,8 +140,8 @@ fun QuickLogScreen(
             )
             DeviceType.CARDIO -> QuickLogCardioSheet(
                 device = selected,
-                onLog = { seconds ->
-                    viewModel.logSession(selected, seconds, onLogged)
+                onLog = { seconds, distanceMeters ->
+                    viewModel.logSession(selected, seconds, distanceMeters, onLogged)
                     selectedDeviceId = null
                 },
                 onDismiss = { selectedDeviceId = null },
@@ -251,16 +253,27 @@ private fun QuickLogStrengthSheet(
 @Composable
 private fun QuickLogCardioSheet(
     device: QuickLogDevice,
-    onLog: (seconds: Int) -> Unit,
+    onLog: (seconds: Int, distanceMeters: Int?) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var seconds by rememberSaveable { mutableIntStateOf(device.durationSeconds) }
+    // Not prefilled: a distance is a result, an old value would be logged unnoticed.
+    var distanceInput by rememberSaveable { mutableStateOf("") }
     var showDurationDialog by rememberSaveable { mutableStateOf(false) }
+    val distanceMeters = parseKmToMeters(distanceInput)
+    val distanceValid = distanceInput.isBlank() || distanceMeters != null
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         SheetContent(deviceName = device.name) {
             DurationStepper(seconds = seconds, onSecondsChange = { seconds = it }, onValueClick = { showDurationDialog = true })
-            Button(onClick = { onLog(seconds) }, modifier = Modifier.fillMaxWidth()) {
+            if (device.tracksDistance) {
+                DistanceField(value = distanceInput, onValueChange = { distanceInput = it }, isError = !distanceValid)
+            }
+            Button(
+                onClick = { onLog(seconds, distanceMeters.takeIf { device.tracksDistance }) },
+                enabled = distanceValid,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 Text(stringResource(R.string.action_log))
             }
         }

@@ -16,6 +16,7 @@ import io.github.parcival42.workouttracker.data.SetLog
 import io.github.parcival42.workouttracker.data.SetLogDao
 import io.github.parcival42.workouttracker.data.UserSettings
 import io.github.parcival42.workouttracker.data.UserSettingsDao
+import io.github.parcival42.workouttracker.ui.components.MAX_DISTANCE_METERS
 import io.github.parcival42.workouttracker.ui.components.MAX_DURATION_SECONDS
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -39,6 +40,8 @@ data class QuickLogDevice(
     val durationSeconds: Int,
     // Bodyweight measured by time: the last set's duration, or a short default.
     val holdSeconds: Int,
+    // Cardio: the sheet asks for an optional distance (not prefilled).
+    val tracksDistance: Boolean = false,
 )
 
 /** What was just logged, so it can be undone. */
@@ -80,6 +83,7 @@ class QuickLogViewModel(
                 sets = settings.defaultTargetSets,
                 durationSeconds = lastSessionByDevice[device.id]?.durationSeconds ?: settings.defaultTargetDurationSeconds,
                 holdSeconds = lastSet?.durationSeconds ?: PlanEntry.DEFAULT_HOLD_SECONDS,
+                tracksDistance = device.tracksDistance,
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -109,12 +113,13 @@ class QuickLogViewModel(
         viewModelScope.launch { onLogged(QuickLogResult.Sets(device.name, setLogDao.insertAll(logs))) }
     }
 
-    fun logSession(device: QuickLogDevice, seconds: Int, onLogged: (QuickLogResult) -> Unit) {
+    fun logSession(device: QuickLogDevice, seconds: Int, distanceMeters: Int?, onLogged: (QuickLogResult) -> Unit) {
         val session = CardioLog(
             deviceId = device.id,
             performedAt = System.currentTimeMillis(),
             durationSeconds = seconds.coerceIn(1, MAX_DURATION_SECONDS),
             planId = null,
+            distanceMeters = distanceMeters?.coerceIn(1, MAX_DISTANCE_METERS),
         )
         viewModelScope.launch { onLogged(QuickLogResult.Session(device.name, cardioLogDao.insert(session))) }
     }

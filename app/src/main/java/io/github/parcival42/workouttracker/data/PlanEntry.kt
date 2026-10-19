@@ -56,6 +56,7 @@ data class PlanEntryItem(
     val stationSeconds: Int?,
     val minWeightGrams: Int,
     val weightStepGrams: Int,
+    val tracksDistance: Boolean = false,
 )
 
 val PlanEntryItem.isTimedBodyweight: Boolean

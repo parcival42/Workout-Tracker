@@ -46,8 +46,11 @@ import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.ui.components.EmptyHint
 import io.github.parcival42.workouttracker.ui.devices.labelRes
 import io.github.parcival42.workouttracker.ui.components.bodyweightSetSummary
+import io.github.parcival42.workouttracker.ui.components.cardioSummary
 import io.github.parcival42.workouttracker.ui.components.formatDuration
 import io.github.parcival42.workouttracker.ui.components.formatKg
+import io.github.parcival42.workouttracker.ui.components.formatKm
+import io.github.parcival42.workouttracker.ui.components.formatKmh
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -88,6 +91,7 @@ fun HistoryScreen(
                 onRangeSelect = viewModel::setRange,
                 onPlanSelect = viewModel::setPlanFilter,
                 onModeSelect = viewModel::setMode,
+                onCardioMetricSelect = viewModel::setCardioMetric,
                 onDeviceToggle = viewModel::toggleDevice,
                 modifier = Modifier.padding(innerPadding),
             )
@@ -101,6 +105,7 @@ private fun HistoryContent(
     onRangeSelect: (HistoryRange) -> Unit,
     onPlanSelect: (Long?) -> Unit,
     onModeSelect: (DeviceType) -> Unit,
+    onCardioMetricSelect: (CardioMetric) -> Unit,
     onDeviceToggle: (Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -114,7 +119,8 @@ private fun HistoryContent(
         DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(locale)
     }
     val resources = LocalResources.current
-    val points = remember(state.dates, state.series, isCardio) { buildChartPoints(state.dates, state.series, isCardio) }
+    val cardioMetric = state.cardioMetric.takeIf { isCardio }
+    val points = remember(state.dates, state.series, cardioMetric) { buildChartPoints(state.dates, state.series, cardioMetric) }
     val colorSlots = remember(state.series) { state.series.associate { it.deviceId to it.colorSlot } }
     var selectedPoint by remember(points) { mutableStateOf<ChartPoint?>(null) }
 
@@ -151,6 +157,20 @@ private fun HistoryContent(
                             selected = state.mode == mode,
                             onClick = { onModeSelect(mode) },
                             label = { Text(stringResource(mode.labelRes())) },
+                        )
+                    }
+                }
+            }
+        }
+
+        if (isCardio && state.hasCardioMetrics) {
+            item {
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    CardioMetric.entries.forEach { metric ->
+                        FilterChip(
+                            selected = state.cardioMetric == metric,
+                            onClick = { onCardioMetricSelect(metric) },
+                            label = { Text(stringResource(metric.labelRes())) },
                         )
                     }
                 }
@@ -203,6 +223,8 @@ private fun HistoryContent(
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     val chartTitle = stringResource(
                         when {
+                            cardioMetric == CardioMetric.DISTANCE -> R.string.history_chart_title_distance
+                            cardioMetric == CardioMetric.SPEED -> R.string.history_chart_title_speed
                             isCardio -> R.string.history_chart_title_cardio
                             bodyweightMeasure == BodyweightMeasure.REPS -> R.string.history_chart_title_reps
                             bodyweightMeasure == BodyweightMeasure.TIME -> R.string.history_chart_title_time
@@ -218,6 +240,8 @@ private fun HistoryContent(
                         dates = state.dates,
                         points = points,
                         scale = when {
+                            cardioMetric == CardioMetric.DISTANCE -> DistanceScale
+                            cardioMetric == CardioMetric.SPEED -> SpeedScale
                             isCardio -> MinutesScale
                             bodyweightMeasure == BodyweightMeasure.REPS -> RepsScale
                             bodyweightMeasure == BodyweightMeasure.TIME -> SecondsScale
@@ -237,10 +261,15 @@ private fun HistoryContent(
                     Text(
                         text = selectedPoint?.let {
                             val groups = formatGroups(it.day.groups, resources, bodyweightMeasure)
-                            val summary = if (isCardio && it.day.entries.size > 1) {
-                                stringResource(R.string.history_cardio_total, formatDuration(it.value), groups)
-                            } else {
-                                groups
+                            val several = it.day.entries.size > 1
+                            val summary = when {
+                                cardioMetric == CardioMetric.SPEED ->
+                                    stringResource(R.string.history_speed_detail, formatKmh(it.value), groups)
+                                cardioMetric == CardioMetric.DISTANCE && several ->
+                                    stringResource(R.string.history_distance_total, formatKm(it.value), groups)
+                                isCardio && several ->
+                                    stringResource(R.string.history_cardio_total, formatDuration(it.value), groups)
+                                else -> groups
                             }
                             stringResource(R.string.history_point_detail, it.deviceName, it.day.date.format(shortDateFormatter), summary)
                         } ?: stringResource(R.string.history_tap_hint),
@@ -325,7 +354,13 @@ private fun formatGroups(groups: List<EntryGroup>, resources: Resources, bodywei
                 formatKg(group.value),
             )
             group.reps != null -> resources.getString(R.string.history_group_strength, group.count, group.reps, formatKg(group.value))
-            group.count == 1 -> resources.getString(R.string.duration_exact, formatDuration(group.value))
+            group.count == 1 -> resources.cardioSummary(group.value, group.distanceMeters)
+            group.distanceMeters != null -> resources.getString(
+                R.string.history_group_cardio_distance,
+                group.count,
+                formatDuration(group.value),
+                formatKm(group.distanceMeters),
+            )
             else -> resources.getString(R.string.history_group_cardio, group.count, formatDuration(group.value))
         }
     }
@@ -337,6 +372,12 @@ private fun SeriesDot(color: Color, modifier: Modifier = Modifier) {
             .size(10.dp)
             .background(color, CircleShape),
     )
+}
+
+private fun CardioMetric.labelRes(): Int = when (this) {
+    CardioMetric.DURATION -> R.string.history_metric_duration
+    CardioMetric.DISTANCE -> R.string.history_metric_distance
+    CardioMetric.SPEED -> R.string.history_metric_speed
 }
 
 private fun HistoryRange.labelRes(): Int = when (this) {

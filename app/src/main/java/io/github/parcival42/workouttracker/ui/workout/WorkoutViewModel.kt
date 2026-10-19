@@ -25,6 +25,7 @@ import io.github.parcival42.workouttracker.ui.circuit.CircuitPreview
 import io.github.parcival42.workouttracker.ui.circuit.CircuitStation
 import io.github.parcival42.workouttracker.ui.circuit.CircuitUiState
 import io.github.parcival42.workouttracker.ui.circuit.buildCircuitPhases
+import io.github.parcival42.workouttracker.ui.components.MAX_DISTANCE_METERS
 import io.github.parcival42.workouttracker.ui.components.MAX_DURATION_SECONDS
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -85,6 +86,9 @@ data class CardioItem(
     // One per round in a circuit plan, otherwise one.
     val targetSessions: Int = 1,
     override val stationSeconds: Int? = null,
+    val tracksDistance: Boolean = false,
+    // Distance of the next session: the last logged distance, or none. Always null without tracksDistance.
+    val distanceMeters: Int? = null,
 ) : WorkoutItem {
     override val isComplete: Boolean get() = todaySessions.size >= targetSessions
     override val hasSessionLogs: Boolean get() = todaySessions.isNotEmpty()
@@ -101,9 +105,21 @@ data class WorkoutUiState(
 }
 
 /** Unsaved edits; null fields fall back to the last logged set or session (see [strengthLogs]). */
-private data class Draft(val weightGrams: Int? = null, val reps: Int? = null, val durationSeconds: Int? = null)
+// A distance can be cleared on purpose, so [distanceSet] tells "cleared" from "not edited".
+private data class Draft(
+    val weightGrams: Int? = null,
+    val reps: Int? = null,
+    val durationSeconds: Int? = null,
+    val distanceMeters: Int? = null,
+    val distanceSet: Boolean = false,
+)
 
-private data class LogsByDevice<T>(val today: Map<Long, List<T>>, val last: Map<Long, T>)
+// [lastDistance]: cardio only, the distance of the last session that has one.
+private data class LogsByDevice<T>(
+    val today: Map<Long, List<T>>,
+    val last: Map<Long, T>,
+    val lastDistance: Map<Long, Int> = emptyMap(),
+)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class WorkoutViewModel(
@@ -148,10 +164,15 @@ class WorkoutViewModel(
         sessionStart.flatMapLatest { since -> cardioLogDao.observeSinceInPlan(since, planId) },
         cardioLogDao.observeLastPerDeviceInPlan(planId),
         cardioLogDao.observeLastPerDevice(),
-    ) { today, lastInPlan, lastAnywhere ->
+        cardioLogDao.observeLastDistancePerDeviceInPlan(planId),
+        cardioLogDao.observeLastDistancePerDevice(),
+    ) { today, lastInPlan, lastAnywhere, lastDistanceInPlan, lastDistanceAnywhere ->
         LogsByDevice(
             today = today.groupBy { it.deviceId },
             last = lastAnywhere.associateBy { it.deviceId } + lastInPlan.associateBy { it.deviceId },
+            lastDistance = (lastDistanceAnywhere + lastDistanceInPlan)
+                .mapNotNull { session -> session.distanceMeters?.let { session.deviceId to it } }
+                .toMap(),
         )
     }
 
@@ -203,6 +224,12 @@ class WorkoutViewModel(
                             ?: entry.targetDurationSeconds,
                         targetSessions = circuitSettings?.rounds ?: 1,
                         stationSeconds = circuitSettings?.let { entry.stationSeconds ?: it.stationSeconds },
+                        tracksDistance = entry.tracksDistance,
+                        distanceMeters = when {
+                            !entry.tracksDistance -> null
+                            draft?.distanceSet == true -> draft.distanceMeters
+                            else -> cardioLogs.lastDistance[entry.deviceId]
+                        },
                     )
                 }
             },
@@ -234,6 +261,12 @@ class WorkoutViewModel(
         drafts.update { it + (deviceId to (it[deviceId] ?: Draft()).copy(durationSeconds = clamped)) }
     }
 
+    /** Null clears the distance, so the next session is logged without one. */
+    fun setDistance(deviceId: Long, meters: Int?) {
+        val clamped = meters?.coerceIn(1, MAX_DISTANCE_METERS)
+        drafts.update { it + (deviceId to (it[deviceId] ?: Draft()).copy(distanceMeters = clamped, distanceSet = true)) }
+    }
+
     fun completeDevice(item: StrengthItem) = logSets(item, item.openSets)
 
     fun completeOneSet(item: StrengthItem) = logSets(item, 1)
@@ -259,28 +292,36 @@ class WorkoutViewModel(
         viewModelScope.launch { setLogDao.delete(set) }
     }
 
-    fun logSession(item: CardioItem) {
+    /** [onLogged] gets the stored session (with its id), e.g. to offer correcting the distance. */
+    fun logSession(item: CardioItem, onLogged: (CardioLog) -> Unit = {}) {
         val session = CardioLog(
             deviceId = item.deviceId,
             performedAt = System.currentTimeMillis(),
             durationSeconds = item.durationSeconds,
             planId = planId,
+            distanceMeters = item.distanceMeters.takeIf { item.tracksDistance },
         )
         viewModelScope.launch {
-            cardioLogDao.insert(session)
+            val id = cardioLogDao.insert(session)
             // The logged value is now the device's last session, so the draft is no longer needed.
             drafts.update { it - item.deviceId }
+            onLogged(session.copy(id = id))
         }
     }
 
     fun undoLastSession(item: CardioItem) {
-        // Pin the displayed duration so removing the session does not change it.
-        drafts.update { it + (item.deviceId to Draft(durationSeconds = item.durationSeconds)) }
+        // Pin the displayed values so removing the session does not change them.
+        drafts.update {
+            it + (item.deviceId to Draft(durationSeconds = item.durationSeconds, distanceMeters = item.distanceMeters, distanceSet = true))
+        }
         viewModelScope.launch { cardioLogDao.deleteLastSinceInPlan(item.deviceId, planId, sessionStart.first()) }
     }
 
-    fun updateSession(session: CardioLog, seconds: Int) {
-        val updated = session.copy(durationSeconds = seconds.coerceIn(1, MAX_DURATION_SECONDS))
+    fun updateSession(session: CardioLog, seconds: Int, distanceMeters: Int?) {
+        val updated = session.copy(
+            durationSeconds = seconds.coerceIn(1, MAX_DURATION_SECONDS),
+            distanceMeters = distanceMeters?.coerceIn(1, MAX_DISTANCE_METERS),
+        )
         viewModelScope.launch { cardioLogDao.update(updated) }
     }
 

@@ -51,25 +51,30 @@ data class HistoryEntry(
     val reps: Int?,
     val planId: Long?,
     val durationSeconds: Int? = null,
+    // Cardio only: the session's distance in meters, if logged.
+    val distanceMeters: Int? = null,
 )
 
 /** [count] consecutive entries of one day with the same values, e.g. "3 × 10 · 17.5 kg". */
-data class EntryGroup(val value: Int, val reps: Int?, val durationSeconds: Int?, val count: Int)
+data class EntryGroup(val value: Int, val reps: Int?, val durationSeconds: Int?, val count: Int, val distanceMeters: Int? = null)
 
 data class DayEntries(val date: LocalDate, val entries: List<HistoryEntry>) {
     val groups: List<EntryGroup> = buildList {
         entries.forEach { entry ->
             val last = lastOrNull()
             if (last != null && last.value == entry.value && last.reps == entry.reps &&
-                last.durationSeconds == entry.durationSeconds
+                last.durationSeconds == entry.durationSeconds && last.distanceMeters == entry.distanceMeters
             ) {
                 set(lastIndex, last.copy(count = last.count + 1))
             } else {
-                add(EntryGroup(entry.value, entry.reps, entry.durationSeconds, 1))
+                add(EntryGroup(entry.value, entry.reps, entry.durationSeconds, 1, entry.distanceMeters))
             }
         }
     }
 }
+
+/** What the cardio chart shows per day. Distance and speed only count sessions with a distance. */
+enum class CardioMetric { DURATION, DISTANCE, SPEED }
 
 data class HistorySeries(val deviceId: Long, val deviceName: String, val colorSlot: Int, val days: List<DayEntries>)
 
@@ -93,6 +98,9 @@ data class HistoryUiState(
     val dates: List<LocalDate> = emptyList(),
     val series: List<HistorySeries> = emptyList(),
     val canSelectMore: Boolean = true,
+    /** Cardio mode only: the metric switch is shown if a device of the mode tracks distance or has distances. */
+    val cardioMetric: CardioMetric = CardioMetric.DURATION,
+    val hasCardioMetrics: Boolean = false,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -125,7 +133,9 @@ class HistoryViewModel(
         planDao.observeLoggedDevicePlans(),
     ) { devices, plans, devicePlans -> PlanData(devices, plans, devicePlans.toSet()) }
 
-    private val filters = combine(range, planFilter, ::Pair)
+    private val cardioMetric = MutableStateFlow(CardioMetric.DURATION)
+
+    private val filters = combine(range, planFilter, cardioMetric, ::Triple)
 
     val uiState: StateFlow<HistoryUiState> = combine(
         planData,
@@ -133,7 +143,7 @@ class HistoryViewModel(
         mode,
         selections,
         logs,
-    ) { planData, (range, planFilter), mode, selections, (sets, sessions) ->
+    ) { planData, (range, planFilter, cardioMetric), mode, selections, (sets, sessions) ->
         val allEntriesByType = entriesByType(planData.devices, sets, sessions)
         val plansWithHistory = planData.plans.filter { plan -> planData.devicePlans.any { it.planId == plan.id } }
         // Falls back to all plans if the selected plan was deleted.
@@ -159,7 +169,14 @@ class HistoryViewModel(
             ?: DeviceType.STRENGTH
 
         val modeDevices = devices.filter { it.type == effectiveMode }
-        val modeEntries = entriesByType[effectiveMode].orEmpty()
+        val hasCardioMetrics = effectiveMode == DeviceType.CARDIO && (
+            modeDevices.any { it.tracksDistance } || entriesByType[DeviceType.CARDIO].orEmpty().any { it.distanceMeters != null }
+            )
+        val effectiveMetric = if (hasCardioMetrics) cardioMetric else CardioMetric.DURATION
+        // Distance and speed leave out sessions without a distance, so days without one disappear.
+        val modeEntries = entriesByType[effectiveMode].orEmpty().let { entries ->
+            if (effectiveMetric == CardioMetric.DURATION) entries else entries.filter { it.distanceMeters != null }
+        }
 
         // Default: show the most recently trained device until the user picks something.
         val defaultDeviceId = modeEntries.lastOrNull()?.deviceId ?: modeDevices.firstOrNull()?.id
@@ -191,6 +208,8 @@ class HistoryViewModel(
             dates = series.flatMap { s -> s.days.map { it.date } }.distinct().sorted(),
             series = series,
             canSelectMore = effectiveSelection.keys.count { id -> modeDevices.any { it.id == id } } < MAX_SERIES,
+            cardioMetric = effectiveMetric,
+            hasCardioMetrics = hasCardioMetrics,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HistoryUiState())
 
@@ -200,6 +219,10 @@ class HistoryViewModel(
 
     fun setPlanFilter(planId: Long?) {
         planFilter.value = planId
+    }
+
+    fun setCardioMetric(metric: CardioMetric) {
+        cardioMetric.value = metric
     }
 
     fun setMode(newMode: DeviceType) {
@@ -255,7 +278,9 @@ class HistoryViewModel(
         }
         return mapOf(
             DeviceType.STRENGTH to strength,
-            DeviceType.CARDIO to sessions.map { HistoryEntry(it.id, it.deviceId, it.performedAt, it.durationSeconds, null, it.planId) },
+            DeviceType.CARDIO to sessions.map {
+                HistoryEntry(it.id, it.deviceId, it.performedAt, it.durationSeconds, null, it.planId, distanceMeters = it.distanceMeters)
+            },
             DeviceType.BODYWEIGHT to bodyweight,
         )
     }

@@ -20,7 +20,7 @@ class BackupJsonTest {
         devices = listOf(
             Device(id = 1, name = "Leg Press", minWeightGrams = 40_000, weightStepGrams = 5_000),
             Device(id = 2, name = "Old Rowing", imageUri = "content://image", archived = true),
-            Device(id = 3, name = "Treadmill", type = DeviceType.CARDIO),
+            Device(id = 3, name = "Treadmill", type = DeviceType.CARDIO, tracksDistance = true),
             Device(id = 4, name = "Plank", type = DeviceType.BODYWEIGHT, measure = BodyweightMeasure.TIME),
         ),
         plans = listOf(
@@ -51,6 +51,10 @@ class BackupJsonTest {
         ),
         cardioSessions = listOf(
             CardioLog(id = 20, deviceId = 3, performedAt = 1_760_000_000_002, durationSeconds = 1_500, planId = 8),
+            CardioLog(
+                id = 21, deviceId = 3, performedAt = 1_760_000_000_005, durationSeconds = 1_800, planId = 7,
+                distanceMeters = 2_400,
+            ),
         ),
         settings = UserSettings(defaultTargetSets = 4, defaultTargetReps = 8, defaultTargetDurationSeconds = 900),
     )
@@ -143,6 +147,27 @@ class BackupJsonTest {
         val data = BackupJson.decode(v3)
         assertNull(data.sets.single().planId)
         assertEquals(UserSettings(), data.settings)
+    }
+
+    @Test
+    fun readsVersion6WithoutDistance() {
+        val v6 = """
+            {"format":"workout-tracker-backup","version":6,"exportedAt":0,
+             "devices":[{"id":3,"name":"Treadmill","imageUri":null,"archived":false,"startWeightGrams":0,"weightStepGrams":2500,"type":"CARDIO","measure":"REPS"}],
+             "plans":[],
+             "planEntries":[],
+             "sets":[],
+             "cardioSessions":[{"id":20,"deviceId":3,"performedAt":0,"durationSeconds":1800,"planId":null}]}
+        """.trimIndent()
+        val data = BackupJson.decode(v6)
+        assertEquals(false, data.devices.single().tracksDistance)
+        assertNull(data.cardioSessions.single().distanceMeters)
+    }
+
+    @Test
+    fun rejectsInvalidDistance() {
+        val broken = sample.copy(cardioSessions = sample.cardioSessions.map { it.copy(distanceMeters = 0) })
+        assertThrows(InvalidBackupException::class.java) { BackupJson.decode(BackupJson.encode(broken, 0)) }
     }
 
     @Test

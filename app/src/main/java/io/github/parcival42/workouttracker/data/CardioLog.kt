@@ -31,4 +31,6 @@ data class CardioLog(
     @ColumnInfo(name = "duration_seconds") val durationSeconds: Int,
     // Plan the session was logged in; null for sessions without a known plan (deleted plan, old data).
     @ColumnInfo(name = "plan_id") val planId: Long? = null,
+    // Meters; null if no distance was logged (device without distance, circuit station, old data).
+    @ColumnInfo(name = "distance_meters") val distanceMeters: Int? = null,
 )
