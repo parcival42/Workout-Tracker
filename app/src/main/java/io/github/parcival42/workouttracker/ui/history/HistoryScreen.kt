@@ -14,15 +14,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -37,6 +43,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -124,174 +131,223 @@ private fun HistoryContent(
     val colorSlots = remember(state.series) { state.series.associate { it.deviceId to it.colorSlot } }
     var selectedPoint by remember(points) { mutableStateOf<ChartPoint?>(null) }
 
-    LazyColumn(
-        modifier = modifier,
-        contentPadding = PaddingValues(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        if (state.plans.isNotEmpty()) {
-            item {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = state.planId == null,
-                        onClick = { onPlanSelect(null) },
-                        label = { Text(stringResource(R.string.history_plan_all)) },
-                    )
-                    state.plans.forEach { plan ->
-                        FilterChip(
-                            selected = state.planId == plan.id,
-                            onClick = { onPlanSelect(plan.id) },
-                            label = { Text(plan.name) },
-                        )
-                    }
-                }
-            }
-        }
-
+    // The kind of history is the main switch: tabs. Plan, range and metric change rarely, so they
+    // share one row of dropdown chips that still show the current value.
+    Column(modifier = modifier) {
         if (state.availableModes.size > 1) {
-            item {
-                // Chips like the range filter: three segments are too narrow for the labels.
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    state.availableModes.forEach { mode ->
-                        FilterChip(
-                            selected = state.mode == mode,
-                            onClick = { onModeSelect(mode) },
-                            label = { Text(stringResource(mode.labelRes())) },
-                        )
-                    }
-                }
-            }
-        }
-
-        if (isCardio && state.hasCardioMetrics) {
-            item {
-                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    CardioMetric.entries.forEach { metric ->
-                        FilterChip(
-                            selected = state.cardioMetric == metric,
-                            onClick = { onCardioMetricSelect(metric) },
-                            label = { Text(stringResource(metric.labelRes())) },
-                        )
-                    }
-                }
-            }
-        }
-
-        item {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                HistoryRange.entries.forEach { range ->
-                    FilterChip(
-                        selected = state.range == range,
-                        onClick = { onRangeSelect(range) },
-                        label = { Text(stringResource(range.labelRes())) },
+            PrimaryTabRow(selectedTabIndex = state.availableModes.indexOf(state.mode).coerceAtLeast(0)) {
+                state.availableModes.forEach { mode ->
+                    Tab(
+                        selected = state.mode == mode,
+                        onClick = { onModeSelect(mode) },
+                        // Tab colors both states alike by default; M3 dims the unselected ones.
+                        selectedContentColor = MaterialTheme.colorScheme.primary,
+                        unselectedContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = { Text(stringResource(mode.labelRes()), maxLines = 1, overflow = TextOverflow.Ellipsis) },
                     )
                 }
             }
         }
 
-        item {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                state.devices.forEach { historyDevice ->
-                    val slot = historyDevice.colorSlot
-                    FilterChip(
-                        selected = slot != null,
-                        enabled = slot != null || state.canSelectMore,
-                        onClick = { onDeviceToggle(historyDevice.device.id) },
-                        label = { Text(historyDevice.device.name) },
-                        leadingIcon = slot?.let { { SeriesDot(SeriesColors[it]) } },
-                    )
-                }
-            }
-        }
-
-        item {
-            if (state.dates.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(120.dp),
-                    contentAlignment = Alignment.Center,
+        LazyColumn(
+            contentPadding = PaddingValues(vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                FlowRow(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Text(
-                        text = stringResource(
-                            if (state.series.isEmpty()) R.string.history_select_device else R.string.history_no_data_in_range
-                        ),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    if (state.plans.isNotEmpty()) {
+                        val selectedPlan = state.plans.firstOrNull { it.id == state.planId }
+                        DropdownChip(
+                            label = selectedPlan?.name ?: stringResource(R.string.history_plan_all),
+                            highlighted = selectedPlan != null,
+                            options = listOf<Long?>(null) + state.plans.map { it.id },
+                            selected = state.planId,
+                            optionLabel = { id ->
+                                state.plans.firstOrNull { it.id == id }?.name ?: stringResource(R.string.history_plan_all)
+                            },
+                            onSelect = onPlanSelect,
+                        )
+                    }
+                    DropdownChip(
+                        label = stringResource(state.range.labelRes()),
+                        highlighted = state.range != HistoryRange.THREE_MONTHS,
+                        options = HistoryRange.entries,
+                        selected = state.range,
+                        optionLabel = { stringResource(it.labelRes()) },
+                        onSelect = onRangeSelect,
                     )
-                }
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    val chartTitle = stringResource(
-                        when {
-                            cardioMetric == CardioMetric.DISTANCE -> R.string.history_chart_title_distance
-                            cardioMetric == CardioMetric.SPEED -> R.string.history_chart_title_speed
-                            isCardio -> R.string.history_chart_title_cardio
-                            bodyweightMeasure == BodyweightMeasure.REPS -> R.string.history_chart_title_reps
-                            bodyweightMeasure == BodyweightMeasure.TIME -> R.string.history_chart_title_time
-                            else -> R.string.history_chart_title
-                        }
-                    )
-                    Text(
-                        text = chartTitle,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    HistoryChart(
-                        dates = state.dates,
-                        points = points,
-                        scale = when {
-                            cardioMetric == CardioMetric.DISTANCE -> DistanceScale
-                            cardioMetric == CardioMetric.SPEED -> SpeedScale
-                            isCardio -> MinutesScale
-                            bodyweightMeasure == BodyweightMeasure.REPS -> RepsScale
-                            bodyweightMeasure == BodyweightMeasure.TIME -> SecondsScale
-                            else -> WeightScale
-                        },
-                        colorSlots = colorSlots,
-                        selected = selectedPoint,
-                        onSelect = { selectedPoint = it },
-                        dateFormatter = shortDateFormatter,
-                        surfaceColor = MaterialTheme.colorScheme.background,
-                        inkColor = MaterialTheme.colorScheme.onBackground,
-                        contentDescription = chartTitle,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(260.dp),
-                    )
-                    Text(
-                        text = selectedPoint?.let {
-                            val groups = formatGroups(it.day.groups, resources, bodyweightMeasure)
-                            val several = it.day.entries.size > 1
-                            val summary = when {
-                                cardioMetric == CardioMetric.SPEED ->
-                                    stringResource(R.string.history_speed_detail, formatKmh(it.value), groups)
-                                cardioMetric == CardioMetric.DISTANCE && several ->
-                                    stringResource(R.string.history_distance_total, formatKm(it.value), groups)
-                                isCardio && several ->
-                                    stringResource(R.string.history_cardio_total, formatDuration(it.value), groups)
-                                else -> groups
-                            }
-                            stringResource(R.string.history_point_detail, it.deviceName, it.day.date.format(shortDateFormatter), summary)
-                        } ?: stringResource(R.string.history_tap_hint),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (selectedPoint != null) {
-                            MaterialTheme.colorScheme.onSurface
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        },
-                    )
+                    if (isCardio && state.hasCardioMetrics) {
+                        DropdownChip(
+                            label = stringResource(state.cardioMetric.labelRes()),
+                            highlighted = state.cardioMetric != CardioMetric.DURATION,
+                            options = CardioMetric.entries,
+                            selected = state.cardioMetric,
+                            optionLabel = { stringResource(it.labelRes()) },
+                            onSelect = onCardioMetricSelect,
+                        )
+                    }
                 }
             }
-        }
 
-        val datesDescending = state.dates.asReversed()
-        items(datesDescending, key = { it.toEpochDay() }) { date ->
-            HistoryDayEntry(
-                date = date,
-                series = state.series,
-                bodyweightMeasure = bodyweightMeasure,
-                dateFormatter = longDateFormatter,
-            )
+            // One scrolling row, so many devices don't push the chart down.
+            item {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(state.devices, key = { it.device.id }) { historyDevice ->
+                        val slot = historyDevice.colorSlot
+                        FilterChip(
+                            selected = slot != null,
+                            enabled = slot != null || state.canSelectMore,
+                            onClick = { onDeviceToggle(historyDevice.device.id) },
+                            label = { Text(historyDevice.device.name) },
+                            leadingIcon = slot?.let { { SeriesDot(SeriesColors[it]) } },
+                        )
+                    }
+                }
+            }
+
+            item {
+                if (state.dates.isEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp)
+                            .fillMaxWidth()
+                            .height(120.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = stringResource(
+                                if (state.series.isEmpty()) R.string.history_select_device else R.string.history_no_data_in_range
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                } else {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        val chartTitle = stringResource(
+                            when {
+                                cardioMetric == CardioMetric.DISTANCE -> R.string.history_chart_title_distance
+                                cardioMetric == CardioMetric.SPEED -> R.string.history_chart_title_speed
+                                isCardio -> R.string.history_chart_title_cardio
+                                bodyweightMeasure == BodyweightMeasure.REPS -> R.string.history_chart_title_reps
+                                bodyweightMeasure == BodyweightMeasure.TIME -> R.string.history_chart_title_time
+                                else -> R.string.history_chart_title
+                            }
+                        )
+                        Text(
+                            text = chartTitle,
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        HistoryChart(
+                            dates = state.dates,
+                            points = points,
+                            scale = when {
+                                cardioMetric == CardioMetric.DISTANCE -> DistanceScale
+                                cardioMetric == CardioMetric.SPEED -> SpeedScale
+                                isCardio -> MinutesScale
+                                bodyweightMeasure == BodyweightMeasure.REPS -> RepsScale
+                                bodyweightMeasure == BodyweightMeasure.TIME -> SecondsScale
+                                else -> WeightScale
+                            },
+                            colorSlots = colorSlots,
+                            selected = selectedPoint,
+                            onSelect = { selectedPoint = it },
+                            dateFormatter = shortDateFormatter,
+                            surfaceColor = MaterialTheme.colorScheme.background,
+                            inkColor = MaterialTheme.colorScheme.onBackground,
+                            contentDescription = chartTitle,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(260.dp),
+                        )
+                        Text(
+                            text = selectedPoint?.let {
+                                val groups = formatGroups(it.day.groups, resources, bodyweightMeasure)
+                                val several = it.day.entries.size > 1
+                                val summary = when {
+                                    cardioMetric == CardioMetric.SPEED ->
+                                        stringResource(R.string.history_speed_detail, formatKmh(it.value), groups)
+                                    cardioMetric == CardioMetric.DISTANCE && several ->
+                                        stringResource(R.string.history_distance_total, formatKm(it.value), groups)
+                                    isCardio && several ->
+                                        stringResource(R.string.history_cardio_total, formatDuration(it.value), groups)
+                                    else -> groups
+                                }
+                                stringResource(R.string.history_point_detail, it.deviceName, it.day.date.format(shortDateFormatter), summary)
+                            } ?: stringResource(R.string.history_tap_hint),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (selectedPoint != null) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                        )
+                    }
+                }
+            }
+
+            val datesDescending = state.dates.asReversed()
+            items(datesDescending, key = { it.toEpochDay() }) { date ->
+                HistoryDayEntry(
+                    date = date,
+                    series = state.series,
+                    bodyweightMeasure = bodyweightMeasure,
+                    dateFormatter = longDateFormatter,
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                )
+            }
+        }
+    }
+}
+
+/** Filter chip that shows the current value and opens a menu; [highlighted] marks a non-default value. */
+@Composable
+private fun <T> DropdownChip(
+    label: String,
+    highlighted: Boolean,
+    options: List<T>,
+    selected: T,
+    optionLabel: @Composable (T) -> String,
+    onSelect: (T) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        FilterChip(
+            selected = highlighted,
+            onClick = { expanded = true },
+            label = { Text(label) },
+            trailingIcon = {
+                Icon(
+                    painter = painterResource(R.drawable.ic_expand_more),
+                    contentDescription = null,
+                    modifier = Modifier.size(FilterChipDefaults.IconSize),
+                )
+            },
+        )
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(optionLabel(option)) },
+                    onClick = {
+                        expanded = false
+                        onSelect(option)
+                    },
+                    trailingIcon = if (option == selected) {
+                        { Icon(painter = painterResource(R.drawable.ic_check), contentDescription = null) }
+                    } else {
+                        null
+                    },
+                )
+            }
         }
     }
 }
@@ -302,8 +358,9 @@ private fun HistoryDayEntry(
     series: List<HistorySeries>,
     dateFormatter: DateTimeFormatter,
     bodyweightMeasure: BodyweightMeasure?,
+    modifier: Modifier = Modifier,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         HorizontalDivider()
         Text(
             text = date.format(dateFormatter),
