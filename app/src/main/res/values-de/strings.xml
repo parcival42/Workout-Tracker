@@ -156,10 +156,10 @@
     <string name="history_chart_title">Höchstes Gewicht pro Tag (kg)</string>
     <string name="history_chart_title_cardio">Dauer pro Tag (min)</string>
     <string name="history_tap_hint">Tippe auf einen Punkt für Details.</string>
-    <string name="history_range_1m">1 M</string>
-    <string name="history_range_3m">3 M</string>
-    <string name="history_range_1y">1 J</string>
-    <string name="history_range_all">Alle</string>
+    <string name="history_range_1m">1 Monat</string>
+    <string name="history_range_3m">3 Monate</string>
+    <string name="history_range_1y">1 Jahr</string>
+    <string name="history_range_all">Gesamt</string>
     <string name="history_plan_all">Alle Pläne</string>
     <string name="entries_title">Alle Einträge</string>
     <string name="entry_no_plan">Ohne Plan</string>
