@@ -1,10 +1,10 @@
 <resources>
     <string name="app_name" translatable="false">Simple Workout Tracker</string>
 
-    <string name="devices_title">Devices</string>
-    <string name="devices_empty">No devices yet. Tap + to add a device, or pick common machines from the templates.</string>
+    <string name="devices_title">Exercises</string>
+    <string name="devices_empty">No exercises yet. Tap + to add an exercise, or pick common ones from the templates.</string>
     <string name="template_open_action">Add from templates</string>
-    <string name="template_dialog_title">Device templates</string>
+    <string name="template_dialog_title">Exercise templates</string>
     <string name="template_dialog_hint">Weights are rough defaults. Adjust them to your machines afterwards.</string>
     <string name="template_add_action">Add (%1$d)</string>
     <string name="template_already_added">Already added</string>
@@ -31,11 +31,11 @@
     <string name="template_exercise_bike">Exercise bike</string>
     <string name="template_rowing_machine">Rowing machine</string>
     <string name="template_stair_climber">Stair climber</string>
-    <string name="device_add_title">Add device</string>
-    <string name="device_add_own">Own device</string>
+    <string name="device_add_title">Add exercise</string>
+    <string name="device_add_own">Own exercise</string>
     <string name="device_add_own_description">Set name and weights yourself</string>
-    <string name="devices_archived_title">Archived devices</string>
-    <string name="devices_archived_empty">No archived devices.</string>
+    <string name="devices_archived_title">Archived exercises</string>
+    <string name="devices_archived_empty">No archived exercises.</string>
     <string name="log_count_none">No training logged</string>
     <plurals name="log_count_sets">
         <item quantity="one">%d set logged</item>
@@ -45,7 +45,7 @@
         <item quantity="one">%d session logged</item>
         <item quantity="other">%d sessions logged</item>
     </plurals>
-    <string name="device_delete_title">Delete device?</string>
+    <string name="device_delete_title">Delete exercise?</string>
     <string name="device_delete_message_no_logs">\"%1$s\" will be deleted permanently and removed from all plans.</string>
     <plurals name="device_delete_message_sets">
         <item quantity="one">\"%1$s\" and its %2$d logged set will be deleted permanently and removed from all plans. This cannot be undone.</item>
@@ -58,8 +58,8 @@
     <string name="device_archived_message">\"%1$s\" archived</string>
     <string name="action_restore">Restore</string>
     <string name="action_undo">Undo</string>
-    <string name="device_edit_title">Edit device</string>
-    <string name="device_name_label">Device name</string>
+    <string name="device_edit_title">Edit exercise</string>
+    <string name="device_name_label">Exercise name</string>
     <string name="device_name_placeholder">e.g. Leg press</string>
     <string name="device_min_weight_label">Minimum weight (kg)</string>
     <string name="device_min_weight_help">Lightest setting on the machine. Weight steps are counted from here.</string>
@@ -99,7 +99,7 @@
     <string name="template_floor_back_extension">Floor back extension</string>
     <string name="template_plank">Plank</string>
     <string name="template_wall_sit">Wall sit</string>
-    <string name="device_type_locked">The type can\'t be changed because training has already been logged on this device.</string>
+    <string name="device_type_locked">The type can\'t be changed because training has already been logged for this exercise.</string>
 
     <string name="plans_title">Training plans</string>
     <string name="training_title">Training</string>
@@ -107,9 +107,9 @@
     <string name="plans_default_hint">Mark a plan with the star to start it automatically in the Training tab.</string>
     <string name="quick_log_title">Quick log</string>
     <string name="quick_log_description">Log training without a plan</string>
-    <string name="quick_log_search">Search device</string>
-    <string name="quick_log_no_devices">No devices yet. Create devices in the Devices tab.</string>
-    <string name="quick_log_no_match">No device matches your search.</string>
+    <string name="quick_log_search">Search exercise</string>
+    <string name="quick_log_no_devices">No exercises yet. Create exercises in the Exercises tab.</string>
+    <string name="quick_log_no_match">No exercise matches your search.</string>
     <string name="quick_log_sheet_subtitle">Logged without a plan</string>
     <string name="quick_log_logged">\"%1$s\" logged</string>
     <string name="action_log">Log</string>
@@ -120,9 +120,9 @@
     <string name="plan_rename_title">Rename plan</string>
     <string name="plan_delete_title">Delete plan?</string>
     <string name="plan_delete_message">The plan \"%1$s\" will be deleted. Your training history is kept.</string>
-    <string name="plan_entries_empty">No devices in this plan yet. Tap + to add one.</string>
-    <string name="plan_add_device_title">Add device to plan</string>
-    <string name="plan_no_devices_available">All devices are already in this plan. Create new devices in the Devices tab.</string>
+    <string name="plan_entries_empty">No exercises in this plan yet. Tap + to add one.</string>
+    <string name="plan_add_device_title">Add exercise to plan</string>
+    <string name="plan_no_devices_available">All exercises are already in this plan. Create new exercises in the Exercises tab.</string>
     <string name="plan_entry_targets" translatable="false">%1$d × %2$d</string>
     <string name="target_sets">Sets</string>
     <string name="target_reps">Reps</string>
@@ -133,7 +133,7 @@
     <string name="duration_exact" translatable="false">%1$s min</string>
     <string name="duration_dialog_title">Set duration</string>
 
-    <string name="workout_empty">This plan has no devices yet. Add devices with the edit button.</string>
+    <string name="workout_empty">This plan has no exercises yet. Add exercises with the edit button.</string>
     <string name="workout_progress" translatable="false">%1$d/%2$d</string>
     <string name="workout_set_summary" translatable="false">%1$s kg × %2$d</string>
     <string name="set_summary_timed" translatable="false">%1$s kg · %2$s min</string>
@@ -164,7 +164,7 @@
 
     <string name="history_title">History</string>
     <string name="history_empty">No training logged yet. Your history appears here after your first workout.</string>
-    <string name="history_select_device">Select a device to see its history.</string>
+    <string name="history_select_device">Select an exercise to see its history.</string>
     <string name="history_no_data_in_range">No training in this time range.</string>
     <string name="history_chart_title">Top weight per day (kg)</string>
     <string name="history_chart_title_cardio">Duration per day (min)</string>
@@ -191,7 +191,7 @@
     <string name="settings_title">Settings</string>
     <string name="settings_language_title">Language</string>
     <string name="settings_plan_defaults_title">Defaults for new plan entries</string>
-    <string name="settings_plan_defaults_description">Prefilled when you add a device to a plan. Existing plan entries are not changed.</string>
+    <string name="settings_plan_defaults_description">Prefilled when you add an exercise to a plan. Existing plan entries are not changed.</string>
     <string name="settings_default_duration">Cardio duration (min)</string>
     <string name="language_system">System default</string>
     <string name="language_german" translatable="false">Deutsch</string>
@@ -201,7 +201,7 @@
     <string name="backup_export_action">Export data</string>
     <string name="backup_import_action">Import data</string>
     <string name="backup_import_confirm_title">Replace all data?</string>
-    <string name="backup_import_confirm_message">All devices, plans and training history on this phone will be replaced by the contents of the file. This cannot be undone.</string>
+    <string name="backup_import_confirm_message">All exercises, plans and training history on this phone will be replaced by the contents of the file. This cannot be undone.</string>
     <string name="backup_import_confirm_action">Replace</string>
     <string name="backup_exported">Data exported.</string>
     <string name="backup_export_failed">Export failed.</string>

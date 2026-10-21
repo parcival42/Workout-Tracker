@@ -2,10 +2,6 @@
 
 ## Ideas
 
-- Rename the "Devices" tab ("Geräte") to a term that covers machines as well as bodyweight
-  exercises. Rejected so far: "Übungen" (sounds like practising, not training hard),
-  "Stationen" (does not fit bodyweight exercises at home). Code keeps the name `Device`;
-  a rename also touches the store texts in `fastlane/metadata/` and the screenshots.
 - Cardio distance, step 2: distance as plan target ("run 3 km today"), chosen per plan entry
   (duration or distance) for devices that track distance. Open: the duration is then the
   result and has the same stale-prefill problem as the distance today; km/h needs both.

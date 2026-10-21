@@ -1,8 +1,8 @@
 <resources>
-    <string name="devices_title">Geräte</string>
-    <string name="devices_empty">Noch keine Geräte. Tippe auf +, um ein Gerät anzulegen, oder übernimm gängige Geräte aus den Vorlagen.</string>
+    <string name="devices_title">Übungen</string>
+    <string name="devices_empty">Noch keine Übungen. Tippe auf +, um eine Übung anzulegen, oder übernimm gängige Übungen aus den Vorlagen.</string>
     <string name="template_open_action">Aus Vorlagen hinzufügen</string>
-    <string name="template_dialog_title">Gerätevorlagen</string>
+    <string name="template_dialog_title">Übungsvorlagen</string>
     <string name="template_dialog_hint">Die Gewichte sind Richtwerte. Passe sie danach an deine Geräte an.</string>
     <string name="template_add_action">Hinzufügen (%1$d)</string>
     <string name="template_already_added">Bereits vorhanden</string>
@@ -29,11 +29,11 @@
     <string name="template_exercise_bike">Ergometer</string>
     <string name="template_rowing_machine">Rudergerät</string>
     <string name="template_stair_climber">Stepper</string>
-    <string name="device_add_title">Gerät anlegen</string>
-    <string name="device_add_own">Eigenes Gerät</string>
+    <string name="device_add_title">Übung anlegen</string>
+    <string name="device_add_own">Eigene Übung</string>
     <string name="device_add_own_description">Name und Gewichte selbst festlegen</string>
-    <string name="devices_archived_title">Archivierte Geräte</string>
-    <string name="devices_archived_empty">Keine archivierten Geräte.</string>
+    <string name="devices_archived_title">Archivierte Übungen</string>
+    <string name="devices_archived_empty">Keine archivierten Übungen.</string>
     <string name="log_count_none">Kein Training eingetragen</string>
     <plurals name="log_count_sets">
         <item quantity="one">%d Satz eingetragen</item>
@@ -43,21 +43,21 @@
         <item quantity="one">%d Einheit eingetragen</item>
         <item quantity="other">%d Einheiten eingetragen</item>
     </plurals>
-    <string name="device_delete_title">Gerät löschen?</string>
+    <string name="device_delete_title">Übung löschen?</string>
     <string name="device_delete_message_no_logs">„%1$s“ wird endgültig gelöscht und aus allen Plänen entfernt.</string>
     <plurals name="device_delete_message_sets">
-        <item quantity="one">„%1$s“ und %2$d eingetragener Satz werden endgültig gelöscht, das Gerät wird aus allen Plänen entfernt. Das kann nicht rückgängig gemacht werden.</item>
-        <item quantity="other">„%1$s“ und %2$d eingetragene Sätze werden endgültig gelöscht, das Gerät wird aus allen Plänen entfernt. Das kann nicht rückgängig gemacht werden.</item>
+        <item quantity="one">„%1$s“ und %2$d eingetragener Satz werden endgültig gelöscht, die Übung wird aus allen Plänen entfernt. Das kann nicht rückgängig gemacht werden.</item>
+        <item quantity="other">„%1$s“ und %2$d eingetragene Sätze werden endgültig gelöscht, die Übung wird aus allen Plänen entfernt. Das kann nicht rückgängig gemacht werden.</item>
     </plurals>
     <plurals name="device_delete_message_sessions">
-        <item quantity="one">„%1$s“ und %2$d eingetragene Einheit werden endgültig gelöscht, das Gerät wird aus allen Plänen entfernt. Das kann nicht rückgängig gemacht werden.</item>
-        <item quantity="other">„%1$s“ und %2$d eingetragene Einheiten werden endgültig gelöscht, das Gerät wird aus allen Plänen entfernt. Das kann nicht rückgängig gemacht werden.</item>
+        <item quantity="one">„%1$s“ und %2$d eingetragene Einheit werden endgültig gelöscht, die Übung wird aus allen Plänen entfernt. Das kann nicht rückgängig gemacht werden.</item>
+        <item quantity="other">„%1$s“ und %2$d eingetragene Einheiten werden endgültig gelöscht, die Übung wird aus allen Plänen entfernt. Das kann nicht rückgängig gemacht werden.</item>
     </plurals>
     <string name="device_archived_message">„%1$s“ archiviert</string>
     <string name="action_restore">Wiederherstellen</string>
     <string name="action_undo">Rückgängig</string>
-    <string name="device_edit_title">Gerät bearbeiten</string>
-    <string name="device_name_label">Gerätename</string>
+    <string name="device_edit_title">Übung bearbeiten</string>
+    <string name="device_name_label">Name der Übung</string>
     <string name="device_name_placeholder">z. B. Beinpresse</string>
     <string name="device_min_weight_label">Mindestgewicht (kg)</string>
     <string name="device_min_weight_help">Leichteste Einstellung am Gerät. Von hier aus wird in Abstufungen gezählt.</string>
@@ -92,7 +92,7 @@
     <string name="template_floor_back_extension">Rückenstrecken</string>
     <string name="template_plank">Plank</string>
     <string name="template_wall_sit">Wandsitzen</string>
-    <string name="device_type_locked">Der Typ lässt sich nicht mehr ändern, weil an diesem Gerät schon Training erfasst ist.</string>
+    <string name="device_type_locked">Der Typ lässt sich nicht mehr ändern, weil für diese Übung schon Training erfasst ist.</string>
 
     <string name="plans_title">Trainingspläne</string>
     <string name="training_title">Training</string>
@@ -100,9 +100,9 @@
     <string name="plans_default_hint">Markiere einen Plan mit dem Stern, damit er im Tab Training automatisch startet.</string>
     <string name="quick_log_title">Quick log</string>
     <string name="quick_log_description">Training ohne Plan eintragen</string>
-    <string name="quick_log_search">Gerät suchen</string>
-    <string name="quick_log_no_devices">Noch keine Geräte. Lege Geräte im Tab Geräte an.</string>
-    <string name="quick_log_no_match">Kein Gerät passt zur Suche.</string>
+    <string name="quick_log_search">Übung suchen</string>
+    <string name="quick_log_no_devices">Noch keine Übungen. Lege Übungen im Tab Übungen an.</string>
+    <string name="quick_log_no_match">Keine Übung passt zur Suche.</string>
     <string name="quick_log_sheet_subtitle">Wird ohne Plan eingetragen</string>
     <string name="quick_log_logged">„%1$s“ eingetragen</string>
     <string name="action_log">Eintragen</string>
@@ -113,16 +113,16 @@
     <string name="plan_rename_title">Plan umbenennen</string>
     <string name="plan_delete_title">Plan löschen?</string>
     <string name="plan_delete_message">Der Plan „%1$s“ wird gelöscht. Dein Trainingsverlauf bleibt erhalten.</string>
-    <string name="plan_entries_empty">Noch keine Geräte in diesem Plan. Tippe auf +, um eins hinzuzufügen.</string>
-    <string name="plan_add_device_title">Gerät zum Plan hinzufügen</string>
-    <string name="plan_no_devices_available">Alle Geräte sind bereits in diesem Plan. Neue Geräte legst du im Tab Geräte an.</string>
+    <string name="plan_entries_empty">Noch keine Übungen in diesem Plan. Tippe auf +, um eine hinzuzufügen.</string>
+    <string name="plan_add_device_title">Übung zum Plan hinzufügen</string>
+    <string name="plan_no_devices_available">Alle Übungen sind bereits in diesem Plan. Neue Übungen legst du im Tab Übungen an.</string>
     <string name="target_sets">Sätze</string>
     <string name="target_reps">Wiederholungen</string>
     <string name="duration_label">Dauer</string>
     <string name="duration_label_min">Dauer (min)</string>
     <string name="duration_dialog_title">Dauer festlegen</string>
 
-    <string name="workout_empty">Dieser Plan hat noch keine Geräte. Füge sie über den Bearbeiten-Button hinzu.</string>
+    <string name="workout_empty">Dieser Plan hat noch keine Übungen. Füge sie über den Bearbeiten-Button hinzu.</string>
     <string name="next_set_sheet_subtitle">Gewicht und Wiederholungen für den nächsten Satz</string>
     <string name="weight_label">Gewicht</string>
     <string name="action_edit_next_set">Nächsten Satz bearbeiten</string>
@@ -148,7 +148,7 @@
 
     <string name="history_title">Verlauf</string>
     <string name="history_empty">Noch keine Trainingsdaten. Dein Verlauf erscheint hier nach dem ersten Training.</string>
-    <string name="history_select_device">Wähle ein Gerät, um seinen Verlauf zu sehen.</string>
+    <string name="history_select_device">Wähle eine Übung, um ihren Verlauf zu sehen.</string>
     <string name="history_no_data_in_range">Kein Training in diesem Zeitraum.</string>
     <string name="history_chart_title">Höchstes Gewicht pro Tag (kg)</string>
     <string name="history_chart_title_cardio">Dauer pro Tag (min)</string>
@@ -168,7 +168,7 @@
     <string name="settings_title">Einstellungen</string>
     <string name="settings_language_title">Sprache</string>
     <string name="settings_plan_defaults_title">Standardwerte für neue Planeinträge</string>
-    <string name="settings_plan_defaults_description">Wird vorbelegt, wenn du ein Gerät zu einem Plan hinzufügst. Bestehende Planeinträge bleiben unverändert.</string>
+    <string name="settings_plan_defaults_description">Wird vorbelegt, wenn du eine Übung zu einem Plan hinzufügst. Bestehende Planeinträge bleiben unverändert.</string>
     <string name="settings_default_duration">Cardio-Dauer (min)</string>
     <string name="language_system">Systemsprache</string>
     <string name="settings_data_title">Datensicherung</string>
@@ -176,7 +176,7 @@
     <string name="backup_export_action">Daten exportieren</string>
     <string name="backup_import_action">Daten importieren</string>
     <string name="backup_import_confirm_title">Alle Daten ersetzen?</string>
-    <string name="backup_import_confirm_message">Alle Geräte, Pläne und der Trainingsverlauf auf diesem Handy werden durch den Inhalt der Datei ersetzt. Das lässt sich nicht rückgängig machen.</string>
+    <string name="backup_import_confirm_message">Alle Übungen, Pläne und der Trainingsverlauf auf diesem Handy werden durch den Inhalt der Datei ersetzt. Das lässt sich nicht rückgängig machen.</string>
     <string name="backup_import_confirm_action">Ersetzen</string>
     <string name="backup_exported">Daten exportiert.</string>
     <string name="backup_export_failed">Export fehlgeschlagen.</string>
