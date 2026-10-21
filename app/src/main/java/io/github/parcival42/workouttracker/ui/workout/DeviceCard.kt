@@ -21,6 +21,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -55,6 +56,8 @@ private const val MAX_PROGRESS_SEGMENTS = 10
  * logged entries stay editable. It stays expanded until the user collapses it.
  * [isActive] marks the next device to train: its card stands out a bit from the others.
  * [done]/[target] show the logged and planned sets (or sessions) as segments; no target, no segments.
+ * [onUndo] (null = nothing to undo) puts the undo icon in the header next to the counter it
+ * changes, away from "Done" in the bottom right corner, so it is not hit by mistake.
  */
 @Composable
 internal fun DeviceCard(
@@ -66,6 +69,8 @@ internal fun DeviceCard(
     summary: String,
     isActive: Boolean = false,
     highlighted: Boolean = false,
+    onUndo: (() -> Unit)? = null,
+    undoDescription: String? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
@@ -132,6 +137,11 @@ internal fun DeviceCard(
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+                if (onUndo != null && !collapsed) {
+                    IconButton(onClick = onUndo) {
+                        Icon(painter = painterResource(R.drawable.ic_undo), contentDescription = undoDescription)
+                    }
                 }
                 if (isComplete) {
                     Icon(
