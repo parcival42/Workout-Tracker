@@ -17,6 +17,8 @@ import io.github.parcival42.workouttracker.ui.components.TARGET_MINUTES_RANGE
 import io.github.parcival42.workouttracker.ui.components.TARGET_REPS_RANGE
 import io.github.parcival42.workouttracker.ui.components.TARGET_SETS_RANGE
 import io.github.parcival42.workouttracker.ui.components.secondsToMinutes
+import io.github.parcival42.workouttracker.ui.theme.AppTheme
+import io.github.parcival42.workouttracker.ui.theme.ThemeSettings
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -36,7 +38,12 @@ class SettingsViewModel(
     private val backupRepository: BackupRepository,
     private val contentResolver: ContentResolver,
     private val userSettingsDao: UserSettingsDao,
+    private val themeSettings: ThemeSettings,
 ) : ViewModel() {
+
+    val theme: StateFlow<AppTheme> = themeSettings.theme
+
+    fun setTheme(theme: AppTheme) = themeSettings.setTheme(theme)
 
     private val _result = MutableStateFlow<BackupResult?>(null)
     val result: StateFlow<BackupResult?> = _result.asStateFlow()
@@ -125,6 +132,7 @@ class SettingsViewModel(
                     BackupRepository(app.database),
                     app.contentResolver,
                     app.database.userSettingsDao(),
+                    app.themeSettings,
                 )
             }
         }

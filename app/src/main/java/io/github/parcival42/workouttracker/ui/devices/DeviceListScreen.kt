@@ -2,13 +2,12 @@ package io.github.parcival42.workouttracker.ui.devices
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
@@ -34,16 +33,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.parcival42.workouttracker.R
 import io.github.parcival42.workouttracker.data.Device
 import io.github.parcival42.workouttracker.data.DeviceType
+import io.github.parcival42.workouttracker.ui.components.DeviceTypeBadge
 import io.github.parcival42.workouttracker.ui.components.EmptyHint
+import io.github.parcival42.workouttracker.ui.components.cardioSummary
+import io.github.parcival42.workouttracker.ui.components.setSummary
 import io.github.parcival42.workouttracker.ui.components.formatKg
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.temporal.ChronoUnit
 
 @Composable
 fun DeviceListScreen(
@@ -53,6 +62,7 @@ fun DeviceListScreen(
     val devices by viewModel.devices.collectAsStateWithLifecycle()
     val archivedDevices by viewModel.archivedDevices.collectAsStateWithLifecycle()
     val deviceIdsWithLogs by viewModel.deviceIdsWithLogs.collectAsStateWithLifecycle()
+    val lastLogs by viewModel.lastLogs.collectAsStateWithLifecycle()
     var showAddChoice by rememberSaveable { mutableStateOf(false) }
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var showTemplateDialog by rememberSaveable { mutableStateOf(false) }
@@ -63,6 +73,7 @@ fun DeviceListScreen(
 
     DeviceListContent(
         devices = devices,
+        lastLogs = lastLogs,
         hasArchivedDevices = archivedDevices.isNotEmpty(),
         snackbarHostState = snackbarHostState,
         onAddClick = { showAddChoice = true },
@@ -138,6 +149,7 @@ fun DeviceListScreen(
 @Composable
 private fun DeviceListContent(
     devices: List<Device>,
+    lastLogs: Map<Long, LastLog>,
     hasArchivedDevices: Boolean,
     snackbarHostState: SnackbarHostState,
     onAddClick: () -> Unit,
@@ -182,10 +194,27 @@ private fun DeviceListContent(
                 },
             )
         } else {
-            LazyColumn(modifier = Modifier.padding(innerPadding)) {
-                items(devices, key = { it.id }) { device ->
-                    DeviceRow(device = device, onClick = { onDeviceClick(device) })
-                    HorizontalDivider()
+            // Grouped by type; the FAB must not cover the last row.
+            val groups = remember(devices) { devices.groupBy { it.type } }
+            LazyColumn(
+                modifier = Modifier.padding(innerPadding),
+                contentPadding = PaddingValues(bottom = 88.dp),
+            ) {
+                DeviceType.entries.forEach { type ->
+                    val group = groups[type] ?: return@forEach
+                    item(key = "header-$type") {
+                        Text(
+                            text = stringResource(type.labelRes()),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 4.dp)
+                                .semantics { heading() },
+                        )
+                    }
+                    items(group, key = { it.id }) { device ->
+                        DeviceRow(device = device, lastLog = lastLogs[device.id], onClick = { onDeviceClick(device) })
+                    }
                 }
             }
         }
@@ -215,33 +244,51 @@ private fun AddDeviceSheet(onOwnDevice: () -> Unit, onTemplates: () -> Unit, onD
     }
 }
 
+/** Trained devices show their last entry; untrained ones their setup (weights, measure). */
 @Composable
-private fun DeviceRow(device: Device, onClick: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-    ) {
-        Text(text = device.name, style = MaterialTheme.typography.titleMedium)
-        Text(
-            text = when (device.type) {
-                DeviceType.STRENGTH -> stringResource(
-                    R.string.device_weight_info,
-                    formatKg(device.minWeightGrams),
-                    formatKg(device.weightStepGrams),
-                )
-                DeviceType.CARDIO -> stringResource(
-                    if (device.tracksDistance) R.string.device_cardio_distance_info else R.string.device_type_cardio
-                )
-                DeviceType.BODYWEIGHT -> stringResource(
-                    R.string.device_bodyweight_info,
-                    stringResource(R.string.device_type_bodyweight),
-                    stringResource(device.measure.labelRes()),
-                )
-            },
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+private fun DeviceRow(device: Device, lastLog: LastLog?, onClick: () -> Unit) {
+    val resources = LocalResources.current
+    val lastText = lastLog?.let { log ->
+        val entry = log.set?.let { resources.setSummary(it, device.type == DeviceType.BODYWEIGHT) }
+            ?: log.session?.let { resources.cardioSummary(it) }
+            ?: return@let null
+        stringResource(R.string.device_last_log, entry, relativeDay(log.performedAt))
     }
+    ListItem(
+        headlineContent = { Text(text = device.name, style = MaterialTheme.typography.titleMedium) },
+        supportingContent = { Text(lastText ?: setupText(device)) },
+        leadingContent = { DeviceTypeBadge(type = device.type) },
+        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+        modifier = Modifier.clickable(onClick = onClick),
+    )
+}
+
+/** "today", "yesterday" or "3 days ago". */
+@Composable
+private fun relativeDay(epochMillis: Long): String {
+    val zone = ZoneId.systemDefault()
+    val day = Instant.ofEpochMilli(epochMillis).atZone(zone).toLocalDate()
+    val days = ChronoUnit.DAYS.between(day, LocalDate.now(zone)).toInt().coerceAtLeast(0)
+    return when (days) {
+        0 -> stringResource(R.string.relative_today)
+        1 -> stringResource(R.string.relative_yesterday)
+        else -> pluralStringResource(R.plurals.relative_days_ago, days, days)
+    }
+}
+
+@Composable
+private fun setupText(device: Device): String = when (device.type) {
+    DeviceType.STRENGTH -> stringResource(
+        R.string.device_weight_info,
+        formatKg(device.minWeightGrams),
+        formatKg(device.weightStepGrams),
+    )
+    DeviceType.CARDIO -> stringResource(
+        if (device.tracksDistance) R.string.device_cardio_distance_info else R.string.device_type_cardio
+    )
+    DeviceType.BODYWEIGHT -> stringResource(
+        R.string.device_bodyweight_info,
+        stringResource(R.string.device_type_bodyweight),
+        stringResource(device.measure.labelRes()),
+    )
 }

@@ -2,12 +2,15 @@ package io.github.parcival42.workouttracker.ui.history
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import io.github.parcival42.workouttracker.ui.theme.isLight
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -32,8 +35,9 @@ import kotlin.math.max
 import kotlin.math.pow
 import kotlin.math.roundToInt
 
-// Validated categorical palette (dark mode), assigned by fixed slot, never cycled.
-val SeriesColors = listOf(
+// Validated categorical palette, assigned by fixed slot, never cycled. Same hues in both modes,
+// each with its own step for the light and the dark surface.
+private val DarkSeriesColors = listOf(
     Color(0xFF3987E5),
     Color(0xFFD95926),
     Color(0xFF199E70),
@@ -44,9 +48,25 @@ val SeriesColors = listOf(
     Color(0xFFE66767),
 )
 
-private val GridColor = Color(0xFF2C2C2A)
-private val AxisColor = Color(0xFF383835)
-private val MutedInk = Color(0xFF898781)
+private val LightSeriesColors = listOf(
+    Color(0xFF2A78D6),
+    Color(0xFFEB6834),
+    Color(0xFF1BAF7A),
+    Color(0xFFEDA100),
+    Color(0xFFE87BA4),
+    Color(0xFF008300),
+    Color(0xFF6250D6),
+    Color(0xFFE34948),
+)
+
+val SeriesColors: List<Color>
+    @Composable @ReadOnlyComposable
+    get() = if (MaterialTheme.colorScheme.isLight) LightSeriesColors else DarkSeriesColors
+
+private class ChartChrome(val grid: Color, val axis: Color, val mutedInk: Color)
+
+private val DarkChrome = ChartChrome(grid = Color(0xFF2C2C2A), axis = Color(0xFF383835), mutedInk = Color(0xFF898781))
+private val LightChrome = ChartChrome(grid = Color(0xFFE1E0D9), axis = Color(0xFFC3C2B7), mutedInk = Color(0xFF898781))
 
 /**
  * Y axis units of a chart: the smallest visible range, allowed tick step factors and label
@@ -148,7 +168,9 @@ fun HistoryChart(
     modifier: Modifier = Modifier,
 ) {
     val textMeasurer = rememberTextMeasurer()
-    val labelStyle = TextStyle(color = MutedInk, fontSize = 11.sp)
+    val chrome = if (MaterialTheme.colorScheme.isLight) LightChrome else DarkChrome
+    val seriesColors = SeriesColors
+    val labelStyle = TextStyle(color = chrome.mutedInk, fontSize = 11.sp)
     val allPoints = remember(points) { points.values.flatten() }
     val yAxis = remember(allPoints, scale) {
         niceYAxis(allPoints.minOf { it.value }, allPoints.maxOf { it.value }, scale)
@@ -170,11 +192,11 @@ fun HistoryChart(
 
         yAxis.ticks.forEach { tick ->
             val y = layout.y(tick)
-            drawLine(GridColor, Offset(layout.left, y), Offset(layout.right, y), strokeWidth = 1.dp.toPx())
+            drawLine(chrome.grid, Offset(layout.left, y), Offset(layout.right, y), strokeWidth = 1.dp.toPx())
             val label = textMeasurer.measure(scale.format(tick), labelStyle)
             drawText(label, topLeft = Offset(layout.left - label.size.width - 6.dp.toPx(), y - label.size.height / 2f))
         }
-        drawLine(AxisColor, Offset(layout.left, layout.bottom), Offset(layout.right, layout.bottom), strokeWidth = 1.dp.toPx())
+        drawLine(chrome.axis, Offset(layout.left, layout.bottom), Offset(layout.right, layout.bottom), strokeWidth = 1.dp.toPx())
 
         val labelEvery = max(1, ceil(dates.size / max(1f, layout.plotWidth / 64.dp.toPx())).toInt())
         dates.forEachIndexed { index, date ->
@@ -186,7 +208,7 @@ fun HistoryChart(
         }
 
         points.forEach { (deviceId, seriesPoints) ->
-            val color = SeriesColors[colorSlots.getValue(deviceId)]
+            val color = seriesColors[colorSlots.getValue(deviceId)]
             if (seriesPoints.size > 1) {
                 val path = Path()
                 seriesPoints.forEachIndexed { i, p ->

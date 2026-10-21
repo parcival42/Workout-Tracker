@@ -77,7 +77,6 @@
         <item quantity="one">%d Wdh.</item>
         <item quantity="other">%d Wdh.</item>
     </plurals>
-    <string name="workout_next_set_bodyweight">Nächster Satz: %1$s</string>
     <string name="history_chart_title_reps">Beste Wiederholungen pro Tag</string>
     <string name="history_chart_title_time">Längste Zeit pro Tag</string>
     <string name="template_pushups">Liegestütze</string>
@@ -124,7 +123,6 @@
     <string name="duration_dialog_title">Dauer festlegen</string>
 
     <string name="workout_empty">Dieser Plan hat noch keine Geräte. Füge sie über den Bearbeiten-Button hinzu.</string>
-    <string name="workout_next_set">Nächster Satz: %1$s kg × %2$d</string>
     <string name="next_set_sheet_subtitle">Gewicht und Wiederholungen für den nächsten Satz</string>
     <string name="weight_label">Gewicht</string>
     <string name="action_edit_next_set">Nächsten Satz bearbeiten</string>
@@ -142,7 +140,6 @@
     <string name="workout_plan_complete">Trainingsplan abgeschlossen</string>
     <string name="workout_plan_restarted">Trainingsplan neu gestartet</string>
     <string name="action_edit_plan">Plan bearbeiten</string>
-    <string name="workout_next_session">Dauer: %1$s min</string>
     <string name="next_session_sheet_subtitle">Dauer der nächsten Einheit</string>
     <string name="action_edit_next_session">Nächste Einheit bearbeiten</string>
     <string name="action_extra_session">Weitere Einheit</string>
@@ -187,7 +184,7 @@
     <string name="backup_import_invalid">Diese Datei ist keine gültige Simple-Workout-Tracker-Sicherung. Es wurde nichts geändert.</string>
     <string name="backup_import_failed">Import fehlgeschlagen. Es wurde nichts geändert.</string>
     <string name="settings_about_title">Über die App</string>
-    <string name="settings_version">Version %1$s (%2$d)</string>
+    <string name="settings_version">Version %1$s</string>
     <string name="settings_repository_action">Quellcode auf GitHub</string>
     <string name="licenses_title">Open-Source-Lizenzen</string>
     <string name="licenses_intro">Diese App nutzt die folgenden Open-Source-Bibliotheken, alle unter der Apache License, Version 2.0. Der vollständige Lizenztext steht darunter.</string>
@@ -223,8 +220,6 @@
     </plurals>
     <string name="circuit_settings_summary">%1$s · %2$s min pro Station · %3$s min Pause · %4$s Countdown</string>
     <string name="circuit_own_station_time">Eigene Stationszeit</string>
-    <string name="workout_next_station">Nächste Station: %1$s kg · %2$s min</string>
-    <string name="workout_station_time">Stationszeit: %1$s min</string>
     <string name="next_station_sheet_subtitle">Für die nächste Station</string>
     <string name="station_time_plan_hint">Wird im Plan gespeichert; eine laufende Station behält ihre Zeit.</string>
     <string name="duration_input_label">Dauer (min oder m:ss)</string>
@@ -252,11 +247,28 @@
     <string name="distance_label">Distanz</string>
     <string name="distance_placeholder">z. B. 2,4</string>
     <string name="next_session_sheet_subtitle_distance">Dauer und Distanz der nächsten Einheit</string>
-    <string name="workout_next_session_distance">Dauer: %1$s min · %2$s km</string>
     <string name="workout_session_logged">Gespeichert: %1$s</string>
     <string name="action_adjust">Anpassen</string>
     <string name="history_metric_duration">Dauer</string>
     <string name="history_metric_distance">Distanz</string>
     <string name="history_chart_title_distance">Distanz pro Tag (km)</string>
     <string name="history_chart_title_speed">Durchschnittstempo pro Tag (km/h)</string>
+    <string name="settings_appearance_title">Darstellung</string>
+    <string name="settings_theme_title">Farbschema</string>
+    <string name="theme_dark">Dunkel</string>
+    <string name="theme_light">Hell</string>
+    <string name="theme_warm">Warm</string>
+    <string name="workout_next_set_label">Nächster Satz</string>
+    <string name="workout_next_station_label">Nächste Station</string>
+    <string name="workout_station_time_label">Stationszeit</string>
+    <string name="workout_next_session_label">Nächste Einheit</string>
+    <string name="workout_plan_progress">Erledigt: %1$d/%2$d</string>
+    <string name="workout_summary_volume">Volumen</string>
+    <string name="relative_today">heute</string>
+    <string name="relative_yesterday">gestern</string>
+    <plurals name="relative_days_ago">
+        <item quantity="one">vor %d Tag</item>
+        <item quantity="other">vor %d Tagen</item>
+    </plurals>
+    <string name="history_stat_days">Trainingstage</string>
 </resources>
