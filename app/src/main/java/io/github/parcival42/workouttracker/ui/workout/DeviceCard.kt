@@ -29,6 +29,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -36,6 +37,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -44,8 +47,11 @@ import androidx.compose.ui.unit.dp
 import io.github.parcival42.workouttracker.R
 import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.ui.components.DeviceTypeBadge
+import kotlinx.coroutines.delay
 
 private const val COMPLETED_CARD_ALPHA = 0.5f
+
+private const val COLLAPSE_DELAY_MILLIS = 400L
 
 // Above this many sets the segments get too narrow; a plain bar is used instead.
 private const val MAX_PROGRESS_SEGMENTS = 10
@@ -74,9 +80,21 @@ internal fun DeviceCard(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
-    // Collapse again on the next completion if the device was reopened in between (e.g. undo).
-    LaunchedEffect(isComplete) { if (!isComplete) expanded = false }
-    val collapsed = isComplete && !expanded
+    // A card that is already complete when shown starts collapsed; one completed right now waits.
+    var collapseDue by remember { mutableStateOf(isComplete) }
+    LaunchedEffect(isComplete) {
+        if (isComplete) {
+            // Collapsing moves the cards below up under the finger: a quick second tap would hit
+            // the next card's "Done". Meanwhile it lands on this card, which ignores taps (the
+            // cardio card shows "Extra session" right where "Done" was).
+            if (!collapseDue) delay(COLLAPSE_DELAY_MILLIS)
+        } else {
+            // Collapse again on the next completion if the device was reopened in between (e.g. undo).
+            expanded = false
+        }
+        collapseDue = isComplete
+    }
+    val collapsed = isComplete && collapseDue && !expanded
     val containerColor by animateColorAsState(
         if (isActive) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.surfaceContainerHigh,
         label = "cardContainer",
@@ -99,7 +117,9 @@ internal fun DeviceCard(
             .animateContentSize(),
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = if (collapsed) 8.dp else 16.dp),
+            modifier = Modifier
+                .then(if (isComplete && !collapseDue) Modifier.swallowTaps() else Modifier)
+                .padding(horizontal = 16.dp, vertical = if (collapsed) 8.dp else 16.dp),
             verticalArrangement = Arrangement.spacedBy(if (collapsed) 4.dp else 12.dp),
         ) {
             val toggleLabel = stringResource(if (expanded) R.string.action_hide_details else R.string.action_show_details)
@@ -167,6 +187,15 @@ internal fun DeviceCard(
                 if (target != null) SetProgress(done = done, target = target)
                 content()
             }
+        }
+    }
+}
+
+/** Consumes every pointer event before the children see it, so nothing inside reacts. */
+private fun Modifier.swallowTaps(): Modifier = pointerInput(Unit) {
+    awaitPointerEventScope {
+        while (true) {
+            awaitPointerEvent(PointerEventPass.Initial).changes.forEach { it.consume() }
         }
     }
 }
