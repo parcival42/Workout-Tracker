@@ -256,17 +256,10 @@ private fun HistoryContent(
                                 else -> resources.getString(R.string.weight_kg, formatKg(value))
                             }
                         }
-                        HistoryStats(
-                            trainingDays = state.dates.size,
-                            series = state.series,
-                            points = points,
-                            formatValue = formatValue,
-                        )
                         Text(
                             text = chartTitle,
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 8.dp),
                         )
                         HistoryChart(
                             dates = state.dates,
@@ -312,6 +305,14 @@ private fun HistoryContent(
                                 MaterialTheme.colorScheme.onSurfaceVariant
                             },
                         )
+                        // Below the chart, so the chart stays high up on the screen.
+                        HistoryStats(
+                            trainingDays = state.dates.size,
+                            series = state.series,
+                            points = points,
+                            formatValue = formatValue,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
                     }
                 }
             }
@@ -331,7 +332,7 @@ private fun HistoryContent(
 }
 
 /**
- * Key numbers above the chart: training days in the range, then per device its latest day value
+ * Key numbers under the chart: training days in the range, then per device its latest day value
  * and the change since its first day in the range (same value as the chart: top weight, total time ...).
  */
 @Composable
@@ -340,9 +341,10 @@ private fun HistoryStats(
     series: List<HistorySeries>,
     points: Map<Long, List<ChartPoint>>,
     formatValue: (Int) -> String,
+    modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        modifier = modifier.horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         StatTile(
