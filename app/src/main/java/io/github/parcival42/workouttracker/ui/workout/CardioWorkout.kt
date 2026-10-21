@@ -15,8 +15,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
@@ -37,7 +35,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalResources
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
@@ -83,6 +80,9 @@ internal fun CardioCard(
         isActive = isActive,
         highlighted = highlighted,
         summary = item.todaySessions.joinToString("  ·  ") { resources.cardioSummary(it) },
+        // Nothing to undo before the first session.
+        onUndo = onUndo.takeIf { item.todaySessions.isNotEmpty() },
+        undoDescription = stringResource(R.string.action_undo_session),
     ) {
         if (item.todaySessions.isNotEmpty()) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -108,31 +108,22 @@ internal fun CardioCard(
             onClick = onEditNextSession,
         )
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            // Nothing to undo before the first session; the buttons take the space instead.
-            if (item.todaySessions.isNotEmpty()) {
-                IconButton(onClick = onUndo) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_undo),
-                        contentDescription = stringResource(R.string.action_undo_session),
-                    )
-                }
-            }
-            // Keeps the button in the same grid slot as "Done" on strength cards, which have
-            // a second button here.
-            Spacer(modifier = Modifier.weight(1f))
-            // Once done, a further session stays possible but is no longer the prominent action.
-            if (isCircuitPlan) {
+        if (!isCircuitPlan) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                // Keeps the button in the same grid slot as "Done" on strength cards, which have
+                // a second button here.
                 Spacer(modifier = Modifier.weight(1f))
-            } else if (item.isComplete) {
-                OutlinedButton(onClick = onLogSession, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.action_extra_session), maxLines = 1)
+                // Once done, a further session stays possible but is no longer the prominent action.
+                if (item.isComplete) {
+                    OutlinedButton(onClick = onLogSession, modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.action_extra_session), maxLines = 1)
+                    }
+                } else {
+                    DoneButton(onClick = onLogSession, prominent = isActive, modifier = Modifier.weight(1f))
                 }
-            } else {
-                DoneButton(onClick = onLogSession, prominent = isActive, modifier = Modifier.weight(1f))
             }
         }
     }

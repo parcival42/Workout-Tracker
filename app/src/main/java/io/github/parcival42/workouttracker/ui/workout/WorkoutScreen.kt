@@ -409,6 +409,9 @@ private fun WorkoutCard(
         summary = item.todaySets.joinToString("  ·  ") { resources.setSummary(it, item.isBodyweight) },
         isActive = isActive,
         highlighted = highlighted,
+        // Nothing to undo before the first set.
+        onUndo = onUndo.takeIf { item.todaySets.isNotEmpty() },
+        undoDescription = stringResource(R.string.action_undo_set),
     ) {
         if (item.todaySets.isNotEmpty()) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -458,20 +461,11 @@ private fun WorkoutCard(
             onClick = onEditNextSet,
         )
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            // Nothing to undo before the first set; the buttons take the space instead.
-            if (item.todaySets.isNotEmpty()) {
-                IconButton(onClick = onUndo) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_undo),
-                        contentDescription = stringResource(R.string.action_undo_set),
-                    )
-                }
-            }
-            if (!isCircuitPlan) {
+        if (!isCircuitPlan) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
                 OutlinedButton(onClick = onCompleteOneSet, modifier = Modifier.weight(1f)) {
                     val nextSet = item.todaySets.size + 1
                     Text(
