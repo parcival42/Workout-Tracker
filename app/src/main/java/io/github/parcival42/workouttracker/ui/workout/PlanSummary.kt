@@ -33,7 +33,6 @@ import io.github.parcival42.workouttracker.ui.components.StatTile
 import io.github.parcival42.workouttracker.ui.components.formatDuration
 import java.text.NumberFormat
 
-private const val MILLIS_PER_SECOND = 1_000L
 private const val GRAMS_PER_KG = 1_000L
 
 /** Slim bar under the top bar: how many devices of the plan are done. */
@@ -60,23 +59,19 @@ internal fun PlanProgress(done: Int, total: Int) {
     }
 }
 
-private data class PlanTotals(val sets: Int, val volumeKg: Long, val cardioSeconds: Int, val durationSeconds: Long)
+// No training duration: logging after the fact (after a few devices or the whole workout) is
+// intended, so the log timestamps say nothing about how long the training took.
+private data class PlanTotals(val sets: Int, val volumeKg: Long, val cardioSeconds: Int)
 
 private fun totalsOf(items: List<WorkoutItem>): PlanTotals {
     val sets = items.filterIsInstance<StrengthItem>().flatMap { item -> item.todaySets.map { item to it } }
     val sessions = items.filterIsInstance<CardioItem>().flatMap { it.todaySessions }
     // Volume only counts sets with a weight and reps; bodyweight and timed sets have no volume.
     val volumeGrams = sets.sumOf { (item, set) -> if (item.isBodyweight) 0L else set.weightGrams.toLong() * (set.reps ?: 0) }
-    // A session (or timed set) is logged when it ends, so it started its duration earlier.
-    val starts = sets.map { (_, set) -> set.performedAt - (set.durationSeconds ?: 0) * MILLIS_PER_SECOND } +
-        sessions.map { it.performedAt - it.durationSeconds * MILLIS_PER_SECOND }
-    val ends = sets.map { it.second.performedAt } + sessions.map { it.performedAt }
-    val durationMillis = if (starts.isEmpty()) 0L else ends.max() - starts.min()
     return PlanTotals(
         sets = sets.size,
         volumeKg = (volumeGrams + GRAMS_PER_KG / 2) / GRAMS_PER_KG,
         cardioSeconds = sessions.sumOf { it.durationSeconds },
-        durationSeconds = durationMillis / MILLIS_PER_SECOND,
     )
 }
 
@@ -125,13 +120,6 @@ internal fun PlanCompleteCard(items: List<WorkoutItem>, onRestart: () -> Unit) {
                         add(
                             stringResource(R.string.device_type_cardio) to
                                 stringResource(R.string.duration_exact, formatDuration(totals.cardioSeconds))
-                        )
-                    }
-                    // A single quick entry has no meaningful duration.
-                    if (totals.durationSeconds >= 60) {
-                        add(
-                            stringResource(R.string.duration_label) to
-                                stringResource(R.string.duration_exact, formatDuration(totals.durationSeconds.toInt()))
                         )
                     }
                 }
