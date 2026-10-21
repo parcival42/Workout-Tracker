@@ -18,25 +18,22 @@ Not fixed yet; each needs a decision first.
 
 ### Bugs / UX problems
 
-1. Workout cards collapse immediately after "Done", so the content shifts under the finger.
-   A quick second tap logged the next device completely. Idea: collapse with a delay or an
-   animation.
-2. German template names are easy to mix up: "Rudermaschine" (seated row, strength) vs.
+1. German template names are easy to mix up: "Rudermaschine" (seated row, strength) vs.
    "Rudergerät" (cardio), "Rückenstrecker" (machine) vs. "Rückenstrecken" (bodyweight).
    Idea: "Rudern sitzend" / "Ruderzug" and "Rückenstrecken am Boden".
-3. The next-set sheet subtitle says "Weight and reps for the next set"
+2. The next-set sheet subtitle says "Weight and reps for the next set"
    (`next_set_sheet_subtitle`) for bodyweight exercises too, where there is no weight
    (push-ups) or neither weight nor reps (plank). Idea: one subtitle per measure.
-4. The "Own device" dialog has no duplicate name check: "leg press" next to "Leg press" keeps
+3. The "Own device" dialog has no duplicate name check: "leg press" next to "Leg press" keeps
    Save enabled, while templates check case-insensitively. Decide whether this is intended.
-5. Import asks "Replace all data?" before the file is validated and without saying what it
+4. Import asks "Replace all data?" before the file is validated and without saying what it
    contains. Idea: validate first, then confirm with counts (devices, plans, logs).
-6. Circuit in landscape: the circuit panel plus the bottom bar fill the whole screen, the
+5. Circuit in landscape: the circuit panel plus the bottom bar fill the whole screen, the
    cards are not reachable.
-7. Template dialog rows are only about 28 dp high (Material recommends 48 dp touch targets).
-8. The set edit dialog only disables Save for invalid values, without an error text (the
+6. Template dialog rows are only about 28 dp high (Material recommends 48 dp touch targets).
+7. The set edit dialog only disables Save for invalid values, without an error text (the
    device dialog shows one).
-9. Day rollover while the app keeps running: in the release test, 1.0.0 still showed the sets
+8. Day rollover while the app keeps running: in the release test, 1.0.0 still showed the sets
    of Oct 16 as "today" on Oct 18 (process kept alive by an emulator snapshot); after an app
    restart it was correct. If the app stays open over midnight, "today" (open sets, counters)
    probably does not switch. Not verified in 1.1.0. Idea: derive the day start from a clock
@@ -44,13 +41,13 @@ Not fixed yet; each needs a decision first.
 
 ### Design questions
 
-10. Duration steppers step by whole minutes, also for bodyweight holds: 0:30 -> + -> 1:30 ->
+9. Duration steppers step by whole minutes, also for bodyweight holds: 0:30 -> + -> 1:30 ->
    - -> 1 min; 0:30 can only be restored by typing. 15 s steps may fit holds better.
-11. The circuit timer keeps running while the "End circuit?" dialog is open.
+10. The circuit timer keeps running while the "End circuit?" dialog is open.
 
 ### Docs
 
-12. CLAUDE.md says templates are a top bar action in the device list; they are actually
+11. CLAUDE.md says templates are a top bar action in the device list; they are actually
     reached via the FAB (choice sheet) and the empty state button.
 
 ### Not covered on the Pixel 4
