@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12+: dark and light follow the wallpaper colors, like the dynamic color schemes. -->
+    <style name="Theme.WorkoutTracker" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/system_neutral1_900</item>
+        <item name="android:windowSplashScreenBackground">@android:color/system_neutral1_900</item>
+    </style>
+
+    <style name="Theme.WorkoutTracker.Light" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@android:color/system_neutral1_10</item>
+        <item name="android:windowSplashScreenBackground">@android:color/system_neutral1_10</item>
+    </style>
+
+    <style name="Theme.WorkoutTracker.Warm" parent="Theme.WorkoutTracker">
+        <item name="android:windowBackground">@color/window_warm</item>
+        <item name="android:windowSplashScreenBackground">@color/window_warm</item>
+    </style>
+</resources>

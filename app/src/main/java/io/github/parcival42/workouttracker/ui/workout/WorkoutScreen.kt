@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.parcival42.workouttracker.R
+import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.data.BodyweightMeasure
 import io.github.parcival42.workouttracker.data.CardioLog
 import io.github.parcival42.workouttracker.data.SetLog
@@ -191,6 +192,9 @@ fun WorkoutScreen(
                         onStop = viewModel::stopCircuit,
                     )
                 }
+                if (!isCircuitPlan) PlanProgress(done = state.items.count { it.isComplete }, total = state.items.size)
+                // The first open device is the one to train next (circuit plans have the timer for that).
+                val activeDeviceId = state.items.firstOrNull { !it.isComplete }?.deviceId.takeIf { !isCircuitPlan }
                 LazyColumn(
                     state = listState,
                     contentPadding = PaddingValues(12.dp),
@@ -198,6 +202,7 @@ fun WorkoutScreen(
                 ) {
                     items(state.items, key = { it.deviceId }) { item ->
                         val highlighted = circuitActive && item.deviceId == circuit?.activeDeviceId
+                        val isActive = item.deviceId == activeDeviceId
                         when (item) {
                             is StrengthItem -> WorkoutCard(
                                 item = item,
@@ -208,6 +213,7 @@ fun WorkoutScreen(
                                 onSetClick = { number, set -> editingSet = number to set },
                                 highlighted = highlighted,
                                 isCircuitPlan = isCircuitPlan,
+                                isActive = isActive,
                             )
                             is CardioItem -> CardioCard(
                                 item = item,
@@ -219,34 +225,13 @@ fun WorkoutScreen(
                                 onSessionClick = { number, session -> editingSession = number to session },
                                 highlighted = highlighted,
                                 isCircuitPlan = isCircuitPlan,
+                                isActive = isActive,
                             )
                         }
                     }
                     if (state.isComplete && !circuitActive) {
                         item(key = "plan-complete") {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 12.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.workout_plan_complete),
-                                    style = MaterialTheme.typography.titleMedium,
-                                )
-                                OutlinedButton(onClick = restartPlan) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.ic_restart),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(18.dp),
-                                    )
-                                    Text(
-                                        text = stringResource(R.string.action_restart_plan),
-                                        modifier = Modifier.padding(start = 8.dp),
-                                    )
-                                }
-                            }
+                            PlanCompleteCard(items = state.items, onRestart = restartPlan)
                         }
                     }
                 }
@@ -411,13 +396,18 @@ private fun WorkoutCard(
     highlighted: Boolean = false,
     // Circuit plans log only through the timer: no log buttons, and the next station only has a weight.
     isCircuitPlan: Boolean = false,
+    // The next device to train: only its "Done" is the filled main action.
+    isActive: Boolean = false,
 ) {
     val resources = LocalResources.current
     DeviceCard(
         deviceName = item.deviceName,
+        type = if (item.isBodyweight) DeviceType.BODYWEIGHT else DeviceType.STRENGTH,
         isComplete = item.isComplete,
-        progress = stringResource(R.string.workout_progress, item.todaySets.size, item.targetSets),
+        done = item.todaySets.size,
+        target = item.targetSets,
         summary = item.todaySets.joinToString("  ·  ") { resources.setSummary(it, item.isBodyweight) },
+        isActive = isActive,
         highlighted = highlighted,
     ) {
         if (item.todaySets.isNotEmpty()) {
@@ -432,52 +422,54 @@ private fun WorkoutCard(
         }
 
         // Values are only editable in the sheet, so a stray tap on the card can't change them.
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .clickable(
-                    onClickLabel = stringResource(R.string.action_edit_next_set),
-                    onClick = onEditNextSet,
-                ),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = when {
-                    item.stationSeconds != null && item.isBodyweight ->
-                        stringResource(R.string.workout_station_time, formatDuration(item.stationSeconds))
-                    item.stationSeconds != null ->
-                        stringResource(R.string.workout_next_station, formatKg(item.weightGrams), formatDuration(item.stationSeconds))
-                    item.measure == BodyweightMeasure.TIME -> stringResource(
-                        R.string.workout_next_set_bodyweight,
-                        resources.bodyweightSetSummary(reps = null, durationSeconds = item.durationSeconds),
-                    )
-                    item.isBodyweight -> stringResource(
-                        R.string.workout_next_set_bodyweight,
-                        resources.bodyweightSetSummary(reps = item.reps, durationSeconds = null),
-                    )
-                    else -> stringResource(R.string.workout_next_set, formatKg(item.weightGrams), item.reps)
-                },
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f),
+        val stationSeconds = item.stationSeconds
+        val (label, value, detail) = when {
+            stationSeconds != null && item.isBodyweight -> Triple(
+                stringResource(R.string.workout_station_time_label),
+                stringResource(R.string.duration_exact, formatDuration(stationSeconds)),
+                null,
             )
-            Icon(
-                painter = painterResource(R.drawable.ic_edit),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp),
+            stationSeconds != null -> Triple(
+                stringResource(R.string.workout_next_station_label),
+                stringResource(R.string.weight_kg, formatKg(item.weightGrams)),
+                stringResource(R.string.duration_exact, formatDuration(stationSeconds)),
+            )
+            item.measure == BodyweightMeasure.TIME -> Triple(
+                stringResource(R.string.workout_next_set_label),
+                resources.bodyweightSetSummary(reps = null, durationSeconds = item.durationSeconds),
+                null,
+            )
+            item.isBodyweight -> Triple(
+                stringResource(R.string.workout_next_set_label),
+                resources.bodyweightSetSummary(reps = item.reps, durationSeconds = null),
+                null,
+            )
+            else -> Triple(
+                stringResource(R.string.workout_next_set_label),
+                stringResource(R.string.weight_kg, formatKg(item.weightGrams)),
+                stringResource(R.string.workout_reps_detail, item.reps),
             )
         }
+        NextValueRow(
+            label = label,
+            value = value,
+            detail = detail,
+            onClickLabel = stringResource(R.string.action_edit_next_set),
+            onClick = onEditNextSet,
+        )
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            IconButton(onClick = onUndo, enabled = item.todaySets.isNotEmpty()) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_undo),
-                    contentDescription = stringResource(R.string.action_undo_set),
-                )
+            // Nothing to undo before the first set; the buttons take the space instead.
+            if (item.todaySets.isNotEmpty()) {
+                IconButton(onClick = onUndo) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_undo),
+                        contentDescription = stringResource(R.string.action_undo_set),
+                    )
+                }
             }
             if (!isCircuitPlan) {
                 OutlinedButton(onClick = onCompleteOneSet, modifier = Modifier.weight(1f)) {
@@ -491,13 +483,12 @@ private fun WorkoutCard(
                         maxLines = 1,
                     )
                 }
-                Button(
+                DoneButton(
                     onClick = onCompleteDevice,
+                    prominent = isActive,
                     enabled = !item.isComplete,
                     modifier = Modifier.weight(1f),
-                ) {
-                    Text(stringResource(R.string.action_device_done))
-                }
+                )
             }
         }
     }

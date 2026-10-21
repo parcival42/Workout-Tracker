@@ -3,6 +3,8 @@ package io.github.parcival42.workouttracker.ui.history
 import android.content.res.Resources
 import android.text.format.DateFormat
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -51,6 +54,7 @@ import io.github.parcival42.workouttracker.R
 import io.github.parcival42.workouttracker.data.BodyweightMeasure
 import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.ui.components.EmptyHint
+import io.github.parcival42.workouttracker.ui.components.StatTile
 import io.github.parcival42.workouttracker.ui.devices.labelRes
 import io.github.parcival42.workouttracker.ui.components.bodyweightSetSummary
 import io.github.parcival42.workouttracker.ui.components.cardioSummary
@@ -242,10 +246,27 @@ private fun HistoryContent(
                                 else -> R.string.history_chart_title
                             }
                         )
+                        val formatValue: (Int) -> String = { value ->
+                            when {
+                                cardioMetric == CardioMetric.DISTANCE -> resources.getString(R.string.distance_km, formatKm(value))
+                                cardioMetric == CardioMetric.SPEED -> resources.getString(R.string.speed_kmh, formatKmh(value))
+                                isCardio || bodyweightMeasure == BodyweightMeasure.TIME ->
+                                    resources.getString(R.string.duration_exact, formatDuration(value))
+                                bodyweightMeasure == BodyweightMeasure.REPS -> resources.bodyweightSetSummary(reps = value, durationSeconds = null)
+                                else -> resources.getString(R.string.weight_kg, formatKg(value))
+                            }
+                        }
+                        HistoryStats(
+                            trainingDays = state.dates.size,
+                            series = state.series,
+                            points = points,
+                            formatValue = formatValue,
+                        )
                         Text(
                             text = chartTitle,
                             style = MaterialTheme.typography.titleSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 8.dp),
                         )
                         HistoryChart(
                             dates = state.dates,
@@ -305,6 +326,50 @@ private fun HistoryContent(
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
             }
+        }
+    }
+}
+
+/**
+ * Key numbers above the chart: training days in the range, then per device its latest day value
+ * and the change since its first day in the range (same value as the chart: top weight, total time ...).
+ */
+@Composable
+private fun HistoryStats(
+    trainingDays: Int,
+    series: List<HistorySeries>,
+    points: Map<Long, List<ChartPoint>>,
+    formatValue: (Int) -> String,
+) {
+    Row(
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        StatTile(
+            label = stringResource(R.string.history_stat_days),
+            value = trainingDays.toString(),
+            modifier = Modifier.widthIn(min = 96.dp),
+        )
+        series.forEach { s ->
+            val seriesPoints = points[s.deviceId].orEmpty()
+            val latest = seriesPoints.lastOrNull() ?: return@forEach
+            val change = latest.value - seriesPoints.first().value
+            StatTile(
+                label = s.deviceName,
+                value = formatValue(latest.value),
+                detail = if (seriesPoints.size > 1) {
+                    when {
+                        change > 0 -> "+" + formatValue(change)
+                        change < 0 -> "−" + formatValue(-change)
+                        else -> "±" + formatValue(0)
+                    }
+                } else {
+                    null
+                },
+                detailColor = if (change > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                leading = { SeriesDot(SeriesColors[s.colorSlot]) },
+                modifier = Modifier.widthIn(min = 120.dp, max = 200.dp),
+            )
         }
     }
 }

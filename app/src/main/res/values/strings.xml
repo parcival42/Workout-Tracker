@@ -81,7 +81,6 @@
         <item quantity="one">%d rep</item>
         <item quantity="other">%d reps</item>
     </plurals>
-    <string name="workout_next_set_bodyweight">Next set: %1$s</string>
     <string name="plan_entry_targets_time" translatable="false">%1$d × %2$s min</string>
     <string name="history_group_bodyweight" translatable="false">%1$d × %2$s</string>
     <string name="set_summary_bodyweight_both" translatable="false">%1$s · %2$s min</string>
@@ -145,7 +144,6 @@
     <string name="workout_plan_complete">Plan complete</string>
     <string name="workout_plan_restarted">Plan restarted</string>
     <string name="weight_kg" translatable="false">%1$s kg</string>
-    <string name="workout_next_set">Next set: %1$s kg × %2$d</string>
     <string name="next_set_sheet_subtitle">Weight and reps for the next set</string>
     <string name="weight_label">Weight</string>
     <string name="action_edit_next_set">Edit next set</string>
@@ -158,7 +156,6 @@
     <string name="edit_set_title">Edit set %1$d</string>
     <string name="action_undo_set">Undo last set</string>
     <string name="action_edit_plan">Edit plan</string>
-    <string name="workout_next_session">Duration: %1$s min</string>
     <string name="next_session_sheet_subtitle">Duration of the next session</string>
     <string name="action_edit_next_session">Edit next session</string>
     <string name="action_extra_session">Extra session</string>
@@ -212,7 +209,7 @@
     <string name="backup_import_invalid">This file is not a valid Simple Workout Tracker backup. Nothing was changed.</string>
     <string name="backup_import_failed">Import failed. Nothing was changed.</string>
     <string name="settings_about_title">About</string>
-    <string name="settings_version">Version %1$s (%2$d)</string>
+    <string name="settings_version">Version %1$s</string>
     <string name="settings_repository_action">Source code on GitHub</string>
     <string name="licenses_title">Open source licenses</string>
     <string name="licenses_intro">This app uses the following open source libraries, all licensed under the Apache License, Version 2.0. The full license text follows below.</string>
@@ -249,8 +246,6 @@
     </plurals>
     <string name="circuit_settings_summary">%1$s · %2$s min per station · %3$s min rest · %4$s countdown</string>
     <string name="circuit_own_station_time">Own station time</string>
-    <string name="workout_next_station">Next station: %1$s kg · %2$s min</string>
-    <string name="workout_station_time">Station time: %1$s min</string>
     <string name="next_station_sheet_subtitle">For the next station</string>
     <string name="station_time_plan_hint">Saved in the plan; a running station keeps its time.</string>
     <string name="duration_input_label">Duration (min or m:ss)</string>
@@ -282,7 +277,6 @@
     <string name="distance_placeholder">e.g. 2.4</string>
     <string name="unit_km" translatable="false">km</string>
     <string name="next_session_sheet_subtitle_distance">Duration and distance of the next session</string>
-    <string name="workout_next_session_distance">Duration: %1$s min · %2$s km</string>
     <string name="workout_session_logged">Saved: %1$s</string>
     <string name="action_adjust">Adjust</string>
     <string name="history_metric_duration">Duration</string>
@@ -293,4 +287,25 @@
     <string name="history_distance_total" translatable="false">%1$s km (%2$s)</string>
     <string name="history_speed_detail" translatable="false">%1$s km/h (%2$s)</string>
     <string name="history_group_cardio_distance" translatable="false">%1$d × %2$s min · %3$s km</string>
+    <string name="settings_appearance_title">Appearance</string>
+    <string name="settings_theme_title">Color theme</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_warm">Warm</string>
+    <string name="workout_next_set_label">Next set</string>
+    <string name="workout_next_station_label">Next station</string>
+    <string name="workout_station_time_label">Station time</string>
+    <string name="workout_next_session_label">Next session</string>
+    <string name="workout_reps_detail" translatable="false">× %1$d</string>
+    <string name="workout_plan_progress">Done: %1$d/%2$d</string>
+    <string name="workout_summary_volume">Volume</string>
+    <string name="device_last_log" translatable="false">%1$s · %2$s</string>
+    <string name="relative_today">today</string>
+    <string name="relative_yesterday">yesterday</string>
+    <plurals name="relative_days_ago">
+        <item quantity="one">%d day ago</item>
+        <item quantity="other">%d days ago</item>
+    </plurals>
+    <string name="speed_kmh" translatable="false">%1$s km/h</string>
+    <string name="history_stat_days">Training days</string>
 </resources>

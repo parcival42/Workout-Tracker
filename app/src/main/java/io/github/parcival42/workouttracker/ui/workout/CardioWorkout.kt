@@ -45,6 +45,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import io.github.parcival42.workouttracker.R
+import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.data.CardioLog
 import io.github.parcival42.workouttracker.ui.components.DurationDialog
 import io.github.parcival42.workouttracker.ui.components.MAX_DURATION_MINUTES
@@ -68,17 +69,18 @@ internal fun CardioCard(
     highlighted: Boolean = false,
     // Circuit plans log only through the timer, with the station time: the row shows that time, no log buttons.
     isCircuitPlan: Boolean = false,
+    // The next device to train: only its "Done" is the filled main action.
+    isActive: Boolean = false,
 ) {
     val resources = LocalResources.current
     DeviceCard(
         deviceName = item.deviceName,
+        type = DeviceType.CARDIO,
         isComplete = item.isComplete,
+        done = item.todaySessions.size,
         // Several sessions are only planned in a circuit, one per round.
-        progress = if (item.targetSessions > 1) {
-            stringResource(R.string.workout_progress, item.todaySessions.size, item.targetSessions)
-        } else {
-            null
-        },
+        target = item.targetSessions.takeIf { it > 1 },
+        isActive = isActive,
         highlighted = highlighted,
         summary = item.todaySessions.joinToString("  ·  ") { resources.cardioSummary(it) },
     ) {
@@ -94,47 +96,30 @@ internal fun CardioCard(
         }
 
         // The duration is only editable in the sheet, so a stray tap on the card can't change it.
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .clickable(
-                    onClickLabel = stringResource(R.string.action_edit_next_session),
-                    onClick = onEditNextSession,
-                ),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = when {
-                    item.stationSeconds != null ->
-                        stringResource(R.string.workout_station_time, formatDuration(item.stationSeconds))
-                    item.distanceMeters != null -> stringResource(
-                        R.string.workout_next_session_distance,
-                        formatDuration(item.durationSeconds),
-                        formatKm(item.distanceMeters),
-                    )
-                    else -> stringResource(R.string.workout_next_session, formatDuration(item.durationSeconds))
-                },
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.weight(1f),
-            )
-            Icon(
-                painter = painterResource(R.drawable.ic_edit),
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp),
-            )
-        }
+        NextValueRow(
+            label = stringResource(
+                if (item.stationSeconds != null) R.string.workout_station_time_label else R.string.workout_next_session_label
+            ),
+            value = stringResource(R.string.duration_exact, formatDuration(item.stationSeconds ?: item.durationSeconds)),
+            detail = item.distanceMeters?.takeIf { item.stationSeconds == null }?.let {
+                stringResource(R.string.distance_km, formatKm(it))
+            },
+            onClickLabel = stringResource(R.string.action_edit_next_session),
+            onClick = onEditNextSession,
+        )
 
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            IconButton(onClick = onUndo, enabled = item.todaySessions.isNotEmpty()) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_undo),
-                    contentDescription = stringResource(R.string.action_undo_session),
-                )
+            // Nothing to undo before the first session; the buttons take the space instead.
+            if (item.todaySessions.isNotEmpty()) {
+                IconButton(onClick = onUndo) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_undo),
+                        contentDescription = stringResource(R.string.action_undo_session),
+                    )
+                }
             }
             // Keeps the button in the same grid slot as "Done" on strength cards, which have
             // a second button here.
@@ -147,9 +132,7 @@ internal fun CardioCard(
                     Text(stringResource(R.string.action_extra_session), maxLines = 1)
                 }
             } else {
-                Button(onClick = onLogSession, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.action_device_done))
-                }
+                DoneButton(onClick = onLogSession, prominent = isActive, modifier = Modifier.weight(1f))
             }
         }
     }

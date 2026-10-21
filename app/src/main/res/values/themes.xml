@@ -1,5 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!--
+        Window themes per app theme (AppTheme). The system draws the window background before any
+        app code runs (cold start), so it has to match the chosen theme: MainActivity passes the
+        matching style to SplashScreen.setSplashScreenTheme (Android 13+) for the next launch.
+        The manifest uses the dark one, the default theme.
+    -->
+    <style name="Theme.WorkoutTracker" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/window_dark</item>
+    </style>
 
-    <style name="Theme.WorkoutTracker" parent="android:Theme.Material.NoActionBar" />
+    <style name="Theme.WorkoutTracker.Light" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_light</item>
+    </style>
+
+    <style name="Theme.WorkoutTracker.Warm" parent="Theme.WorkoutTracker">
+        <item name="android:windowBackground">@color/window_warm</item>
+    </style>
 </resources>
