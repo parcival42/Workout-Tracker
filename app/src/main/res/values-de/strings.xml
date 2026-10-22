@@ -110,20 +110,14 @@
     <string name="action_set_default_plan">Als Standardplan festlegen</string>
     <string name="action_unset_default_plan">Standardplan entfernen</string>
     <string name="plan_add_title">Neuer Plan</string>
-    <string name="plan_rename_title">Plan umbenennen</string>
     <string name="plan_delete_title">Plan löschen?</string>
     <string name="plan_delete_message">Der Plan „%1$s“ wird gelöscht. Dein Trainingsverlauf bleibt erhalten.</string>
-    <string name="plan_entries_empty">Noch keine Übungen in diesem Plan. Tippe auf +, um eine hinzuzufügen.</string>
-    <string name="plan_add_device_title">Übung zum Plan hinzufügen</string>
-    <string name="plan_no_devices_available">Alle Übungen sind bereits in diesem Plan. Neue Übungen legst du im Tab Übungen an.</string>
     <string name="target_sets">Sätze</string>
     <string name="target_reps">Wiederholungen</string>
     <string name="duration_label">Dauer</string>
-    <string name="duration_label_min">Dauer (min)</string>
     <string name="duration_dialog_title">Dauer festlegen</string>
 
-    <string name="workout_empty">Dieser Plan hat noch keine Übungen. Füge sie über den Bearbeiten-Button hinzu.</string>
-    <string name="next_set_sheet_subtitle">Gewicht und Wiederholungen für den nächsten Satz</string>
+    <string name="workout_empty">Dieser Plan hat noch keine Übungen.</string>
     <string name="weight_label">Gewicht</string>
     <string name="action_edit_next_set">Nächsten Satz bearbeiten</string>
     <string name="action_apply">Übernehmen</string>
@@ -136,11 +130,10 @@
     <string name="action_undo_set">Letzten Satz rückgängig</string>
     <string name="action_show_details">Details anzeigen</string>
     <string name="action_hide_details">Details ausblenden</string>
-    <string name="action_restart_plan">Trainingsplan neu starten</string>
+    <string name="action_restart_plan">Plan neu starten</string>
     <string name="workout_plan_complete">Trainingsplan abgeschlossen</string>
     <string name="workout_plan_restarted">Trainingsplan neu gestartet</string>
     <string name="action_edit_plan">Plan bearbeiten</string>
-    <string name="next_session_sheet_subtitle">Dauer der nächsten Einheit</string>
     <string name="action_edit_next_session">Nächste Einheit bearbeiten</string>
     <string name="action_extra_session">Weitere Einheit</string>
     <string name="action_undo_session">Letzte Einheit rückgängig</string>
@@ -168,7 +161,7 @@
     <string name="settings_title">Einstellungen</string>
     <string name="settings_language_title">Sprache</string>
     <string name="settings_plan_defaults_title">Standardwerte für neue Planeinträge</string>
-    <string name="settings_plan_defaults_description">Wird vorbelegt, wenn du eine Übung zu einem Plan hinzufügst. Bestehende Planeinträge bleiben unverändert.</string>
+    <string name="settings_plan_defaults_description">Wird vorbelegt, wenn du eine Übung zu einem Plan hinzufügst; Wiederholungen und Dauer nur, wenn die Übung noch keine Einträge hat. Bestehende Planeinträge bleiben unverändert.</string>
     <string name="settings_default_duration">Cardio-Dauer (min)</string>
     <string name="language_system">Systemsprache</string>
     <string name="settings_data_title">Datensicherung</string>
@@ -193,11 +186,17 @@
     <string name="action_save">Speichern</string>
     <string name="action_cancel">Abbrechen</string>
     <string name="action_archive">Archivieren</string>
-    <string name="action_rename">Umbenennen</string>
     <string name="action_delete">Löschen</string>
     <string name="action_remove_from_plan">Aus Plan entfernen</string>
+    <string name="action_delete_plan">Plan löschen</string>
+    <string name="action_done">Fertig</string>
+    <string name="action_more">Weitere Optionen</string>
+    <string name="add_exercises_title">Übungen hinzufügen</string>
+    <string name="add_exercises_none">Noch keine Übungen vorhanden. Lege sie im Tab Übungen an.</string>
+    <string name="add_exercises_in_plan">Bereits im Plan</string>
+    <string name="workout_entry_removed">\"%1$s\" aus dem Plan entfernt</string>
     <string name="action_back">Zurück</string>
-    <string name="action_reorder">Verschieben</string>
+    <string name="action_reorder">Sortieren</string>
     <string name="action_decrease">Verringern</string>
     <string name="action_increase">Erhöhen</string>
     <!-- Circuit training -->
@@ -218,15 +217,12 @@
         <item quantity="one">%d Station</item>
         <item quantity="other">%d Stationen</item>
     </plurals>
-    <string name="circuit_settings_summary">%1$s · %2$s min pro Station · %3$s min Pause · %4$s Countdown</string>
-    <string name="circuit_own_station_time">Eigene Stationszeit</string>
-    <string name="next_station_sheet_subtitle">Für die nächste Station</string>
-    <string name="station_time_plan_hint">Wird im Plan gespeichert; eine laufende Station behält ihre Zeit.</string>
+    <string name="station_time_plan_hint">Eine laufende Station behält ihre Zeit.</string>
     <string name="duration_input_label">Dauer (min oder m:ss)</string>
     <string name="seconds_input_label">Sekunden</string>
     <string name="reps_optional_label">Wiederholungen (optional)</string>
     <string name="action_start_circuit">Zirkel starten</string>
-    <string name="circuit_summary">%1$s × %2$s · ca. %3$d min</string>
+    <string name="circuit_summary">%1$s × %2$s · %3$s min</string>
     <string name="circuit_phase_countdown">Gleich geht\'s los</string>
     <string name="circuit_phase_round">Runde %1$d von %2$d</string>
     <string name="circuit_phase_rest">Pause · als Nächstes: %1$s</string>
@@ -246,7 +242,6 @@
     <string name="device_cardio_distance_info">Cardio · mit Distanz</string>
     <string name="distance_label">Distanz</string>
     <string name="distance_placeholder">z. B. 2,4</string>
-    <string name="next_session_sheet_subtitle_distance">Dauer und Distanz der nächsten Einheit</string>
     <string name="workout_session_logged">Gespeichert: %1$s</string>
     <string name="action_adjust">Anpassen</string>
     <string name="history_metric_duration">Dauer</string>

@@ -25,8 +25,8 @@ android {
         minSdk = 30
         targetSdk = 37
         // Bump both on every release; versionCode must always increase (see CLAUDE.md).
-        versionCode = 7
-        versionName = "0.3.0"
+        versionCode = 8
+        versionName = "0.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -89,6 +89,10 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.room.testing)
+    // room-testing is built against serialization-core 1.8, but instrumented tests use the app's
+    // copy (1.7.3 via room-runtime), which crashes loading the schema files. Debug builds only.
+    debugImplementation(libs.kotlinx.serialization.core)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

@@ -19,7 +19,11 @@ data class BackupData(
     val sets: List<SetLog>,
     val cardioSessions: List<CardioLog> = emptyList(),
     val settings: UserSettings = UserSettings(),
-)
+    // Format version of the file it was read from; plan entry values need deriving below v8.
+    val version: Int = BackupJson.VERSION,
+) {
+    val needsPlanEntryValues: Boolean get() = version < BackupJson.FIRST_VERSION_WITH_ENTRY_VALUES
+}
 
 class InvalidBackupException(message: String, cause: Throwable? = null) : Exception(message, cause)
 
@@ -36,7 +40,11 @@ object BackupJson {
     // v6: devices can have type "BODYWEIGHT" and carry "measure" (absent in older files, read as reps).
     // v7: devices carry "tracksDistance", cardio sessions a nullable "distanceMeters" (absent in
     //     older files, read as no distance).
-    const val VERSION = 7
+    // v8: plan entries carry "weightGrams", and their sets/reps/duration are the plan's values, no
+    //     longer targets. Older files are imported with the values derived from the logs, like
+    //     the database migration did (see BackupRepository).
+    const val VERSION = 8
+    const val FIRST_VERSION_WITH_ENTRY_VALUES = 8
 
     fun encode(data: BackupData, exportedAt: Long): String = JSONObject().apply {
         put("format", FORMAT)
@@ -78,6 +86,7 @@ object BackupJson {
                 put("targetReps", e.targetReps)
                 put("targetDurationSeconds", e.targetDurationSeconds)
                 put("stationSeconds", e.stationSeconds ?: JSONObject.NULL)
+                put("weightGrams", e.weightGrams)
             }
         }))
         put("sets", JSONArray(data.sets.map { s ->
@@ -155,6 +164,7 @@ object BackupJson {
                             PlanEntry.DEFAULT_TARGET_DURATION_SECONDS,
                         ),
                         stationSeconds = o.optIntOrNull("stationSeconds"),
+                        weightGrams = o.optInt("weightGrams", 0),
                     )
                 },
                 sets = root.getJSONArray("sets").objects().map { o ->
@@ -189,6 +199,7 @@ object BackupJson {
                         ),
                     )
                 } ?: UserSettings(),
+                version = version,
             )
         } catch (e: InvalidBackupException) {
             throw e
@@ -226,7 +237,8 @@ object BackupJson {
         check(data.planEntries.all { it.planId in planIds && it.deviceId in deviceIds }, "Plan entry references a missing plan or device")
         check(
             data.planEntries.all {
-                it.targetSets > 0 && it.targetReps > 0 && it.targetDurationSeconds > 0 && (it.stationSeconds ?: 1) > 0
+                it.targetSets > 0 && it.targetReps > 0 && it.targetDurationSeconds > 0 && (it.stationSeconds ?: 1) > 0 &&
+                    it.weightGrams >= 0
             },
             "Invalid plan entry targets",
         )

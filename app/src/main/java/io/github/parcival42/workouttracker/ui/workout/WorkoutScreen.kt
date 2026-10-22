@@ -1,6 +1,11 @@
 package io.github.parcival42.workouttracker.ui.workout
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import io.github.parcival42.workouttracker.ui.components.TARGET_SETS_RANGE
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -78,7 +83,6 @@ import kotlinx.coroutines.launch
 @Composable
 fun WorkoutScreen(
     planId: Long,
-    onEditPlan: () -> Unit,
     onSwitchPlan: () -> Unit,
     viewModel: WorkoutViewModel = viewModel(key = "workout-$planId", factory = WorkoutViewModel.factory(planId)),
 ) {
@@ -86,6 +90,11 @@ fun WorkoutScreen(
     var editingSet by remember { mutableStateOf<Pair<Int, SetLog>?>(null) }
     var editingSession by remember { mutableStateOf<Pair<Int, CardioLog>?>(null) }
     var nextSetDeviceId by rememberSaveable { mutableStateOf<Long?>(null) }
+    var showPlanSheet by rememberSaveable { mutableStateOf(false) }
+    var showAddDialog by rememberSaveable { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
+    // Reorder mode: compact cards to drag or remove; everything else on the screen is disabled.
+    var reordering by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val resources = LocalResources.current
@@ -142,31 +151,80 @@ fun WorkoutScreen(
         }
     }
 
+    val removeEntry: (WorkoutItem) -> Unit = { item ->
+        viewModel.removeEntry(item)
+        scope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            val result = snackbarHostState.showSnackbar(
+                message = resources.getString(R.string.workout_entry_removed, item.deviceName),
+                actionLabel = resources.getString(R.string.action_undo),
+                duration = SnackbarDuration.Long,
+            )
+            if (result == SnackbarResult.ActionPerformed) viewModel.undoRemoveEntry()
+        }
+    }
+
+    // Nothing left to reorder, or a circuit was started meanwhile.
+    if (reordering && (state.items.isEmpty() || circuitActive)) reordering = false
+    BackHandler(enabled = reordering) { reordering = false }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(state.planName) },
-                actions = {
-                    if (!circuitActive) {
+                title = { Text(if (reordering) stringResource(R.string.action_reorder) else state.planName) },
+                navigationIcon = {
+                    if (!reordering && !circuitActive) {
                         IconButton(onClick = onSwitchPlan) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_list),
                                 contentDescription = stringResource(R.string.action_switch_plan),
                             )
                         }
-                        if (state.items.isNotEmpty()) {
-                            IconButton(onClick = restartPlan) {
-                                Icon(
-                                    painter = painterResource(R.drawable.ic_restart),
-                                    contentDescription = stringResource(R.string.action_restart_plan),
-                                )
-                            }
-                        }
-                        IconButton(onClick = onEditPlan) {
+                    }
+                },
+                actions = {
+                    if (reordering) {
+                        TextButton(onClick = { reordering = false }) { Text(stringResource(R.string.action_done)) }
+                    } else if (!circuitActive) {
+                        IconButton(onClick = { showPlanSheet = true }) {
                             Icon(
                                 painter = painterResource(R.drawable.ic_edit),
                                 contentDescription = stringResource(R.string.action_edit_plan),
                             )
+                        }
+                        IconButton(onClick = { showAddDialog = true }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_add),
+                                contentDescription = stringResource(R.string.add_exercises_title),
+                            )
+                        }
+                        if (state.items.isNotEmpty()) {
+                            Box {
+                                IconButton(onClick = { showMenu = true }) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_more_vert),
+                                        contentDescription = stringResource(R.string.action_more),
+                                    )
+                                }
+                                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.action_reorder)) },
+                                        leadingIcon = { Icon(painterResource(R.drawable.ic_drag_handle), contentDescription = null) },
+                                        onClick = {
+                                            showMenu = false
+                                            reordering = true
+                                        },
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.action_restart_plan)) },
+                                        leadingIcon = { Icon(painterResource(R.drawable.ic_restart), contentDescription = null) },
+                                        onClick = {
+                                            showMenu = false
+                                            restartPlan()
+                                        },
+                                    )
+                                }
+                            }
                         }
                     }
                 },
@@ -177,6 +235,16 @@ fun WorkoutScreen(
         if (state.items.isEmpty()) {
             EmptyHint(
                 text = stringResource(R.string.workout_empty),
+                modifier = Modifier.padding(innerPadding),
+                action = {
+                    Button(onClick = { showAddDialog = true }) { Text(stringResource(R.string.add_exercises_title)) }
+                },
+            )
+        } else if (reordering) {
+            ReorderList(
+                items = state.items,
+                onSaveOrder = viewModel::saveOrder,
+                onRemove = removeEntry,
                 modifier = Modifier.padding(innerPadding),
             )
         } else {
@@ -246,33 +314,67 @@ fun WorkoutScreen(
             item = sheetItem,
             stationSeconds = sheetStationSeconds,
             onApply = { weightGrams, seconds ->
-                weightGrams?.let { viewModel.setWeight(sheetItem.deviceId, it) }
-                if (seconds != sheetStationSeconds) viewModel.setStationSeconds(sheetItem.deviceId, seconds)
+                viewModel.updateStation(sheetItem, weightGrams, seconds)
                 nextSetDeviceId = null
             },
+            onRemove = {
+                nextSetDeviceId = null
+                removeEntry(sheetItem)
+            }.takeIf { !circuitActive },
             onDismiss = { nextSetDeviceId = null },
         )
         sheetItem is StrengthItem -> NextSetSheet(
             item = sheetItem,
-            onApply = { weightGrams, reps, durationSeconds ->
-                if (!sheetItem.isBodyweight) viewModel.setWeight(sheetItem.deviceId, weightGrams)
-                if (sheetItem.measure == BodyweightMeasure.TIME) {
-                    viewModel.setDuration(sheetItem.deviceId, durationSeconds)
-                } else {
-                    viewModel.setReps(sheetItem.deviceId, reps)
-                }
+            onApply = { weightGrams, sets, reps, durationSeconds ->
+                viewModel.updateValues(sheetItem, weightGrams, sets, reps, durationSeconds)
                 nextSetDeviceId = null
+            },
+            onRemove = {
+                nextSetDeviceId = null
+                removeEntry(sheetItem)
             },
             onDismiss = { nextSetDeviceId = null },
         )
         sheetItem is CardioItem -> NextSessionSheet(
             item = sheetItem,
             onApply = { seconds, distanceMeters ->
-                viewModel.setDuration(sheetItem.deviceId, seconds)
-                if (sheetItem.tracksDistance) viewModel.setDistance(sheetItem.deviceId, distanceMeters)
+                viewModel.updateNextSession(sheetItem, seconds, distanceMeters)
                 nextSetDeviceId = null
             },
+            onRemove = {
+                nextSetDeviceId = null
+                removeEntry(sheetItem)
+            },
             onDismiss = { nextSetDeviceId = null },
+        )
+    }
+
+    if (showPlanSheet) {
+        PlanSheet(
+            planName = state.planName,
+            circuitSettings = state.circuitSettings,
+            onSave = { name, circuitSettings ->
+                viewModel.savePlan(name, circuitSettings)
+                showPlanSheet = false
+            },
+            onDelete = {
+                showPlanSheet = false
+                viewModel.deletePlan()
+            },
+            onDismiss = { showPlanSheet = false },
+        )
+    }
+
+    if (showAddDialog) {
+        val devices by viewModel.devices.collectAsStateWithLifecycle()
+        AddExercisesDialog(
+            devices = devices,
+            inPlanDeviceIds = state.items.mapTo(HashSet()) { it.deviceId },
+            onConfirm = { deviceIds ->
+                viewModel.addDevices(deviceIds)
+                showAddDialog = false
+            },
+            onDismiss = { showAddDialog = false },
         )
     }
 
@@ -488,15 +590,18 @@ private fun WorkoutCard(
     }
 }
 
-// Edits stay local until "Apply"; dismissing the sheet discards them.
+// The device's values in this plan. Edits stay local until "Apply" saves them in the plan;
+// dismissing the sheet discards them.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NextSetSheet(
     item: StrengthItem,
-    onApply: (weightGrams: Int, reps: Int, durationSeconds: Int) -> Unit,
+    onApply: (weightGrams: Int, sets: Int, reps: Int, durationSeconds: Int) -> Unit,
+    onRemove: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     var weightGrams by rememberSaveable { mutableIntStateOf(item.weightGrams) }
+    var sets by rememberSaveable { mutableIntStateOf(item.targetSets) }
     var reps by rememberSaveable { mutableIntStateOf(item.reps) }
     var durationSeconds by rememberSaveable { mutableIntStateOf(item.durationSeconds) }
     var showWeightDialog by rememberSaveable { mutableStateOf(false) }
@@ -509,14 +614,7 @@ private fun NextSetSheet(
                 .padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Column {
-                Text(item.deviceName, style = MaterialTheme.typography.titleLarge)
-                Text(
-                    text = stringResource(R.string.next_set_sheet_subtitle),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            SheetTitle(item.deviceName, onRemove)
             if (!item.isBodyweight) {
                 ValueStepper(
                     label = stringResource(R.string.weight_label),
@@ -542,7 +640,14 @@ private fun NextSetSheet(
                     decreaseEnabled = reps > 1,
                 )
             }
-            Button(onClick = { onApply(weightGrams, reps, durationSeconds) }, modifier = Modifier.fillMaxWidth()) {
+            ValueStepper(
+                label = stringResource(R.string.target_sets),
+                value = sets.toString(),
+                onDecrease = { sets = (sets - 1).coerceIn(TARGET_SETS_RANGE) },
+                onIncrease = { sets = (sets + 1).coerceIn(TARGET_SETS_RANGE) },
+                decreaseEnabled = sets > TARGET_SETS_RANGE.first,
+            )
+            Button(onClick = { onApply(weightGrams, sets, reps, durationSeconds) }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.action_apply))
             }
         }
@@ -569,6 +674,27 @@ private fun NextSetSheet(
             },
             onDismiss = { showDurationDialog = false },
         )
+    }
+}
+
+/**
+ * Title of the value sheets. Removing from the plan is only a small red icon up here, away from
+ * "Apply" at the bottom, so it is not hit by mistake; it can be undone from a snackbar.
+ * No icon when [onRemove] is null.
+ */
+@Composable
+internal fun SheetTitle(title: String, onRemove: (() -> Unit)?) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(title, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+        if (onRemove != null) {
+            IconButton(onClick = onRemove) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_delete),
+                    contentDescription = stringResource(R.string.action_remove_from_plan),
+                    tint = MaterialTheme.colorScheme.error,
+                )
+            }
+        }
     }
 }
 

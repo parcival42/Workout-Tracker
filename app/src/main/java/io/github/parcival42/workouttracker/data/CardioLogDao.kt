@@ -26,16 +26,6 @@ interface CardioLogDao {
     )
     fun observeLastPerDevice(): Flow<List<CardioLog>>
 
-    @Query(
-        """
-        SELECT * FROM cardio_log c WHERE c.plan_id = :planId AND c.id = (
-            SELECT c2.id FROM cardio_log c2 WHERE c2.device_id = c.device_id AND c2.plan_id = :planId
-            ORDER BY c2.performed_at DESC, c2.id DESC LIMIT 1
-        )
-        """
-    )
-    fun observeLastPerDeviceInPlan(planId: Long): Flow<List<CardioLog>>
-
     // Last session with a distance, so a session without one (e.g. a circuit station) keeps the prefill.
     @Query(
         """

@@ -10,7 +10,7 @@ import androidx.room.RoomDatabase
     entities = [
         Device::class, TrainingPlan::class, PlanEntry::class, SetLog::class, CardioLog::class, UserSettings::class,
     ],
-    version = 11,
+    version = 12,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -35,6 +35,8 @@ abstract class AppDatabase : RoomDatabase() {
     companion object {
         // Training history is the product: never use a destructive migration fallback.
         fun create(context: Context): AppDatabase =
-            Room.databaseBuilder(context, AppDatabase::class.java, "workout_tracker.db").build()
+            Room.databaseBuilder(context, AppDatabase::class.java, "workout_tracker.db")
+                .addMigrations(MIGRATION_11_12)
+                .build()
     }
 }

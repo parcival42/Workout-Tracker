@@ -9,15 +9,21 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.parcival42.workouttracker.WorkoutTrackerApplication
 import io.github.parcival42.workouttracker.data.BodyweightMeasure
 import io.github.parcival42.workouttracker.data.CardioLog
-import io.github.parcival42.workouttracker.data.CircuitSettings
 import io.github.parcival42.workouttracker.data.CardioLogDao
+import io.github.parcival42.workouttracker.data.CircuitSettings
+import io.github.parcival42.workouttracker.data.Device
+import io.github.parcival42.workouttracker.data.DeviceDao
 import io.github.parcival42.workouttracker.data.DeviceType
 import io.github.parcival42.workouttracker.data.PlanDao
+import io.github.parcival42.workouttracker.data.PlanEntry
 import io.github.parcival42.workouttracker.data.PlanEntryItem
 import io.github.parcival42.workouttracker.data.PlanType
 import io.github.parcival42.workouttracker.data.SetLog
 import io.github.parcival42.workouttracker.data.SetLogDao
+import io.github.parcival42.workouttracker.data.UserSettings
+import io.github.parcival42.workouttracker.data.UserSettingsDao
 import io.github.parcival42.workouttracker.data.circuitSettings
+import io.github.parcival42.workouttracker.data.withCircuitSettings
 import io.github.parcival42.workouttracker.ui.circuit.CircuitController
 import io.github.parcival42.workouttracker.ui.circuit.CircuitEvent
 import io.github.parcival42.workouttracker.ui.circuit.CircuitPhase
@@ -27,6 +33,7 @@ import io.github.parcival42.workouttracker.ui.circuit.CircuitUiState
 import io.github.parcival42.workouttracker.ui.circuit.buildCircuitPhases
 import io.github.parcival42.workouttracker.ui.components.MAX_DISTANCE_METERS
 import io.github.parcival42.workouttracker.ui.components.MAX_DURATION_SECONDS
+import io.github.parcival42.workouttracker.ui.components.TARGET_SETS_RANGE
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,6 +52,7 @@ import java.time.LocalDate
 import java.time.ZoneId
 
 sealed interface WorkoutItem {
+    val entryId: Long
     val deviceId: Long
     val deviceName: String
     val isComplete: Boolean
@@ -54,10 +62,10 @@ sealed interface WorkoutItem {
 }
 
 data class StrengthItem(
+    override val entryId: Long,
     override val deviceId: Long,
     override val deviceName: String,
     val targetSets: Int,
-    val targetReps: Int,
     val todaySets: List<SetLog>,
     val weightGrams: Int,
     val minWeightGrams: Int,
@@ -66,7 +74,7 @@ data class StrengthItem(
     override val stationSeconds: Int? = null,
     // Bodyweight exercises: what counts; null for strength devices with a weight.
     val measure: BodyweightMeasure? = null,
-    // Bodyweight measured by time: duration of the next set.
+    // Bodyweight measured by time: duration per set.
     val durationSeconds: Int = 0,
 ) : WorkoutItem {
     val isBodyweight: Boolean get() = measure != null
@@ -78,10 +86,11 @@ data class StrengthItem(
 }
 
 data class CardioItem(
+    override val entryId: Long,
     override val deviceId: Long,
     override val deviceName: String,
     val todaySessions: List<CardioLog>,
-    // Exact duration of the next session: the last one, or the plan target.
+    // Exact duration of a session, as saved in the plan.
     val durationSeconds: Int,
     // One per round in a circuit plan, otherwise one.
     val targetSessions: Int = 1,
@@ -99,25 +108,15 @@ data class WorkoutUiState(
     val items: List<WorkoutItem> = emptyList(),
     // Only set for circuit plans; normal plans show nothing of the circuit.
     val circuitPreview: CircuitPreview? = null,
+    val circuitSettings: CircuitSettings? = null,
     val circuit: CircuitUiState? = null,
 ) {
     val isComplete: Boolean get() = items.isNotEmpty() && items.all { it.isComplete }
 }
 
-/** Unsaved edits; null fields fall back to the last logged set or session (see [strengthLogs]). */
-// A distance can be cleared on purpose, so [distanceSet] tells "cleared" from "not edited".
-private data class Draft(
-    val weightGrams: Int? = null,
-    val reps: Int? = null,
-    val durationSeconds: Int? = null,
-    val distanceMeters: Int? = null,
-    val distanceSet: Boolean = false,
-)
-
 // [lastDistance]: cardio only, the distance of the last session that has one.
 private data class LogsByDevice<T>(
     val today: Map<Long, List<T>>,
-    val last: Map<Long, T>,
     val lastDistance: Map<Long, Int> = emptyMap(),
 )
 
@@ -127,6 +126,8 @@ class WorkoutViewModel(
     private val planDao: PlanDao,
     private val setLogDao: SetLogDao,
     private val cardioLogDao: CardioLogDao,
+    private val deviceDao: DeviceDao,
+    private val userSettingsDao: UserSettingsDao,
     // Monotonic clock for the circuit timer.
     private val clock: () -> Long = SystemClock::elapsedRealtime,
 ) : ViewModel() {
@@ -135,7 +136,9 @@ class WorkoutViewModel(
     private val startOfToday: Long =
         LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
 
-    private val drafts = MutableStateFlow<Map<Long, Draft>>(emptyMap())
+    // Edited distances of the next cardio session (null = cleared on purpose). The distance is a
+    // result, not a plan value, so it is not saved in the plan; logging the session drops the edit.
+    private val distanceDrafts = MutableStateFlow<Map<Long, Int?>>(emptyMap())
 
     private val plan = planDao.observePlan(planId)
 
@@ -147,29 +150,25 @@ class WorkoutViewModel(
     // Session start before the last restart, for undoing the restart.
     private var previousSessionStartedAt: Long? = null
 
-    // The session's logs count per plan. The prefill comes from the device's last log in this
-    // plan, falling back to its last log in any plan (or without one).
-    private val strengthLogs = combine(
-        sessionStart.flatMapLatest { since -> setLogDao.observeSinceInPlan(since, planId) },
-        setLogDao.observeLastSetPerDeviceInPlan(planId),
-        setLogDao.observeLastSetPerDevice(),
-    ) { today, lastInPlan, lastAnywhere ->
-        LogsByDevice(
-            today = today.groupBy { it.deviceId },
-            last = lastAnywhere.associateBy { it.deviceId } + lastInPlan.associateBy { it.deviceId },
-        )
-    }
+    // Removed entry and the order before, for undoing the removal.
+    private var removedEntry: Pair<PlanEntry, List<Long>>? = null
+
+    /** Active devices, for adding them to the plan. */
+    val devices: StateFlow<List<Device>> = deviceDao.observeActive()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    // The session's logs count per plan.
+    private val strengthLogs = sessionStart
+        .flatMapLatest { since -> setLogDao.observeSinceInPlan(since, planId) }
+        .map { today -> LogsByDevice(today = today.groupBy { it.deviceId }) }
 
     private val cardioLogs = combine(
         sessionStart.flatMapLatest { since -> cardioLogDao.observeSinceInPlan(since, planId) },
-        cardioLogDao.observeLastPerDeviceInPlan(planId),
-        cardioLogDao.observeLastPerDevice(),
         cardioLogDao.observeLastDistancePerDeviceInPlan(planId),
         cardioLogDao.observeLastDistancePerDevice(),
-    ) { today, lastInPlan, lastAnywhere, lastDistanceInPlan, lastDistanceAnywhere ->
+    ) { today, lastDistanceInPlan, lastDistanceAnywhere ->
         LogsByDevice(
             today = today.groupBy { it.deviceId },
-            last = lastAnywhere.associateBy { it.deviceId } + lastInPlan.associateBy { it.deviceId },
             lastDistance = (lastDistanceAnywhere + lastDistanceInPlan)
                 .mapNotNull { session -> session.distanceMeters?.let { session.deviceId to it } }
                 .toMap(),
@@ -182,11 +181,12 @@ class WorkoutViewModel(
         planDao.observeEntries(planId),
         strengthLogs,
         cardioLogs,
-        drafts,
-    ) { plan, entries, strengthLogs, cardioLogs, drafts ->
+        distanceDrafts,
+    ) { plan, entries, strengthLogs, cardioLogs, distanceDrafts ->
         val circuitSettings = plan?.takeIf { it.type == PlanType.CIRCUIT }?.circuitSettings
         WorkoutUiState(
             planName = plan?.name.orEmpty(),
+            circuitSettings = circuitSettings,
             circuitPreview = circuitSettings?.let { settings ->
                 CircuitPreview(
                     stations = entries.size,
@@ -195,39 +195,36 @@ class WorkoutViewModel(
                 )
             },
             items = entries.map { entry ->
-                val draft = drafts[entry.deviceId]
                 when (entry.deviceType) {
                     DeviceType.STRENGTH, DeviceType.BODYWEIGHT -> {
-                        val last = strengthLogs.last[entry.deviceId]
                         val isBodyweight = entry.deviceType == DeviceType.BODYWEIGHT
                         StrengthItem(
+                            entryId = entry.id,
                             deviceId = entry.deviceId,
                             deviceName = entry.deviceName,
                             targetSets = circuitSettings?.rounds ?: entry.targetSets,
-                            targetReps = entry.targetReps,
                             todaySets = strengthLogs.today[entry.deviceId].orEmpty(),
-                            weightGrams = if (isBodyweight) 0 else draft?.weightGrams ?: last?.weightGrams ?: entry.minWeightGrams,
+                            weightGrams = if (isBodyweight) 0 else entry.weightGrams,
                             minWeightGrams = entry.minWeightGrams,
                             weightStepGrams = entry.weightStepGrams,
-                            reps = draft?.reps ?: last?.reps ?: entry.targetReps,
+                            reps = entry.targetReps,
                             stationSeconds = circuitSettings?.let { entry.stationSeconds ?: it.stationSeconds },
                             measure = entry.measure.takeIf { isBodyweight },
-                            durationSeconds = draft?.durationSeconds ?: last?.durationSeconds ?: entry.targetDurationSeconds,
+                            durationSeconds = entry.targetDurationSeconds,
                         )
                     }
                     DeviceType.CARDIO -> CardioItem(
+                        entryId = entry.id,
                         deviceId = entry.deviceId,
                         deviceName = entry.deviceName,
                         todaySessions = cardioLogs.today[entry.deviceId].orEmpty(),
-                        durationSeconds = draft?.durationSeconds
-                            ?: cardioLogs.last[entry.deviceId]?.durationSeconds
-                            ?: entry.targetDurationSeconds,
+                        durationSeconds = entry.targetDurationSeconds,
                         targetSessions = circuitSettings?.rounds ?: 1,
                         stationSeconds = circuitSettings?.let { entry.stationSeconds ?: it.stationSeconds },
                         tracksDistance = entry.tracksDistance,
                         distanceMeters = when {
                             !entry.tracksDistance -> null
-                            draft?.distanceSet == true -> draft.distanceMeters
+                            entry.deviceId in distanceDrafts -> distanceDrafts[entry.deviceId]
                             else -> cardioLogs.lastDistance[entry.deviceId]
                         },
                     )
@@ -246,25 +243,25 @@ class WorkoutViewModel(
         state.copy(circuit = circuitState)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WorkoutUiState())
 
-    fun setWeight(deviceId: Long, weightGrams: Int) {
-        val clamped = weightGrams.coerceIn(0, MAX_WEIGHT_GRAMS)
-        drafts.update { it + (deviceId to (it[deviceId] ?: Draft()).copy(weightGrams = clamped)) }
+    /** Saves the device's values in the plan; every following set uses them. */
+    fun updateValues(item: StrengthItem, weightGrams: Int, sets: Int, reps: Int, durationSeconds: Int) {
+        viewModelScope.launch {
+            planDao.updateValues(
+                entryId = item.entryId,
+                weightGrams = if (item.isBodyweight) 0 else weightGrams.coerceIn(0, MAX_WEIGHT_GRAMS),
+                targetSets = sets.coerceIn(TARGET_SETS_RANGE),
+                targetReps = reps.coerceIn(1, MAX_REPS),
+                targetDurationSeconds = durationSeconds.coerceIn(1, MAX_DURATION_SECONDS),
+            )
+        }
     }
 
-    fun setReps(deviceId: Long, reps: Int) {
-        val clamped = reps.coerceIn(1, MAX_REPS)
-        drafts.update { it + (deviceId to (it[deviceId] ?: Draft()).copy(reps = clamped)) }
-    }
-
-    fun setDuration(deviceId: Long, seconds: Int) {
-        val clamped = seconds.coerceIn(1, MAX_DURATION_SECONDS)
-        drafts.update { it + (deviceId to (it[deviceId] ?: Draft()).copy(durationSeconds = clamped)) }
-    }
-
-    /** Null clears the distance, so the next session is logged without one. */
-    fun setDistance(deviceId: Long, meters: Int?) {
-        val clamped = meters?.coerceIn(1, MAX_DISTANCE_METERS)
-        drafts.update { it + (deviceId to (it[deviceId] ?: Draft()).copy(distanceMeters = clamped, distanceSet = true)) }
+    /** Saves the session duration in the plan; [distanceMeters] (null = none) only applies to the next session. */
+    fun updateNextSession(item: CardioItem, seconds: Int, distanceMeters: Int?) {
+        if (item.tracksDistance) {
+            distanceDrafts.update { it + (item.deviceId to distanceMeters?.coerceIn(1, MAX_DISTANCE_METERS)) }
+        }
+        viewModelScope.launch { planDao.updateDuration(item.entryId, seconds.coerceIn(1, MAX_DURATION_SECONDS)) }
     }
 
     fun completeDevice(item: StrengthItem) = logSets(item, item.openSets)
@@ -272,10 +269,6 @@ class WorkoutViewModel(
     fun completeOneSet(item: StrengthItem) = logSets(item, 1)
 
     fun undoLastSet(item: StrengthItem) {
-        // Pin the displayed values so removing the set does not change the selected weight.
-        drafts.update {
-            it + (item.deviceId to Draft(weightGrams = item.weightGrams, reps = item.reps, durationSeconds = item.durationSeconds))
-        }
         viewModelScope.launch { setLogDao.deleteLastSinceInPlan(item.deviceId, planId, sessionStart.first()) }
     }
 
@@ -303,17 +296,15 @@ class WorkoutViewModel(
         )
         viewModelScope.launch {
             val id = cardioLogDao.insert(session)
-            // The logged value is now the device's last session, so the draft is no longer needed.
-            drafts.update { it - item.deviceId }
+            // The logged distance is now the last one, so the edit is no longer needed.
+            distanceDrafts.update { it - item.deviceId }
             onLogged(session.copy(id = id))
         }
     }
 
     fun undoLastSession(item: CardioItem) {
-        // Pin the displayed values so removing the session does not change them.
-        drafts.update {
-            it + (item.deviceId to Draft(durationSeconds = item.durationSeconds, distanceMeters = item.distanceMeters, distanceSet = true))
-        }
+        // Pin the shown distance so removing the session does not change it.
+        if (item.tracksDistance) distanceDrafts.update { it + (item.deviceId to item.distanceMeters) }
         viewModelScope.launch { cardioLogDao.deleteLastSinceInPlan(item.deviceId, planId, sessionStart.first()) }
     }
 
@@ -327,6 +318,56 @@ class WorkoutViewModel(
 
     fun deleteSession(session: CardioLog) {
         viewModelScope.launch { cardioLogDao.delete(session) }
+    }
+
+    /** Appends the devices in this order, starting where the user left off with each of them. */
+    fun addDevices(deviceIds: List<Long>) {
+        if (deviceIds.isEmpty()) return
+        viewModelScope.launch {
+            val defaults = userSettingsDao.get() ?: UserSettings()
+            val devicesById = deviceDao.observeActive().first().associateBy { it.id }
+            val lastSets = setLogDao.observeLastSetPerDevice().first().associateBy { it.deviceId }
+            val lastSessions = cardioLogDao.observeLastPerDevice().first().associateBy { it.deviceId }
+            val entries = deviceIds.mapNotNull { devicesById[it] }.map { device ->
+                newPlanEntry(device, defaults, lastSets[device.id], lastSessions[device.id])
+            }
+            planDao.addEntries(planId, entries)
+        }
+    }
+
+    /** Removes the device from the plan; its logs stay. Undo with [undoRemoveEntry]. */
+    fun removeEntry(item: WorkoutItem) {
+        viewModelScope.launch {
+            val entry = planDao.getEntry(item.entryId) ?: return@launch
+            removedEntry = entry to planDao.observeEntries(planId).first().map { it.id }
+            planDao.deleteEntry(entry.id)
+        }
+    }
+
+    fun undoRemoveEntry() {
+        val (entry, order) = removedEntry ?: return
+        removedEntry = null
+        viewModelScope.launch { planDao.restoreEntry(entry, order) }
+    }
+
+    fun saveOrder(orderedEntryIds: List<Long>) {
+        viewModelScope.launch { planDao.reorderEntries(orderedEntryIds) }
+    }
+
+    /** Name and, for circuit plans, the circuit settings. */
+    fun savePlan(name: String, circuitSettings: CircuitSettings?) {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch {
+            val current = plan.first() ?: return@launch
+            val renamed = current.copy(name = trimmed)
+            planDao.updatePlan(if (circuitSettings != null) renamed.withCircuitSettings(circuitSettings) else renamed)
+        }
+    }
+
+    /** The Training tab then falls back to its automatic plan choice. */
+    fun deletePlan() {
+        viewModelScope.launch { plan.first()?.let { planDao.deletePlan(it) } }
     }
 
     /** Starts the plan over: only sets logged from now on count for today's progress. */
@@ -360,14 +401,18 @@ class WorkoutViewModel(
         }
     }
 
-    /** Saves a station time in the plan; a running circuit uses it from the station's next pass. */
-    fun setStationSeconds(deviceId: Long, seconds: Int) {
+    /**
+     * Saves a station's weight (strength only, null = unchanged) and time in the plan; a running
+     * circuit uses the time from the station's next pass.
+     */
+    fun updateStation(item: WorkoutItem, weightGrams: Int?, seconds: Int) {
         viewModelScope.launch {
+            if (weightGrams != null) planDao.updateWeight(item.entryId, weightGrams.coerceIn(0, MAX_WEIGHT_GRAMS))
+            if (seconds == item.stationSeconds) return@launch
             val settings = plan.first()?.takeIf { it.type == PlanType.CIRCUIT }?.circuitSettings ?: return@launch
-            val entry = planDao.observeEntries(planId).first().firstOrNull { it.deviceId == deviceId } ?: return@launch
             // The plan's time is stored as "no own time", so the station follows later plan changes.
-            planDao.updateStationSeconds(entry.id, seconds.takeIf { it != settings.stationSeconds })
-            circuit.updateStationSeconds(deviceId, seconds)
+            planDao.updateStationSeconds(item.entryId, seconds.takeIf { it != settings.stationSeconds })
+            circuit.updateStationSeconds(item.deviceId, seconds)
         }
     }
 
@@ -381,36 +426,30 @@ class WorkoutViewModel(
     /** Ends a running circuit or closes a finished one; logged stations stay. */
     fun stopCircuit() = circuit.stop()
 
-    // Logs a finished station: the weight the card shows right now (last set, or the user's
-    // edit) and the station time. Reps can be added later through the set chip.
+    // Logs a finished station: the plan's weight and the station time. Reps can be added later
+    // through the set chip.
     private suspend fun logStation(station: CircuitStation, seconds: Int) {
         when (val item = workoutState.first().items.firstOrNull { it.deviceId == station.deviceId }) {
-            is StrengthItem -> {
-                setLogDao.insertAll(
-                    listOf(
-                        SetLog(
-                            deviceId = item.deviceId,
-                            performedAt = System.currentTimeMillis(),
-                            weightGrams = item.weightGrams,
-                            reps = null,
-                            planId = planId,
-                            durationSeconds = seconds,
-                        )
-                    )
-                )
-                drafts.update { it - item.deviceId }
-            }
-            is CardioItem -> {
-                cardioLogDao.insert(
-                    CardioLog(
+            is StrengthItem -> setLogDao.insertAll(
+                listOf(
+                    SetLog(
                         deviceId = item.deviceId,
                         performedAt = System.currentTimeMillis(),
-                        durationSeconds = seconds,
+                        weightGrams = item.weightGrams,
+                        reps = null,
                         planId = planId,
+                        durationSeconds = seconds,
                     )
                 )
-                drafts.update { it - item.deviceId }
-            }
+            )
+            is CardioItem -> cardioLogDao.insert(
+                CardioLog(
+                    deviceId = item.deviceId,
+                    performedAt = System.currentTimeMillis(),
+                    durationSeconds = seconds,
+                    planId = planId,
+                )
+            )
             null -> Unit
         }
     }
@@ -430,11 +469,7 @@ class WorkoutViewModel(
                 durationSeconds = if (timed) item.durationSeconds else null,
             )
         }
-        viewModelScope.launch {
-            setLogDao.insertAll(sets)
-            // The logged values are now the device's last set, so the draft is no longer needed.
-            drafts.update { it - item.deviceId }
-        }
+        viewModelScope.launch { setLogDao.insertAll(sets) }
     }
 
     companion object {
@@ -449,6 +484,8 @@ class WorkoutViewModel(
                     app.database.planDao(),
                     app.database.setLogDao(),
                     app.database.cardioLogDao(),
+                    app.database.deviceDao(),
+                    app.database.userSettingsDao(),
                 )
             }
         }

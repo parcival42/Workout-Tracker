@@ -70,13 +70,16 @@ fun PlanListScreen(
         },
     ) { innerPadding ->
         LazyColumn(modifier = Modifier.padding(innerPadding)) {
-            item {
-                Text(
-                    text = stringResource(R.string.plans_default_hint),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                )
+            // Only one plan can be the default, so the hint is pointless once one is set.
+            if (plans.orEmpty().none { it.isDefault }) {
+                item {
+                    Text(
+                        text = stringResource(R.string.plans_default_hint),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
             }
             item(key = "quick-log") {
                 QuickLogRow(onClick = onQuickLog)

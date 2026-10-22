@@ -25,8 +25,8 @@ import io.github.parcival42.workouttracker.ui.components.stepWeightDown
 import io.github.parcival42.workouttracker.ui.components.stepWeightUp
 
 /**
- * Next station of a circuit plan: the weight (strength only; a draft for the next log, like
- * [NextSetSheet]) and the station time, which is saved in the plan. Edits apply only on "Apply".
+ * A station of a circuit plan: the weight (strength only) and the station time, both saved in the
+ * plan. Edits apply only on "Apply".
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +34,8 @@ internal fun StationSheet(
     item: WorkoutItem,
     stationSeconds: Int,
     onApply: (weightGrams: Int?, stationSeconds: Int) -> Unit,
+    // Null while a circuit runs: the plan's structure can't change then.
+    onRemove: (() -> Unit)?,
     onDismiss: () -> Unit,
 ) {
     // Only strength devices with a weight; bodyweight stations just have their time.
@@ -49,14 +51,7 @@ internal fun StationSheet(
                 .padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Column {
-                Text(item.deviceName, style = MaterialTheme.typography.titleLarge)
-                Text(
-                    text = stringResource(R.string.next_station_sheet_subtitle),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            SheetTitle(item.deviceName, onRemove)
             if (strength != null) {
                 ValueStepper(
                     label = stringResource(R.string.weight_label),

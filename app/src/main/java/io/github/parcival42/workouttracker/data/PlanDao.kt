@@ -41,7 +41,7 @@ abstract class PlanDao {
                pe.target_sets AS targetSets, pe.target_reps AS targetReps,
                pe.target_duration_seconds AS targetDurationSeconds, pe.station_seconds AS stationSeconds,
                d.start_weight_grams AS minWeightGrams, d.weight_step_grams AS weightStepGrams,
-               d.tracks_distance AS tracksDistance
+               d.tracks_distance AS tracksDistance, pe.weight_grams AS weightGrams
         FROM plan_entry pe
         JOIN device d ON d.id = pe.device_id
         WHERE pe.plan_id = :planId AND d.archived = 0
@@ -66,31 +66,49 @@ abstract class PlanDao {
     @Insert
     protected abstract suspend fun insertEntry(entry: PlanEntry): Long
 
+    /** Appends [entries] in the given order; their ids, plan and sort orders are ignored. */
     @Transaction
-    open suspend fun addEntry(
-        planId: Long,
-        deviceId: Long,
+    open suspend fun addEntries(planId: Long, entries: List<PlanEntry>) {
+        val first = nextSortOrder(planId)
+        entries.forEachIndexed { index, entry ->
+            insertEntry(entry.copy(id = 0, planId = planId, sortOrder = first + index))
+        }
+    }
+
+    @Query("SELECT * FROM plan_entry WHERE id = :entryId")
+    abstract suspend fun getEntry(entryId: Long): PlanEntry?
+
+    /** Undoes a removal: puts the entry back with its id and restores the order from before. */
+    @Transaction
+    open suspend fun restoreEntry(entry: PlanEntry, orderedEntryIds: List<Long>) {
+        insertEntry(entry)
+        reorderEntries(orderedEntryIds)
+    }
+
+    @Query(
+        """
+        UPDATE plan_entry SET weight_grams = :weightGrams, target_sets = :targetSets, target_reps = :targetReps,
+            target_duration_seconds = :targetDurationSeconds
+        WHERE id = :entryId
+        """
+    )
+    abstract suspend fun updateValues(
+        entryId: Long,
+        weightGrams: Int,
         targetSets: Int,
         targetReps: Int,
         targetDurationSeconds: Int,
-    ) {
-        insertEntry(
-            PlanEntry(
-                planId = planId,
-                deviceId = deviceId,
-                sortOrder = nextSortOrder(planId),
-                targetSets = targetSets,
-                targetReps = targetReps,
-                targetDurationSeconds = targetDurationSeconds,
-            )
-        )
-    }
+    )
 
-    @Query("UPDATE plan_entry SET target_sets = :targetSets, target_reps = :targetReps WHERE id = :entryId")
-    abstract suspend fun updateTargets(entryId: Long, targetSets: Int, targetReps: Int)
+    @Query("UPDATE plan_entry SET weight_grams = :weightGrams WHERE id = :entryId")
+    abstract suspend fun updateWeight(entryId: Long, weightGrams: Int)
 
-    @Query("UPDATE plan_entry SET target_duration_seconds = :targetDurationSeconds WHERE id = :entryId")
-    abstract suspend fun updateTargetDuration(entryId: Long, targetDurationSeconds: Int)
+    @Query("UPDATE plan_entry SET target_duration_seconds = :durationSeconds WHERE id = :entryId")
+    abstract suspend fun updateDuration(entryId: Long, durationSeconds: Int)
+
+    /** Sets the values of every entry once from the logs; see [DERIVE_PLAN_ENTRY_VALUES_SQL]. */
+    @Query(DERIVE_PLAN_ENTRY_VALUES_SQL)
+    abstract suspend fun deriveEntryValuesFromLogs()
 
     @Query("UPDATE plan_entry SET station_seconds = :stationSeconds WHERE id = :entryId")
     abstract suspend fun updateStationSeconds(entryId: Long, stationSeconds: Int?)

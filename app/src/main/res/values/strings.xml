@@ -81,7 +81,6 @@
         <item quantity="one">%d rep</item>
         <item quantity="other">%d reps</item>
     </plurals>
-    <string name="plan_entry_targets_time" translatable="false">%1$d × %2$s min</string>
     <string name="history_group_bodyweight" translatable="false">%1$d × %2$s</string>
     <string name="set_summary_bodyweight_both" translatable="false">%1$s · %2$s min</string>
     <string name="history_chart_title_reps">Best reps per day</string>
@@ -117,23 +116,16 @@
     <string name="action_set_default_plan">Set as default plan</string>
     <string name="action_unset_default_plan">Remove default plan</string>
     <string name="plan_add_title">New plan</string>
-    <string name="plan_rename_title">Rename plan</string>
     <string name="plan_delete_title">Delete plan?</string>
     <string name="plan_delete_message">The plan \"%1$s\" will be deleted. Your training history is kept.</string>
-    <string name="plan_entries_empty">No exercises in this plan yet. Tap + to add one.</string>
-    <string name="plan_add_device_title">Add exercise to plan</string>
-    <string name="plan_no_devices_available">All exercises are already in this plan. Create new exercises in the Exercises tab.</string>
-    <string name="plan_entry_targets" translatable="false">%1$d × %2$d</string>
     <string name="target_sets">Sets</string>
     <string name="target_reps">Reps</string>
     <string name="duration_label">Duration</string>
-    <string name="duration_label_min">Duration (min)</string>
-    <string name="duration_min" translatable="false">%1$d min</string>
     <!-- Exact logged duration, see formatDuration: "20 min" or "2:30 min". -->
     <string name="duration_exact" translatable="false">%1$s min</string>
     <string name="duration_dialog_title">Set duration</string>
 
-    <string name="workout_empty">This plan has no exercises yet. Add exercises with the edit button.</string>
+    <string name="workout_empty">This plan has no exercises yet.</string>
     <string name="workout_progress" translatable="false">%1$d/%2$d</string>
     <string name="workout_set_summary" translatable="false">%1$s kg × %2$d</string>
     <string name="set_summary_timed" translatable="false">%1$s kg · %2$s min</string>
@@ -144,7 +136,6 @@
     <string name="workout_plan_complete">Plan complete</string>
     <string name="workout_plan_restarted">Plan restarted</string>
     <string name="weight_kg" translatable="false">%1$s kg</string>
-    <string name="next_set_sheet_subtitle">Weight and reps for the next set</string>
     <string name="weight_label">Weight</string>
     <string name="action_edit_next_set">Edit next set</string>
     <string name="action_apply">Apply</string>
@@ -156,7 +147,6 @@
     <string name="edit_set_title">Edit set %1$d</string>
     <string name="action_undo_set">Undo last set</string>
     <string name="action_edit_plan">Edit plan</string>
-    <string name="next_session_sheet_subtitle">Duration of the next session</string>
     <string name="action_edit_next_session">Edit next session</string>
     <string name="action_extra_session">Extra session</string>
     <string name="action_undo_session">Undo last session</string>
@@ -191,7 +181,7 @@
     <string name="settings_title">Settings</string>
     <string name="settings_language_title">Language</string>
     <string name="settings_plan_defaults_title">Defaults for new plan entries</string>
-    <string name="settings_plan_defaults_description">Prefilled when you add an exercise to a plan. Existing plan entries are not changed.</string>
+    <string name="settings_plan_defaults_description">Prefilled when you add an exercise to a plan; reps and duration only if the exercise has no logs yet. Existing plan entries are not changed.</string>
     <string name="settings_default_duration">Cardio duration (min)</string>
     <string name="language_system">System default</string>
     <string name="language_german" translatable="false">Deutsch</string>
@@ -219,9 +209,15 @@
     <string name="action_save">Save</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_archive">Archive</string>
-    <string name="action_rename">Rename</string>
     <string name="action_delete">Delete</string>
     <string name="action_remove_from_plan">Remove from plan</string>
+    <string name="action_delete_plan">Delete plan</string>
+    <string name="action_done">Done</string>
+    <string name="action_more">More options</string>
+    <string name="add_exercises_title">Add exercises</string>
+    <string name="add_exercises_none">No exercises yet. Create them in the Exercises tab.</string>
+    <string name="add_exercises_in_plan">Already in this plan</string>
+    <string name="workout_entry_removed">\"%1$s\" removed from the plan</string>
     <string name="action_back">Back</string>
     <string name="action_reorder">Reorder</string>
     <string name="action_decrease">Decrease</string>
@@ -244,16 +240,13 @@
         <item quantity="one">%d station</item>
         <item quantity="other">%d stations</item>
     </plurals>
-    <string name="circuit_settings_summary">%1$s · %2$s min per station · %3$s min rest · %4$s countdown</string>
-    <string name="circuit_own_station_time">Own station time</string>
-    <string name="next_station_sheet_subtitle">For the next station</string>
-    <string name="station_time_plan_hint">Saved in the plan; a running station keeps its time.</string>
+    <string name="station_time_plan_hint">A running station keeps its time.</string>
     <string name="duration_input_label">Duration (min or m:ss)</string>
     <string name="seconds_input_label">Seconds</string>
     <string name="reps_optional_label">Reps (optional)</string>
     <string name="duration_seconds" translatable="false">%1$d s</string>
     <string name="action_start_circuit">Start circuit</string>
-    <string name="circuit_summary">%1$s × %2$s · about %3$d min</string>
+    <string name="circuit_summary">%1$s × %2$s · %3$s min</string>
     <string name="circuit_phase_countdown">Get ready</string>
     <string name="circuit_phase_round">Round %1$d of %2$d</string>
     <string name="circuit_phase_rest">Rest · next: %1$s</string>
@@ -276,7 +269,6 @@
     <string name="distance_label">Distance</string>
     <string name="distance_placeholder">e.g. 2.4</string>
     <string name="unit_km" translatable="false">km</string>
-    <string name="next_session_sheet_subtitle_distance">Duration and distance of the next session</string>
     <string name="workout_session_logged">Saved: %1$s</string>
     <string name="action_adjust">Adjust</string>
     <string name="history_metric_duration">Duration</string>
