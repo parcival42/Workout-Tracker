@@ -31,7 +31,7 @@ class BackupJsonTest {
             ),
         ),
         planEntries = listOf(
-            PlanEntry(id = 3, planId = 7, deviceId = 1, sortOrder = 0, targetSets = 3, targetReps = 12),
+            PlanEntry(id = 3, planId = 7, deviceId = 1, sortOrder = 0, targetSets = 3, targetReps = 12, weightGrams = 22_500),
             PlanEntry(
                 id = 4, planId = 7, deviceId = 3, sortOrder = 1, targetSets = 3, targetReps = 10,
                 targetDurationSeconds = 1_800,
@@ -162,6 +162,34 @@ class BackupJsonTest {
         val data = BackupJson.decode(v6)
         assertEquals(false, data.devices.single().tracksDistance)
         assertNull(data.cardioSessions.single().distanceMeters)
+    }
+
+    @Test
+    fun currentVersionNeedsNoDerivedEntryValues() {
+        val data = BackupJson.decode(BackupJson.encode(sample, 0))
+        assertEquals(false, data.needsPlanEntryValues)
+        assertEquals(22_500, data.planEntries.first { it.id == 3L }.weightGrams)
+    }
+
+    @Test
+    fun readsVersion7WithoutEntryWeightAndMarksItForDerivedValues() {
+        val v7 = """
+            {"format":"workout-tracker-backup","version":7,"exportedAt":0,
+             "devices":[{"id":1,"name":"Leg Press","imageUri":null,"archived":false,"startWeightGrams":40000,"weightStepGrams":5000,"type":"STRENGTH","measure":"REPS","tracksDistance":false}],
+             "plans":[{"id":7,"name":"Upper Body","isDefault":false}],
+             "planEntries":[{"id":3,"planId":7,"deviceId":1,"sortOrder":0,"targetSets":3,"targetReps":10,"targetDurationSeconds":1200,"stationSeconds":null}],
+             "sets":[],
+             "cardioSessions":[]}
+        """.trimIndent()
+        val data = BackupJson.decode(v7)
+        assertEquals(0, data.planEntries.single().weightGrams)
+        assertEquals(true, data.needsPlanEntryValues)
+    }
+
+    @Test
+    fun rejectsNegativeEntryWeight() {
+        val broken = sample.copy(planEntries = sample.planEntries.map { it.copy(weightGrams = -1) })
+        assertThrows(InvalidBackupException::class.java) { BackupJson.decode(BackupJson.encode(broken, 0)) }
     }
 
     @Test

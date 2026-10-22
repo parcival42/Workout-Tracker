@@ -129,12 +129,14 @@ internal fun CardioCard(
     }
 }
 
-// Edits stay local until "Apply"; dismissing the sheet discards them.
+// The duration is saved in the plan, the distance only applies to the next session. Edits stay
+// local until "Apply"; dismissing the sheet discards them.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun NextSessionSheet(
     item: CardioItem,
     onApply: (seconds: Int, distanceMeters: Int?) -> Unit,
+    onRemove: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     var seconds by rememberSaveable { mutableIntStateOf(item.durationSeconds) }
@@ -151,17 +153,7 @@ internal fun NextSessionSheet(
                 .padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Column {
-                Text(item.deviceName, style = MaterialTheme.typography.titleLarge)
-                Text(
-                    text = stringResource(
-                        if (item.tracksDistance) R.string.next_session_sheet_subtitle_distance
-                        else R.string.next_session_sheet_subtitle
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            SheetTitle(item.deviceName, onRemove)
             DurationStepper(seconds = seconds, onSecondsChange = { seconds = it }, onValueClick = { showDurationDialog = true })
             if (item.tracksDistance) {
                 DistanceField(value = distanceInput, onValueChange = { distanceInput = it }, isError = !distanceValid)

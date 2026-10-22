@@ -26,16 +26,6 @@ interface SetLogDao {
     )
     fun observeLastSetPerDevice(): Flow<List<SetLog>>
 
-    @Query(
-        """
-        SELECT * FROM set_log s WHERE s.plan_id = :planId AND s.id = (
-            SELECT s2.id FROM set_log s2 WHERE s2.device_id = s.device_id AND s2.plan_id = :planId
-            ORDER BY s2.performed_at DESC, s2.id DESC LIMIT 1
-        )
-        """
-    )
-    fun observeLastSetPerDeviceInPlan(planId: Long): Flow<List<SetLog>>
-
     @Insert
     suspend fun insertAll(sets: List<SetLog>): List<Long>
 

@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -37,9 +38,8 @@ import io.github.parcival42.workouttracker.ui.workout.WorkoutScreen
 @Composable
 fun TrainingScreen(
     selectedPlanId: Long?,
+    // Also used for a newly created plan, which opens directly (empty) in the workout.
     onSelectPlan: (Long) -> Unit,
-    onPlanCreated: (Long) -> Unit,
-    onEditPlan: (Long) -> Unit,
     onShowPlanList: () -> Unit,
     onQuickLog: () -> Unit,
     viewModel: PlanListViewModel = viewModel(factory = PlanListViewModel.Factory),
@@ -51,17 +51,19 @@ fun TrainingScreen(
 
     when {
         loadedPlans.isEmpty() -> NoPlanContent(
-            onCreate = { name, type -> viewModel.create(name, type, onCreated = onPlanCreated) },
+            onCreate = { name, type -> viewModel.create(name, type, onCreated = onSelectPlan) },
             onQuickLog = onQuickLog,
         )
-        activePlan != null -> WorkoutScreen(
-            planId = activePlan.id,
-            onEditPlan = { onEditPlan(activePlan.id) },
-            onSwitchPlan = onShowPlanList,
-        )
+        // Keyed so a different plan starts with fresh screen state (e.g. scroll position).
+        activePlan != null -> key(activePlan.id) {
+            WorkoutScreen(
+                planId = activePlan.id,
+                onSwitchPlan = onShowPlanList,
+            )
+        }
         else -> PlanListScreen(
             onOpenPlan = onSelectPlan,
-            onPlanCreated = onPlanCreated,
+            onPlanCreated = onSelectPlan,
             onQuickLog = onQuickLog,
             viewModel = viewModel,
         )

@@ -28,14 +28,17 @@ data class PlanEntry(
     @ColumnInfo(name = "plan_id") val planId: Long,
     @ColumnInfo(name = "device_id") val deviceId: Long,
     @ColumnInfo(name = "sort_order") val sortOrder: Int,
+    // The plan's values for this device; logging always uses them. The column names still say
+    // "target" from when they were only targets. Sets/reps: strength and bodyweight devices.
     @ColumnInfo(name = "target_sets") val targetSets: Int,
     @ColumnInfo(name = "target_reps") val targetReps: Int,
-    // Cardio: session duration. Bodyweight measured by time: duration per set (with target sets).
-    // Sets/reps are used for strength and bodyweight devices.
+    // Cardio: session duration. Bodyweight measured by time: duration per set.
     @ColumnInfo(name = "target_duration_seconds", defaultValue = "1200")
     val targetDurationSeconds: Int = DEFAULT_TARGET_DURATION_SECONDS,
     // Circuit plans only: own station duration; null uses the plan's station duration.
     @ColumnInfo(name = "station_seconds") val stationSeconds: Int? = null,
+    // Strength devices only; 0 for cardio and bodyweight.
+    @ColumnInfo(name = "weight_grams", defaultValue = "0") val weightGrams: Int = 0,
 ) {
     companion object {
         const val DEFAULT_TARGET_DURATION_SECONDS = 1_200
@@ -57,6 +60,7 @@ data class PlanEntryItem(
     val minWeightGrams: Int,
     val weightStepGrams: Int,
     val tracksDistance: Boolean = false,
+    val weightGrams: Int = 0,
 )
 
 val PlanEntryItem.isTimedBodyweight: Boolean

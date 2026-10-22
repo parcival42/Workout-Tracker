@@ -37,6 +37,8 @@ class BackupRepository(private val database: AppDatabase) {
             database.setLogDao().insertAll(data.sets)
             database.cardioLogDao().insertAll(data.cardioSessions)
             database.userSettingsDao().upsert(data.settings)
+            // Same values as the database migration gave the entries when they got a weight.
+            if (data.needsPlanEntryValues) database.planDao().deriveEntryValuesFromLogs()
         }
     }
 }

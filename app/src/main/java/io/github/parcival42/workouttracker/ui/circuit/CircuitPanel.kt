@@ -24,7 +24,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.parcival42.workouttracker.R
-import io.github.parcival42.workouttracker.ui.components.SECONDS_PER_MINUTE
+import io.github.parcival42.workouttracker.ui.components.formatDuration
 import io.github.parcival42.workouttracker.ui.components.formatMinutesSeconds
 
 /** Fixed panel above the device cards of a circuit plan: start button, running timer or the end. */
@@ -56,7 +56,7 @@ fun CircuitPanel(
                             R.string.circuit_summary,
                             pluralStringResource(R.plurals.circuit_stations_count, preview.stations, preview.stations),
                             pluralStringResource(R.plurals.circuit_rounds_count, preview.rounds, preview.rounds),
-                            (preview.totalSeconds + SECONDS_PER_MINUTE - 1) / SECONDS_PER_MINUTE,
+                            formatDuration(preview.totalSeconds),
                         ),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
