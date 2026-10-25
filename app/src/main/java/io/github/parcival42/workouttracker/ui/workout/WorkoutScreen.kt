@@ -1,6 +1,7 @@
 package io.github.parcival42.workouttracker.ui.workout
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.DropdownMenu
@@ -11,7 +12,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -66,6 +69,9 @@ import io.github.parcival42.workouttracker.data.CardioLog
 import io.github.parcival42.workouttracker.data.SetLog
 import io.github.parcival42.workouttracker.ui.circuit.CircuitEffects
 import io.github.parcival42.workouttracker.ui.circuit.CircuitPanel
+import io.github.parcival42.workouttracker.ui.circuit.TimerEffects
+import io.github.parcival42.workouttracker.ui.resttimer.REST_SLOT_HEIGHT
+import io.github.parcival42.workouttracker.ui.resttimer.RestTimerBar
 import io.github.parcival42.workouttracker.ui.components.DurationDialog
 import io.github.parcival42.workouttracker.ui.components.EmptyHint
 import io.github.parcival42.workouttracker.ui.components.bodyweightSetSummary
@@ -105,13 +111,16 @@ fun WorkoutScreen(
     // In a circuit plan only the timer logs; the cards keep their chips and undo.
     val isCircuitPlan = state.circuitPreview != null
 
-    if (state.circuitPreview != null) {
-        CircuitEffects(
-            events = viewModel.circuitEvents,
-            keepScreenOn = circuitActive && circuit?.isPaused == false,
-            onLeave = viewModel::pauseCircuit,
-        )
-    }
+    // Read straight from the timer, so it is current right away after the background.
+    val restSeconds by viewModel.restSeconds.collectAsStateWithLifecycle()
+    val lastRestSeconds = remember { IntArray(1) }
+    // One effect for both plan types, so its sounds are not built twice while the plan loads.
+    TimerEffects(
+        events = if (isCircuitPlan) viewModel.circuitEvents else viewModel.restTimerEvents,
+        keepScreenOn = if (isCircuitPlan) circuitActive && circuit?.isPaused == false else restSeconds != null,
+    )
+    // The rest keeps running when the screen is left (only its sounds stop); a circuit pauses.
+    if (isCircuitPlan) CircuitEffects(onLeave = viewModel::pauseCircuit)
 
     // Bring the active station into view.
     LaunchedEffect(circuit?.activeDeviceId) {
@@ -260,7 +269,34 @@ fun WorkoutScreen(
                         onStop = viewModel::stopCircuit,
                     )
                 }
-                if (!isCircuitPlan) PlanProgress(done = state.items.count { it.isComplete }, total = state.items.size)
+                val done = state.items.count { it.isComplete }
+                if (state.restTimerSettings?.enabled == true) {
+                    // Rest bar and progress share one slot of fixed height, so a rest starting or
+                    // ending never moves the cards under the finger.
+                    Crossfade(
+                        targetState = restSeconds != null,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(REST_SLOT_HEIGHT),
+                        label = "rest",
+                    ) { resting ->
+                        if (resting) {
+                            // Plain holder, not state: keeps the last time while the bar fades out.
+                            restSeconds?.let { lastRestSeconds[0] = it }
+                            RestTimerBar(
+                                remainingSeconds = lastRestSeconds[0],
+                                onSkip = viewModel::skipRest,
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            )
+                        } else {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                PlanProgress(done = done, total = state.items.size)
+                            }
+                        }
+                    }
+                } else if (!isCircuitPlan) {
+                    PlanProgress(done = done, total = state.items.size)
+                }
                 // The first open device is the one to train next (circuit plans have the timer for that).
                 val activeDeviceId = state.items.firstOrNull { !it.isComplete }?.deviceId.takeIf { !isCircuitPlan }
                 LazyColumn(
@@ -353,8 +389,9 @@ fun WorkoutScreen(
         PlanSheet(
             planName = state.planName,
             circuitSettings = state.circuitSettings,
-            onSave = { name, circuitSettings ->
-                viewModel.savePlan(name, circuitSettings)
+            restTimerSettings = state.restTimerSettings,
+            onSave = { name, circuitSettings, restTimerSettings ->
+                viewModel.savePlan(name, circuitSettings, restTimerSettings)
                 showPlanSheet = false
             },
             onDelete = {

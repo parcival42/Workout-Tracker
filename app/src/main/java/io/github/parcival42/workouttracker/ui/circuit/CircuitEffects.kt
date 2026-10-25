@@ -13,31 +13,44 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.flow.Flow
 
 /**
- * Side effects of a circuit screen: plays [events], keeps the screen on while the circuit
- * runs, and calls [onLeave] when the screen is left or the app goes to the background, so the
- * timer never logs stations unseen and without sound. A rotation does not count as leaving.
+ * Calls [onLeave] when a circuit screen is left or the app goes to the background, so the timer
+ * never logs stations unseen and without sound. A rotation does not count as leaving. Sounds and
+ * keep-screen-on come from [TimerEffects].
  */
 @Composable
-fun CircuitEffects(events: Flow<CircuitEvent>, keepScreenOn: Boolean, onLeave: () -> Unit) {
+fun CircuitEffects(onLeave: () -> Unit) {
+    val context = LocalContext.current
+    val currentOnLeave by rememberUpdatedState(onLeave)
+    val activity = remember(context) { context.findActivity() }
+    val leave = { if (activity?.isChangingConfigurations != true) currentOnLeave() }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { leave() }
+    DisposableEffect(Unit) { onDispose { leave() } }
+}
+
+/**
+ * Plays [events] while the screen is at least started (cues in the background are dropped) and
+ * keeps the screen on while [keepScreenOn].
+ */
+@Composable
+fun TimerEffects(events: Flow<CircuitEvent>, keepScreenOn: Boolean) {
     val context = LocalContext.current
     val sounds = remember { CircuitSounds(context.applicationContext) }
     DisposableEffect(sounds) { onDispose { sounds.release() } }
-    LaunchedEffect(events) { events.collect(sounds::play) }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(events, lifecycleOwner) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) { events.collect(sounds::play) }
+    }
 
     val view = LocalView.current
     DisposableEffect(view, keepScreenOn) {
         view.keepScreenOn = keepScreenOn
         onDispose { view.keepScreenOn = false }
     }
-
-    val currentOnLeave by rememberUpdatedState(onLeave)
-    val activity = remember(context) { context.findActivity() }
-    val leave = { if (activity?.isChangingConfigurations != true) currentOnLeave() }
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { leave() }
-    DisposableEffect(Unit) { onDispose { leave() } }
 }
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {

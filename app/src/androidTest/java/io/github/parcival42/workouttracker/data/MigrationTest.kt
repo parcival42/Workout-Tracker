@@ -76,6 +76,26 @@ class MigrationTest {
         assertEquals(Triple(0, 10, 75), values[6])
     }
 
+    /** Existing plans get the rest timer switched off and no stored times. */
+    @Test
+    fun migrate12To13AddsRestTimerOff() {
+        helper.createDatabase(DB_NAME, 12).apply {
+            execSQL("INSERT INTO training_plan (id, name) VALUES (1, 'A')")
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(DB_NAME, 13, true)
+        db.query(
+            "SELECT rest_timer_enabled, rest_set_seconds, rest_exercise_enabled, rest_exercise_seconds FROM training_plan"
+        ).use { c ->
+            c.moveToFirst()
+            assertEquals(0, c.getInt(0))
+            assertEquals(true, c.isNull(1))
+            assertEquals(0, c.getInt(2))
+            assertEquals(true, c.isNull(3))
+        }
+    }
+
     private companion object {
         const val DB_NAME = "migration-test"
     }

@@ -24,7 +24,10 @@ class BackupJsonTest {
             Device(id = 4, name = "Plank", type = DeviceType.BODYWEIGHT, measure = BodyweightMeasure.TIME),
         ),
         plans = listOf(
-            TrainingPlan(id = 7, name = "Upper Body", isDefault = true),
+            TrainingPlan(
+                id = 7, name = "Upper Body", isDefault = true, restTimerEnabled = true, restSetSeconds = 75,
+                restExerciseEnabled = true, restExerciseSeconds = 150,
+            ),
             TrainingPlan(
                 id = 8, name = "Legs", type = PlanType.CIRCUIT, circuitRounds = 2, circuitStationSeconds = 45,
                 circuitRestSeconds = 0, circuitCountdownSeconds = 5,
@@ -207,6 +210,29 @@ class BackupJsonTest {
     @Test
     fun rejectsInvalidSettings() {
         val broken = sample.copy(settings = UserSettings(defaultTargetSets = 0))
+        assertThrows(InvalidBackupException::class.java) { BackupJson.decode(BackupJson.encode(broken, 0)) }
+    }
+
+    @Test
+    fun readsVersion8WithRestTimerOff() {
+        val v8 = """
+            {"format":"workout-tracker-backup","version":8,"exportedAt":0,
+             "devices":[],
+             "plans":[{"id":7,"name":"Upper Body","isDefault":false,"type":"NORMAL"}],
+             "planEntries":[],
+             "sets":[],
+             "cardioSessions":[]}
+        """.trimIndent()
+        val plan = BackupJson.decode(v8).plans.single()
+        assertEquals(false, plan.restTimerEnabled)
+        assertNull(plan.restSetSeconds)
+        assertEquals(false, plan.restExerciseEnabled)
+        assertNull(plan.restExerciseSeconds)
+    }
+
+    @Test
+    fun rejectsNonPositiveRestSeconds() {
+        val broken = sample.copy(plans = sample.plans.map { it.copy(restSetSeconds = 0) })
         assertThrows(InvalidBackupException::class.java) { BackupJson.decode(BackupJson.encode(broken, 0)) }
     }
 }

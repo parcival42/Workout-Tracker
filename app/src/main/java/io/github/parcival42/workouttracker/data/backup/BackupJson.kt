@@ -43,7 +43,8 @@ object BackupJson {
     // v8: plan entries carry "weightGrams", and their sets/reps/duration are the plan's values, no
     //     longer targets. Older files are imported with the values derived from the logs, like
     //     the database migration did (see BackupRepository).
-    const val VERSION = 8
+    // v9: plans carry the rest timer settings (absent in older files, read as timer off).
+    const val VERSION = 9
     const val FIRST_VERSION_WITH_ENTRY_VALUES = 8
 
     fun encode(data: BackupData, exportedAt: Long): String = JSONObject().apply {
@@ -74,6 +75,10 @@ object BackupJson {
                 put("circuitStationSeconds", p.circuitStationSeconds ?: JSONObject.NULL)
                 put("circuitRestSeconds", p.circuitRestSeconds ?: JSONObject.NULL)
                 put("circuitCountdownSeconds", p.circuitCountdownSeconds ?: JSONObject.NULL)
+                put("restTimerEnabled", p.restTimerEnabled)
+                put("restSetSeconds", p.restSetSeconds ?: JSONObject.NULL)
+                put("restExerciseEnabled", p.restExerciseEnabled)
+                put("restExerciseSeconds", p.restExerciseSeconds ?: JSONObject.NULL)
             }
         }))
         put("planEntries", JSONArray(data.planEntries.map { e ->
@@ -149,6 +154,10 @@ object BackupJson {
                         circuitStationSeconds = o.optIntOrNull("circuitStationSeconds"),
                         circuitRestSeconds = o.optIntOrNull("circuitRestSeconds"),
                         circuitCountdownSeconds = o.optIntOrNull("circuitCountdownSeconds"),
+                        restTimerEnabled = o.optBoolean("restTimerEnabled", false),
+                        restSetSeconds = o.optIntOrNull("restSetSeconds"),
+                        restExerciseEnabled = o.optBoolean("restExerciseEnabled", false),
+                        restExerciseSeconds = o.optIntOrNull("restExerciseSeconds"),
                     )
                 },
                 planEntries = root.getJSONArray("planEntries").objects().map { o ->
@@ -232,6 +241,10 @@ object BackupJson {
                     (p.circuitRestSeconds ?: 0) >= 0 && (p.circuitCountdownSeconds ?: 0) >= 0
             },
             "Invalid circuit settings",
+        )
+        check(
+            data.plans.all { (it.restSetSeconds ?: 1) > 0 && (it.restExerciseSeconds ?: 1) > 0 },
+            "Invalid rest timer settings",
         )
         check(data.devices.all { it.name.isNotBlank() && it.minWeightGrams >= 0 && it.weightStepGrams > 0 }, "Invalid device values")
         check(data.planEntries.all { it.planId in planIds && it.deviceId in deviceIds }, "Plan entry references a missing plan or device")
