@@ -31,7 +31,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.parcival42.workouttracker.R
 import io.github.parcival42.workouttracker.data.CircuitSettings
+import io.github.parcival42.workouttracker.data.RestTimerSettings
 import io.github.parcival42.workouttracker.ui.circuit.CircuitSettingsFields
+import io.github.parcival42.workouttracker.ui.resttimer.RestTimerSettingsFields
 
 /**
  * The plan itself: name and, for circuit plans ([circuitSettings] not null), the circuit
@@ -42,7 +44,8 @@ import io.github.parcival42.workouttracker.ui.circuit.CircuitSettingsFields
 internal fun PlanSheet(
     planName: String,
     circuitSettings: CircuitSettings?,
-    onSave: (name: String, circuitSettings: CircuitSettings?) -> Unit,
+    restTimerSettings: RestTimerSettings?,
+    onSave: (name: String, circuitSettings: CircuitSettings?, restTimerSettings: RestTimerSettings?) -> Unit,
     onDelete: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -52,8 +55,15 @@ internal fun PlanSheet(
     var stationSeconds by rememberSaveable { mutableIntStateOf(circuitSettings?.stationSeconds ?: 0) }
     var restSeconds by rememberSaveable { mutableIntStateOf(circuitSettings?.restSeconds ?: 0) }
     var countdownSeconds by rememberSaveable { mutableIntStateOf(circuitSettings?.countdownSeconds ?: 0) }
+    var restEnabled by rememberSaveable { mutableStateOf(restTimerSettings?.enabled ?: false) }
+    var restSetSeconds by rememberSaveable { mutableIntStateOf(restTimerSettings?.setSeconds ?: 0) }
+    var restExerciseEnabled by rememberSaveable { mutableStateOf(restTimerSettings?.exerciseEnabled ?: false) }
+    var restExerciseSeconds by rememberSaveable { mutableIntStateOf(restTimerSettings?.exerciseSeconds ?: 0) }
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
     val editedCircuit = circuitSettings?.let { CircuitSettings(rounds, stationSeconds, restSeconds, countdownSeconds) }
+    val editedRest = restTimerSettings?.let {
+        RestTimerSettings(restEnabled, restSetSeconds, restExerciseEnabled, restExerciseSeconds)
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -102,8 +112,19 @@ internal fun PlanSheet(
                     },
                 )
             }
+            if (editedRest != null) {
+                RestTimerSettingsFields(
+                    settings = editedRest,
+                    onSettingsChange = {
+                        restEnabled = it.enabled
+                        restSetSeconds = it.setSeconds
+                        restExerciseEnabled = it.exerciseEnabled
+                        restExerciseSeconds = it.exerciseSeconds
+                    },
+                )
+            }
             Button(
-                onClick = { onSave(name, editedCircuit) },
+                onClick = { onSave(name, editedCircuit, editedRest) },
                 enabled = name.isNotBlank(),
                 modifier = Modifier.fillMaxWidth(),
             ) {

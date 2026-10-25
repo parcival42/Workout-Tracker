@@ -232,6 +232,11 @@
     <string name="action_resume">Weiter</string>
     <string name="action_skip">Überspringen</string>
     <string name="action_abort">Beenden</string>
+    <string name="rest_timer">Pausentimer</string>
+    <string name="rest_set_time">Pause zwischen Sätzen</string>
+    <string name="rest_exercise_own">Eigene Pause zwischen Übungen</string>
+    <string name="rest_exercise_time">Pause zwischen Übungen</string>
+    <string name="rest_title">Pause</string>
     <string name="action_close">Schließen</string>
     <string name="circuit_abort_title">Zirkel beenden?</string>
     <string name="circuit_abort_message">Bereits erledigte Stationen bleiben gespeichert.</string>

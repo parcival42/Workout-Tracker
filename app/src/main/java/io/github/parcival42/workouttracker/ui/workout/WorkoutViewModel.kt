@@ -23,7 +23,11 @@ import io.github.parcival42.workouttracker.data.SetLogDao
 import io.github.parcival42.workouttracker.data.UserSettings
 import io.github.parcival42.workouttracker.data.UserSettingsDao
 import io.github.parcival42.workouttracker.data.circuitSettings
+import io.github.parcival42.workouttracker.data.RestTimerSettings
+import io.github.parcival42.workouttracker.data.restTimerSettings
 import io.github.parcival42.workouttracker.data.withCircuitSettings
+import io.github.parcival42.workouttracker.data.withRestTimerSettings
+import io.github.parcival42.workouttracker.ui.resttimer.RestTimerController
 import io.github.parcival42.workouttracker.ui.circuit.CircuitController
 import io.github.parcival42.workouttracker.ui.circuit.CircuitEvent
 import io.github.parcival42.workouttracker.ui.circuit.CircuitPhase
@@ -48,6 +52,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -110,6 +116,8 @@ data class WorkoutUiState(
     val circuitPreview: CircuitPreview? = null,
     val circuitSettings: CircuitSettings? = null,
     val circuit: CircuitUiState? = null,
+    // Only set for normal plans; circuit plans have no rest timer.
+    val restTimerSettings: RestTimerSettings? = null,
 ) {
     val isComplete: Boolean get() = items.isNotEmpty() && items.all { it.isComplete }
 }
@@ -187,6 +195,7 @@ class WorkoutViewModel(
         WorkoutUiState(
             planName = plan?.name.orEmpty(),
             circuitSettings = circuitSettings,
+            restTimerSettings = plan?.takeIf { it.type == PlanType.NORMAL }?.restTimerSettings,
             circuitPreview = circuitSettings?.let { settings ->
                 CircuitPreview(
                     stations = entries.size,
@@ -239,6 +248,18 @@ class WorkoutViewModel(
 
     val circuitEvents: SharedFlow<CircuitEvent> get() = circuit.events
 
+    // Only started in normal plans; keeps running while the screen is left or in the background.
+    private val restTimer = RestTimerController(viewModelScope, clock)
+
+    val restTimerEvents: SharedFlow<CircuitEvent> get() = restTimer.events
+
+    /** Remaining seconds of the running rest, null while none runs; always current, also after the background. */
+    val restSeconds: StateFlow<Int?> get() = restTimer.state
+
+    // Logs are written one after another, see [logWithRest].
+    private val logMutex = Mutex()
+    private var restGeneration = 0
+
     val uiState: StateFlow<WorkoutUiState> = combine(workoutState, circuit.state) { state, circuitState ->
         state.copy(circuit = circuitState)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WorkoutUiState())
@@ -269,6 +290,7 @@ class WorkoutViewModel(
     fun completeOneSet(item: StrengthItem) = logSets(item, 1)
 
     fun undoLastSet(item: StrengthItem) {
+        stopRest()
         viewModelScope.launch { setLogDao.deleteLastSinceInPlan(item.deviceId, planId, sessionStart.first()) }
     }
 
@@ -294,7 +316,7 @@ class WorkoutViewModel(
             planId = planId,
             distanceMeters = item.distanceMeters.takeIf { item.tracksDistance },
         )
-        viewModelScope.launch {
+        logWithRest(item, loggedSets = 1) {
             val id = cardioLogDao.insert(session)
             // The logged distance is now the last one, so the edit is no longer needed.
             distanceDrafts.update { it - item.deviceId }
@@ -303,6 +325,7 @@ class WorkoutViewModel(
     }
 
     fun undoLastSession(item: CardioItem) {
+        stopRest()
         // Pin the shown distance so removing the session does not change it.
         if (item.tracksDistance) distanceDrafts.update { it + (item.deviceId to item.distanceMeters) }
         viewModelScope.launch { cardioLogDao.deleteLastSinceInPlan(item.deviceId, planId, sessionStart.first()) }
@@ -354,14 +377,17 @@ class WorkoutViewModel(
         viewModelScope.launch { planDao.reorderEntries(orderedEntryIds) }
     }
 
-    /** Name and, for circuit plans, the circuit settings. */
-    fun savePlan(name: String, circuitSettings: CircuitSettings?) {
+    /** Name plus the circuit settings (circuit plans) or the rest timer settings (normal plans). */
+    fun savePlan(name: String, circuitSettings: CircuitSettings?, restTimerSettings: RestTimerSettings?) {
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return
+        if (restTimerSettings?.enabled == false) stopRest()
         viewModelScope.launch {
             val current = plan.first() ?: return@launch
-            val renamed = current.copy(name = trimmed)
-            planDao.updatePlan(if (circuitSettings != null) renamed.withCircuitSettings(circuitSettings) else renamed)
+            var updated = current.copy(name = trimmed)
+            if (circuitSettings != null) updated = updated.withCircuitSettings(circuitSettings)
+            if (restTimerSettings != null) updated = updated.withRestTimerSettings(restTimerSettings)
+            planDao.updatePlan(updated)
         }
     }
 
@@ -372,6 +398,7 @@ class WorkoutViewModel(
 
     /** Starts the plan over: only sets logged from now on count for today's progress. */
     fun restartPlan() {
+        stopRest()
         viewModelScope.launch {
             previousSessionStartedAt = plan.first()?.sessionStartedAt
             planDao.setSessionStart(planId, System.currentTimeMillis())
@@ -426,6 +453,34 @@ class WorkoutViewModel(
     /** Ends a running circuit or closes a finished one; logged stations stay. */
     fun stopCircuit() = circuit.stop()
 
+    /** Ends the running rest early, without a sound. */
+    fun skipRest() = stopRest()
+
+    // Every stop counts up, so a log that was still being written cannot start a rest afterwards.
+    private fun stopRest() {
+        restGeneration++
+        restTimer.stop()
+    }
+
+    /**
+     * Writes a log with [insert] and starts the rest that follows it, if the plan's rest timer is
+     * on. Logs run one after another, so each one sees the sets of the logs before it.
+     */
+    private fun logWithRest(item: WorkoutItem, loggedSets: Int, insert: suspend () -> Unit) {
+        val generation = restGeneration
+        viewModelScope.launch {
+            logMutex.withLock {
+                val before = workoutState.first()
+                insert()
+                val settings = plan.first()?.takeIf { it.type == PlanType.NORMAL }?.restTimerSettings
+                if (settings == null || !settings.enabled || generation != restGeneration) return@withLock
+                val current = before.items.firstOrNull { it.entryId == item.entryId } ?: item
+                val kind = chooseRest(current, loggedSets, before.items) ?: return@withLock
+                restTimer.start(settings.secondsFor(kind))
+            }
+        }
+    }
+
     // Logs a finished station: the plan's weight and the station time. Reps can be added later
     // through the set chip.
     private suspend fun logStation(station: CircuitStation, seconds: Int) {
@@ -469,7 +524,7 @@ class WorkoutViewModel(
                 durationSeconds = if (timed) item.durationSeconds else null,
             )
         }
-        viewModelScope.launch { setLogDao.insertAll(sets) }
+        logWithRest(item, count) { setLogDao.insertAll(sets) }
     }
 
     companion object {
