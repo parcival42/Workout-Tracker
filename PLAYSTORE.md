@@ -3,10 +3,8 @@
 ## Status
 
 - App angelegt am 17.10.2026: Standardsprache de-DE, Übersetzung en-US, kostenlos, automatischer Schutz deaktiviert, KI-Assets gekennzeichnet.
-- Geschlossener Test (Track **Alpha**) ab 17.10.2026 mit den Versionen 1.0.0 (4) bis 0.6.0 (10). Die Versionsnamen der Testphase waren nur Anzeige; `versionCode` ist durchgehend gestiegen.
+- Geschlossener Test (Track **Alpha**) ab 17.10.2026.
 - Produktionszugriff erteilt am 02.11.2026 (nach 12 Testern über 14 Tage).
-- Erstes Produktions-Release: **1.0.0 (versionCode 11)**.
-- 1.1.0 (versionCode 13; 12 wurde für ein verworfenes Bundle verbraucht): Übungs-Icons aus Vorlagen, feste Farben im Verlauf, Archivieren als Icon im Übungsdialog, Bearbeiten-Dialog übersteht Drehen.
 - Verwaltete Veröffentlichung ist aus: Freigegebene Änderungen gehen automatisch live.
 
 ## Links
@@ -21,13 +19,13 @@
 
 ## Release
 
-1. `versionCode` um 1 erhöhen (nächster: 14), `versionName` semantisch anpassen (`app/build.gradle.kts`, siehe [docs/development.md](docs/development.md)).
+1. `versionCode` um 1 erhöhen, `versionName` semantisch anpassen (`app/build.gradle.kts`, siehe [docs/development.md](docs/development.md)).
 2. Testen: aktuelle Android-Version und Android 11 (Emulatoren `Medium_Phone_API_37.0` und `Pixel_4`), inklusive Update über die vorige Version mit Daten.
 3. Release-Build auf einem Emulator ohne Debug-Build testen (R8 kann Fehler verursachen, die im Debug-Build fehlen).
 4. Bundle bauen: `JAVA_HOME="C:\Program Files\Android\Android Studio\jbr" ./gradlew bundleRelease`
 5. Datei: `app\build\outputs\bundle\release\app-release.aab`, in der Console hochladen.
 6. Release-Name in der Console: `<versionCode> (<versionName>)`.
-7. Versionssprung committen (`chore: bump version to X.Y.Z (versionCode N)`).
+7. Versionssprung committen.
 
 Optional: Debug-Symbole ins Bundle packen (`ndk { debugSymbolLevel }`), damit die Warnung "nativer Code ohne Symbole" verschwindet.
 
