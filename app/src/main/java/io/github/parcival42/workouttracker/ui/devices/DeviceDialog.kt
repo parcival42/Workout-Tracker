@@ -52,6 +52,7 @@ fun DeviceDialog(
     var weightStep by rememberSaveable { mutableStateOf(formatKg(initial.weightStepGrams)) }
     var measure by rememberSaveable { mutableStateOf(initial.measure) }
     var tracksDistance by rememberSaveable { mutableStateOf(initial.tracksDistance) }
+    var color by rememberSaveable { mutableStateOf(initial.color) }
 
     val isStrength = type == DeviceType.STRENGTH
     val minWeightGrams = parseKgToGrams(minWeight)
@@ -174,6 +175,7 @@ fun DeviceDialog(
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     )
                 }
+                SeriesColorPicker(selected = color, onSelect = { color = it })
             }
         },
         confirmButton = {
@@ -191,6 +193,7 @@ fun DeviceDialog(
                         onConfirm(
                             device.copy(
                                 name = name.trim(), type = type, measure = measure, tracksDistance = tracksDistance, icon = icon,
+                                color = color,
                             )
                         )
                     }

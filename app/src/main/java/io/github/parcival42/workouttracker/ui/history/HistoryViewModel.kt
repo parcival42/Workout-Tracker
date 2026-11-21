@@ -118,8 +118,9 @@ class HistoryViewModel(
     // null until the user picks a mode; then the mode of the most recent training is shown.
     private val mode = MutableStateFlow<DeviceType?>(null)
 
-    // Per mode: deviceId -> color slot. A slot stays with its device while selected, so
-    // toggling other devices never repaints the ones already shown.
+    // Per mode: deviceId -> stored color slot. A slot stays with its device while selected, so
+    // toggling other devices never repaints the ones already shown. A device's own color
+    // always wins over the stored slot (see shownSlot), so changing it applies immediately.
     private val selections = MutableStateFlow<Map<DeviceType, Map<Long, Int>>>(emptyMap())
 
     private val logs = range.flatMapLatest { range ->
@@ -189,7 +190,7 @@ class HistoryViewModel(
             .groupBy { it.deviceId }
         val zone = ZoneId.systemDefault()
         val series = modeDevices.mapNotNull { device ->
-            val slot = effectiveSelection[device.id] ?: return@mapNotNull null
+            val slot = effectiveSelection[device.id]?.let { shownSlot(device, it) } ?: return@mapNotNull null
             val days = selectedEntriesByDevice[device.id].orEmpty()
                 .sortedWith(compareBy({ it.performedAt }, { it.id }))
                 .groupBy { Instant.ofEpochMilli(it.performedAt).atZone(zone).toLocalDate() }
@@ -203,11 +204,11 @@ class HistoryViewModel(
             mode = effectiveMode,
             measure = modeDevices.firstOrNull { it.id in effectiveSelection && it.type == DeviceType.BODYWEIGHT }?.measure,
             availableModes = availableModes,
-            devices = modeDevices.map { HistoryDevice(it, effectiveSelection[it.id]) },
+            devices = modeDevices.map { HistoryDevice(it, effectiveSelection[it.id]?.let { slot -> shownSlot(it, slot) }) },
             range = range,
             dates = series.flatMap { s -> s.days.map { it.date } }.distinct().sorted(),
             series = series,
-            canSelectMore = effectiveSelection.keys.count { id -> modeDevices.any { it.id == id } } < MAX_SERIES,
+            canSelectMore = effectiveSelection.keys.count { id -> modeDevices.any { it.id == id } } < SERIES_COLOR_COUNT,
             cardioMetric = effectiveMetric,
             hasCardioMetrics = hasCardioMetrics,
         )
@@ -244,10 +245,12 @@ class HistoryViewModel(
             current - deviceId
         } else {
             // Devices hidden by the plan filter keep their slot unless all slots are taken.
-            val visibleIds = state.devices.mapTo(HashSet()) { it.device.id }
-            val candidates = if (current.size < MAX_SERIES) current else current.filterKeys { it in visibleIds }
-            val freeSlot = (0 until MAX_SERIES).firstOrNull { it !in candidates.values }
-            if (freeSlot == null) current else candidates + (deviceId to freeSlot)
+            addToSelection(
+                selection = current,
+                deviceId = deviceId,
+                fixedSlots = state.devices.mapNotNull { d -> d.device.fixedColorSlot()?.let { d.device.id to it } }.toMap(),
+                visibleIds = state.devices.mapTo(HashSet()) { it.device.id },
+            )
         }
         // Pin the mode too, so the view doesn't jump to another mode when new training is logged.
         mode.value = state.mode
@@ -292,8 +295,6 @@ class HistoryViewModel(
     }
 
     companion object {
-        const val MAX_SERIES = 8
-
         val Factory = viewModelFactory {
             initializer {
                 val app = this[APPLICATION_KEY] as WorkoutTrackerApplication

@@ -18,8 +18,9 @@ class BackupJsonTest {
 
     private val sample = BackupData(
         devices = listOf(
-            Device(id = 1, name = "Leg Press", minWeightGrams = 40_000, weightStepGrams = 5_000, icon = "legs"),
-            Device(id = 2, name = "Old Rowing", imageUri = "content://image", archived = true),
+            Device(id = 1, name = "Leg Press", minWeightGrams = 40_000, weightStepGrams = 5_000, icon = "legs", color = 3),
+            // Index outside the palette (e.g. from a newer app version) is kept as it is.
+            Device(id = 2, name = "Old Rowing", imageUri = "content://image", archived = true, color = 9),
             Device(id = 3, name = "Treadmill", type = DeviceType.CARDIO, tracksDistance = true),
             Device(id = 4, name = "Plank", type = DeviceType.BODYWEIGHT, measure = BodyweightMeasure.TIME),
         ),
@@ -250,6 +251,25 @@ class BackupJsonTest {
         """.trimIndent()
         val data = BackupJson.decode(v9)
         assertEquals(listOf("leg", "treadmill", "bodyweight"), data.devices.map { it.icon })
+    }
+
+    @Test
+    fun readsVersion10WithoutColor() {
+        val v10 = """
+            {"format":"workout-tracker-backup","version":10,"exportedAt":0,
+             "devices":[{"id":1,"name":"Leg Press","imageUri":null,"archived":false,"startWeightGrams":40000,"weightStepGrams":5000,"type":"STRENGTH","measure":"REPS","tracksDistance":false,"icon":"legs"}],
+             "plans":[],
+             "planEntries":[],
+             "sets":[],
+             "cardioSessions":[]}
+        """.trimIndent()
+        assertNull(BackupJson.decode(v10).devices.single().color)
+    }
+
+    @Test
+    fun keepsUnknownColorIndex() {
+        val data = BackupJson.decode(BackupJson.encode(sample, 0))
+        assertEquals(listOf(3, 9, null, null), data.devices.map { it.color })
     }
 
     @Test

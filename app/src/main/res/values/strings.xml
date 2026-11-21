@@ -278,6 +278,9 @@
     <!-- Cardio distance -->
     <string name="device_tracks_distance">Track distance</string>
     <string name="device_tracks_distance_help">Log the distance in km with every session.</string>
+    <string name="device_color_label">Color in history</string>
+    <string name="device_color_auto">Automatic</string>
+    <string name="device_color_option">Color %1$d</string>
     <string name="device_cardio_distance_info">Cardio · with distance</string>
     <string name="distance_km" translatable="false">%1$s km</string>
     <string name="cardio_session_summary" translatable="false">%1$s min · %2$s km</string>

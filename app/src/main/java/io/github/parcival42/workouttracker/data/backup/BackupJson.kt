@@ -46,7 +46,8 @@ object BackupJson {
     //     the database migration did (see BackupRepository).
     // v9: plans carry the rest timer settings (absent in older files, read as timer off).
     // v10: devices carry "icon" (absent in older files, read as the icon of the device's type).
-    const val VERSION = 10
+    // v11: devices carry a nullable "color" (palette index; absent in older files, read as automatic).
+    const val VERSION = 11
     const val FIRST_VERSION_WITH_ENTRY_VALUES = 8
 
     fun encode(data: BackupData, exportedAt: Long): String = JSONObject().apply {
@@ -66,6 +67,7 @@ object BackupJson {
                 put("measure", d.measure.name)
                 put("tracksDistance", d.tracksDistance)
                 put("icon", d.icon)
+                put("color", d.color ?: JSONObject.NULL)
             }
         }))
         put("plans", JSONArray(data.plans.map { p ->
@@ -150,6 +152,8 @@ object BackupJson {
                         // Unknown keys are kept as they are; they show the type icon. Older files get
                         // the same icons the database migration gave existing devices.
                         icon = if (o.has("icon")) o.getString("icon") else legacyDeviceIcon(name, type),
+                        // An index outside the palette is kept; it shows as automatic.
+                        color = if (o.has("color")) o.optIntOrNull("color") else null,
                     )
                 },
                 plans = root.getJSONArray("plans").objects().map { o ->

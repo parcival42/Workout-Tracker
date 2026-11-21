@@ -22,6 +22,9 @@ data class Device(
     @ColumnInfo(name = "tracks_distance", defaultValue = "0") val tracksDistance: Boolean = false,
     // Icon key (see DeviceIcons); starts as the type's icon. An unknown key shows the type icon.
     @ColumnInfo(defaultValue = "strength") val icon: String = type.defaultIcon,
+    // History color as a palette index (see SeriesColors); null = picked automatically.
+    // An index outside the palette counts as automatic.
+    val color: Int? = null,
 ) {
     companion object {
         const val DEFAULT_WEIGHT_STEP_GRAMS = 2_500

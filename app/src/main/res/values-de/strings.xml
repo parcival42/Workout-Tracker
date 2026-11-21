@@ -254,6 +254,9 @@
     <!-- Cardio distance -->
     <string name="device_tracks_distance">Distanz erfassen</string>
     <string name="device_tracks_distance_help">Zu jeder Einheit die Distanz in km eintragen.</string>
+    <string name="device_color_label">Farbe im Verlauf</string>
+    <string name="device_color_auto">Automatisch</string>
+    <string name="device_color_option">Farbe %1$d</string>
     <string name="device_cardio_distance_info">Cardio · mit Distanz</string>
     <string name="distance_label">Distanz</string>
     <string name="distance_placeholder">z. B. 2,4</string>

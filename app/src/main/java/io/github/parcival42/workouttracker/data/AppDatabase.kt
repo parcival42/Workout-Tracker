@@ -10,7 +10,7 @@ import androidx.room.RoomDatabase
     entities = [
         Device::class, TrainingPlan::class, PlanEntry::class, SetLog::class, CardioLog::class, UserSettings::class,
     ],
-    version = 14,
+    version = 15,
     exportSchema = true,
     autoMigrations = [
         AutoMigration(from = 1, to = 2),
@@ -25,6 +25,7 @@ import androidx.room.RoomDatabase
         AutoMigration(from = 10, to = 11),
         AutoMigration(from = 12, to = 13),
         AutoMigration(from = 13, to = 14, spec = DeviceIconAutoMigration::class),
+        AutoMigration(from = 14, to = 15),
     ],
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -121,6 +121,24 @@ class MigrationTest {
         assertEquals(listOf("leg", "treadmill", "bodyweight", "strength", "bodyweight", "cardio"), icons)
     }
 
+    /** Existing devices keep the automatic history color. */
+    @Test
+    fun migrate14To15AddsNoColor() {
+        helper.createDatabase(DB_NAME, 14).apply {
+            execSQL(
+                "INSERT INTO device (id, name, archived, start_weight_grams, type, measure, icon) " +
+                    "VALUES (1, 'Leg Press', 0, 0, 'STRENGTH', 'REPS', 'leg')"
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(DB_NAME, 15, true)
+        db.query("SELECT color FROM device").use { c ->
+            c.moveToFirst()
+            assertEquals(true, c.isNull(0))
+        }
+    }
+
     private companion object {
         const val DB_NAME = "migration-test"
     }
