@@ -2,6 +2,7 @@ package io.github.parcival42.workouttracker.ui.devices
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
@@ -216,15 +217,21 @@ fun DeviceDialog(
                     }
                 },
                 enabled = valid,
+                contentPadding = CompactButtonPadding,
             ) {
                 Text(stringResource(R.string.action_save))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
+            TextButton(onClick = onDismiss, contentPadding = CompactButtonPadding) {
+                Text(stringResource(R.string.action_cancel))
+            }
         },
     )
 }
+
+// Narrower than the default 12 dp side padding, so the button row stays compact in German.
+private val CompactButtonPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
 
 fun DeviceType.labelRes(): Int = when (this) {
     DeviceType.STRENGTH -> R.string.device_type_strength
