@@ -1,5 +1,6 @@
 package io.github.parcival42.workouttracker.data
 
+import androidx.room.migration.AutoMigrationSpec
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
 
@@ -48,6 +49,24 @@ const val DERIVE_PLAN_ENTRY_VALUES_SQL = """
             ELSE target_duration_seconds
         END
     """
+
+/**
+ * Devices store their own icon key: an existing device named like a template gets that template's
+ * icon, every other one the icon of its type (see [legacyDeviceIcon]).
+ */
+class DeviceIconAutoMigration : AutoMigrationSpec {
+    override fun onPostMigrate(db: SupportSQLiteDatabase) {
+        val icons = db.query("SELECT id, name, type FROM device").use { c ->
+            buildList {
+                while (c.moveToNext()) {
+                    val type = DeviceType.entries.firstOrNull { it.name == c.getString(2) } ?: DeviceType.STRENGTH
+                    add(c.getLong(0) to legacyDeviceIcon(c.getString(1), type))
+                }
+            }
+        }
+        icons.forEach { (id, icon) -> db.execSQL("UPDATE device SET icon = ? WHERE id = ?", arrayOf<Any>(icon, id)) }
+    }
+}
 
 /** Plan entries store their weight; all values become the plan's values instead of targets. */
 val MIGRATION_11_12 = object : Migration(11, 12) {

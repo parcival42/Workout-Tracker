@@ -23,6 +23,7 @@ import io.github.parcival42.workouttracker.data.SetLogDao
 import io.github.parcival42.workouttracker.data.UserSettings
 import io.github.parcival42.workouttracker.data.UserSettingsDao
 import io.github.parcival42.workouttracker.data.circuitSettings
+import io.github.parcival42.workouttracker.data.defaultIcon
 import io.github.parcival42.workouttracker.data.RestTimerSettings
 import io.github.parcival42.workouttracker.data.restTimerSettings
 import io.github.parcival42.workouttracker.data.withCircuitSettings
@@ -65,6 +66,8 @@ sealed interface WorkoutItem {
     val hasSessionLogs: Boolean
     // Circuit plans only: the station time of this device; null in normal plans.
     val stationSeconds: Int?
+    // Icon key of the device (see DeviceIcons).
+    val deviceIcon: String
 }
 
 data class StrengthItem(
@@ -82,6 +85,7 @@ data class StrengthItem(
     val measure: BodyweightMeasure? = null,
     // Bodyweight measured by time: duration per set.
     val durationSeconds: Int = 0,
+    override val deviceIcon: String = DeviceType.STRENGTH.defaultIcon,
 ) : WorkoutItem {
     val isBodyweight: Boolean get() = measure != null
     // Circuit stations are timed: they log weight and duration, no reps.
@@ -104,6 +108,7 @@ data class CardioItem(
     val tracksDistance: Boolean = false,
     // Distance of the next session: the last logged distance, or none. Always null without tracksDistance.
     val distanceMeters: Int? = null,
+    override val deviceIcon: String = DeviceType.CARDIO.defaultIcon,
 ) : WorkoutItem {
     override val isComplete: Boolean get() = todaySessions.size >= targetSessions
     override val hasSessionLogs: Boolean get() = todaySessions.isNotEmpty()
@@ -220,6 +225,7 @@ class WorkoutViewModel(
                             stationSeconds = circuitSettings?.let { entry.stationSeconds ?: it.stationSeconds },
                             measure = entry.measure.takeIf { isBodyweight },
                             durationSeconds = entry.targetDurationSeconds,
+                            deviceIcon = entry.deviceIcon,
                         )
                     }
                     DeviceType.CARDIO -> CardioItem(
@@ -236,6 +242,7 @@ class WorkoutViewModel(
                             entry.deviceId in distanceDrafts -> distanceDrafts[entry.deviceId]
                             else -> cardioLogs.lastDistance[entry.deviceId]
                         },
+                        deviceIcon = entry.deviceIcon,
                     )
                 }
             },

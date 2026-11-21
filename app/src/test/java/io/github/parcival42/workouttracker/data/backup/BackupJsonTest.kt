@@ -18,7 +18,7 @@ class BackupJsonTest {
 
     private val sample = BackupData(
         devices = listOf(
-            Device(id = 1, name = "Leg Press", minWeightGrams = 40_000, weightStepGrams = 5_000),
+            Device(id = 1, name = "Leg Press", minWeightGrams = 40_000, weightStepGrams = 5_000, icon = "legs"),
             Device(id = 2, name = "Old Rowing", imageUri = "content://image", archived = true),
             Device(id = 3, name = "Treadmill", type = DeviceType.CARDIO, tracksDistance = true),
             Device(id = 4, name = "Plank", type = DeviceType.BODYWEIGHT, measure = BodyweightMeasure.TIME),
@@ -233,6 +233,28 @@ class BackupJsonTest {
     @Test
     fun rejectsNonPositiveRestSeconds() {
         val broken = sample.copy(plans = sample.plans.map { it.copy(restSetSeconds = 0) })
+        assertThrows(InvalidBackupException::class.java) { BackupJson.decode(BackupJson.encode(broken, 0)) }
+    }
+
+    @Test
+    fun readsVersion9WithTemplateOrTypeIcons() {
+        val v9 = """
+            {"format":"workout-tracker-backup","version":9,"exportedAt":0,
+             "devices":[{"id":1,"name":"Leg Press","imageUri":null,"archived":false,"startWeightGrams":40000,"weightStepGrams":5000,"type":"STRENGTH","measure":"REPS","tracksDistance":false},
+                        {"id":2,"name":"Treadmill","imageUri":null,"archived":false,"startWeightGrams":0,"weightStepGrams":2500,"type":"CARDIO","measure":"REPS","tracksDistance":false},
+                        {"id":3,"name":"Plank","imageUri":null,"archived":false,"startWeightGrams":0,"weightStepGrams":2500,"type":"BODYWEIGHT","measure":"TIME","tracksDistance":false}],
+             "plans":[],
+             "planEntries":[],
+             "sets":[],
+             "cardioSessions":[]}
+        """.trimIndent()
+        val data = BackupJson.decode(v9)
+        assertEquals(listOf("leg", "treadmill", "bodyweight"), data.devices.map { it.icon })
+    }
+
+    @Test
+    fun rejectsBlankIcon() {
+        val broken = sample.copy(devices = sample.devices.map { it.copy(icon = " ") })
         assertThrows(InvalidBackupException::class.java) { BackupJson.decode(BackupJson.encode(broken, 0)) }
     }
 }

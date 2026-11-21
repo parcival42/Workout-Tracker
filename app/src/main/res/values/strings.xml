@@ -31,6 +31,9 @@
     <string name="template_exercise_bike">Exercise bike</string>
     <string name="template_rowing_machine">Rowing machine</string>
     <string name="template_stair_climber">Stair climber</string>
+    <string name="template_running">Running</string>
+    <string name="template_cycling">Cycling</string>
+    <string name="template_swimming">Swimming</string>
     <string name="device_add_title">Add exercise</string>
     <string name="device_add_own">Own exercise</string>
     <string name="device_add_own_description">Set name and weights yourself</string>
@@ -202,7 +205,14 @@
     <string name="settings_version">Version %1$s</string>
     <string name="settings_repository_action">Source code on GitHub</string>
     <string name="licenses_title">Open source licenses</string>
-    <string name="licenses_intro">This app uses the following open source libraries, all licensed under the Apache License, Version 2.0. The full license text follows below.</string>
+    <string name="licenses_intro">This app uses the following open source components. Tap one to read its license.</string>
+    <string name="licenses_use_androidx">App framework: screens, database, navigation</string>
+    <string name="licenses_use_kotlin">Programming language and background work</string>
+    <string name="licenses_use_reorderable">Reordering by drag and drop</string>
+    <string name="licenses_use_material_icons">Strength type icon, buttons and navigation</string>
+    <string name="licenses_use_tabler">Treadmill, bike, stairs, running and swimming icons, plus the cardio and bodyweight type icons</string>
+    <string name="licenses_use_lucide">Biceps icon</string>
+    <string name="licenses_use_healthicons">Leg and arm icons</string>
     <string name="settings_repository_url" translatable="false">https://github.com/parcival42/Workout-Tracker</string>
 
     <string name="name_label">Name</string>

@@ -61,6 +61,7 @@ data class PlanEntryItem(
     val weightStepGrams: Int,
     val tracksDistance: Boolean = false,
     val weightGrams: Int = 0,
+    val deviceIcon: String = deviceType.defaultIcon,
 )
 
 val PlanEntryItem.isTimedBodyweight: Boolean

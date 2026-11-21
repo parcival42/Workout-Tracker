@@ -72,7 +72,7 @@ internal fun ReorderList(
                         modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        DeviceTypeBadge(type = item.deviceType, size = 28.dp)
+                        DeviceTypeBadge(type = item.deviceType, icon = item.deviceIcon, size = 28.dp)
                         Text(
                             text = item.deviceName,
                             style = MaterialTheme.typography.titleMedium,

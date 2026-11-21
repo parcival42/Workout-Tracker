@@ -73,6 +73,7 @@ internal fun CardioCard(
     DeviceCard(
         deviceName = item.deviceName,
         type = DeviceType.CARDIO,
+        icon = item.deviceIcon,
         isComplete = item.isComplete,
         done = item.todaySessions.size,
         // Several sessions are only planned in a circuit, one per round.

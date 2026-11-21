@@ -20,6 +20,8 @@ data class Device(
     @ColumnInfo(defaultValue = "REPS") val measure: BodyweightMeasure = BodyweightMeasure.REPS,
     // Only used for cardio devices: sessions can carry a distance. Changeable at any time.
     @ColumnInfo(name = "tracks_distance", defaultValue = "0") val tracksDistance: Boolean = false,
+    // Icon key (see DeviceIcons); starts as the type's icon. An unknown key shows the type icon.
+    @ColumnInfo(defaultValue = "strength") val icon: String = type.defaultIcon,
 ) {
     companion object {
         const val DEFAULT_WEIGHT_STEP_GRAMS = 2_500

@@ -1,4 +1,7 @@
-# Device icons (parked, 2026-11-02)
+# Device icons (parked 2026-11-02, restored 2026-11-21)
+
+**Status:** the patch was applied on 2026-11-21 and extended with template icons. The notes below describe the parked
+state and are kept for history; `device-icons-wip.patch` is no longer needed to restore anything.
 
 Removed from the working tree before the first production release (1.0.0), because it was
 neither finished nor tested. The full state is in `device-icons-wip.patch` (24 files, incl. the
@@ -29,7 +32,9 @@ The patch is based on commit 7cdb64d (0.6.0). If it no longer applies cleanly, u
   are kept; a blank icon fails validation. Tests in `BackupJsonTest`.
 - Also in the patch (not icon-related, came along in the same work): cardio templates
   "Running" / "Cycling" / "Swimming" (de: Laufen / Fahrradfahren / Schwimmen), all with
-  distance tracking, plus a `cardio()` helper in `DeviceTemplates.kt`.
+  distance tracking, plus a `cardio()` helper in `DeviceTemplates.kt`. These hunks are in main
+  since 2026-11-21 (with the type icon); exclude them when restoring:
+  `git apply --exclude='*DeviceTemplates.kt' --exclude='*strings.xml' docs/device-icons/device-icons-wip.patch`
 
 ## Decisions with the user
 

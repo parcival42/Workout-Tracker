@@ -91,6 +91,7 @@ fun TemplateDialog(
                             weightStepGrams = template.weightStepGrams,
                             measure = template.measure,
                             tracksDistance = template.tracksDistance,
+                            icon = template.icon,
                         )
                     }
                     onConfirm(devices)

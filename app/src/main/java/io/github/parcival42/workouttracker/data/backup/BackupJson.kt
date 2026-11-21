@@ -9,6 +9,7 @@ import io.github.parcival42.workouttracker.data.PlanType
 import io.github.parcival42.workouttracker.data.SetLog
 import io.github.parcival42.workouttracker.data.TrainingPlan
 import io.github.parcival42.workouttracker.data.UserSettings
+import io.github.parcival42.workouttracker.data.legacyDeviceIcon
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -44,7 +45,8 @@ object BackupJson {
     //     longer targets. Older files are imported with the values derived from the logs, like
     //     the database migration did (see BackupRepository).
     // v9: plans carry the rest timer settings (absent in older files, read as timer off).
-    const val VERSION = 9
+    // v10: devices carry "icon" (absent in older files, read as the icon of the device's type).
+    const val VERSION = 10
     const val FIRST_VERSION_WITH_ENTRY_VALUES = 8
 
     fun encode(data: BackupData, exportedAt: Long): String = JSONObject().apply {
@@ -63,6 +65,7 @@ object BackupJson {
                 put("type", d.type.name)
                 put("measure", d.measure.name)
                 put("tracksDistance", d.tracksDistance)
+                put("icon", d.icon)
             }
         }))
         put("plans", JSONArray(data.plans.map { p ->
@@ -132,16 +135,21 @@ object BackupJson {
 
             BackupData(
                 devices = root.getJSONArray("devices").objects().map { o ->
+                    val type = DeviceType.valueOf(o.optString("type", DeviceType.STRENGTH.name))
+                    val name = o.getString("name")
                     Device(
                         id = o.getLong("id"),
-                        name = o.getString("name"),
+                        name = name,
                         imageUri = if (o.isNull("imageUri")) null else o.getString("imageUri"),
                         archived = o.getBoolean("archived"),
                         minWeightGrams = o.getInt("startWeightGrams"),
                         weightStepGrams = o.getInt("weightStepGrams"),
-                        type = DeviceType.valueOf(o.optString("type", DeviceType.STRENGTH.name)),
+                        type = type,
                         measure = BodyweightMeasure.valueOf(o.optString("measure", BodyweightMeasure.REPS.name)),
                         tracksDistance = o.optBoolean("tracksDistance", false),
+                        // Unknown keys are kept as they are; they show the type icon. Older files get
+                        // the same icons the database migration gave existing devices.
+                        icon = if (o.has("icon")) o.getString("icon") else legacyDeviceIcon(name, type),
                     )
                 },
                 plans = root.getJSONArray("plans").objects().map { o ->
@@ -246,7 +254,10 @@ object BackupJson {
             data.plans.all { (it.restSetSeconds ?: 1) > 0 && (it.restExerciseSeconds ?: 1) > 0 },
             "Invalid rest timer settings",
         )
-        check(data.devices.all { it.name.isNotBlank() && it.minWeightGrams >= 0 && it.weightStepGrams > 0 }, "Invalid device values")
+        check(
+            data.devices.all { it.name.isNotBlank() && it.minWeightGrams >= 0 && it.weightStepGrams > 0 && it.icon.isNotBlank() },
+            "Invalid device values",
+        )
         check(data.planEntries.all { it.planId in planIds && it.deviceId in deviceIds }, "Plan entry references a missing plan or device")
         check(
             data.planEntries.all {

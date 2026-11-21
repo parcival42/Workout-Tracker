@@ -29,6 +29,9 @@
     <string name="template_exercise_bike">Ergometer</string>
     <string name="template_rowing_machine">Rudergerät</string>
     <string name="template_stair_climber">Stepper</string>
+    <string name="template_running">Laufen</string>
+    <string name="template_cycling">Fahrradfahren</string>
+    <string name="template_swimming">Schwimmen</string>
     <string name="device_add_title">Übung anlegen</string>
     <string name="device_add_own">Eigene Übung</string>
     <string name="device_add_own_description">Name und Gewichte selbst festlegen</string>
@@ -180,7 +183,14 @@
     <string name="settings_version">Version %1$s</string>
     <string name="settings_repository_action">Quellcode auf GitHub</string>
     <string name="licenses_title">Open-Source-Lizenzen</string>
-    <string name="licenses_intro">Diese App nutzt die folgenden Open-Source-Bibliotheken, alle unter der Apache License, Version 2.0. Der vollständige Lizenztext steht darunter.</string>
+    <string name="licenses_intro">Diese App nutzt die folgenden Open-Source-Bestandteile. Tippe auf einen Eintrag, um seine Lizenz zu lesen.</string>
+    <string name="licenses_use_androidx">Grundgerüst der App: Bildschirme, Datenbank, Navigation</string>
+    <string name="licenses_use_kotlin">Programmiersprache und Hintergrundaufgaben</string>
+    <string name="licenses_use_reorderable">Sortieren per Drag &amp; Drop</string>
+    <string name="licenses_use_material_icons">Icon für den Typ Kraft, Schaltflächen und Navigation</string>
+    <string name="licenses_use_tabler">Icons für Laufband, Fahrrad, Treppe, Laufen und Schwimmen sowie die Typ-Icons für Cardio und Eigengewicht</string>
+    <string name="licenses_use_lucide">Bizeps-Icon</string>
+    <string name="licenses_use_healthicons">Bein- und Arm-Icon</string>
 
     <string name="name_label">Name</string>
     <string name="action_save">Speichern</string>

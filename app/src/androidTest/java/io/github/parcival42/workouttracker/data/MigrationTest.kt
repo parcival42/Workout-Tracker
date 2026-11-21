@@ -96,6 +96,31 @@ class MigrationTest {
         }
     }
 
+    /** Devices named like a template (English or German, same type) get its icon, all others their type icon. */
+    @Test
+    fun migrate13To14SetsTemplateOrTypeIcons() {
+        helper.createDatabase(DB_NAME, 13).apply {
+            execSQL(
+                """
+                INSERT INTO device (id, name, archived, start_weight_grams, type, measure) VALUES
+                    (1, 'Leg Press', 0, 0, 'STRENGTH', 'REPS'),
+                    (2, 'Laufband', 0, 0, 'CARDIO', 'REPS'),
+                    (3, 'Plank', 1, 0, 'BODYWEIGHT', 'TIME'),
+                    (4, 'Kabelzug', 0, 0, 'STRENGTH', 'REPS'),
+                    (5, 'Laufen', 0, 0, 'BODYWEIGHT', 'REPS'),
+                    (6, 'Crosstrainer', 0, 0, 'CARDIO', 'REPS')
+                """
+            )
+            close()
+        }
+
+        val db = helper.runMigrationsAndValidate(DB_NAME, 14, true)
+        val icons = db.query("SELECT icon FROM device ORDER BY id").use { c ->
+            buildList { while (c.moveToNext()) add(c.getString(0)) }
+        }
+        assertEquals(listOf("leg", "treadmill", "bodyweight", "strength", "bodyweight", "cardio"), icons)
+    }
+
     private companion object {
         const val DB_NAME = "migration-test"
     }

@@ -28,6 +28,7 @@ import io.github.parcival42.workouttracker.ui.devices.DeviceListScreen
 import io.github.parcival42.workouttracker.ui.history.HistoryScreen
 import io.github.parcival42.workouttracker.ui.history.LogEntriesScreen
 import io.github.parcival42.workouttracker.ui.quicklog.QuickLogScreen
+import io.github.parcival42.workouttracker.ui.settings.LicenseDetailScreen
 import io.github.parcival42.workouttracker.ui.settings.LicensesScreen
 import io.github.parcival42.workouttracker.ui.settings.SettingsScreen
 import io.github.parcival42.workouttracker.ui.training.TrainingScreen
@@ -43,6 +44,9 @@ private object Routes {
     const val ARCHIVED_DEVICES = "devices/archived"
     const val LOG_ENTRIES = "history/entries"
     const val LICENSES = "settings/licenses"
+    const val LICENSE_COMPONENT_ARG = "componentId"
+    const val LICENSE_DETAIL = "settings/licenses/{$LICENSE_COMPONENT_ARG}"
+    fun licenseDetail(componentId: String) = "settings/licenses/$componentId"
 }
 
 // Plan picked from a plan list, kept in the Training entry's saved state while the app runs.
@@ -142,7 +146,16 @@ fun AppNavigation() {
                 SettingsScreen(onShowLicenses = { navController.navigate(Routes.LICENSES) })
             }
             composable(Routes.LICENSES) {
-                LicensesScreen(onBack = { navController.popBackStack() })
+                LicensesScreen(
+                    onBack = { navController.popBackStack() },
+                    onShowLicense = { navController.navigate(Routes.licenseDetail(it)) },
+                )
+            }
+            composable(Routes.LICENSE_DETAIL) { entry ->
+                LicenseDetailScreen(
+                    componentId = entry.arguments?.getString(Routes.LICENSE_COMPONENT_ARG).orEmpty(),
+                    onBack = { navController.popBackStack() },
+                )
             }
         }
     }

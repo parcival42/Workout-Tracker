@@ -69,6 +69,7 @@ private const val MAX_PROGRESS_SEGMENTS = 10
 internal fun DeviceCard(
     deviceName: String,
     type: DeviceType,
+    icon: String,
     isComplete: Boolean,
     done: Int,
     target: Int?,
@@ -133,7 +134,7 @@ internal fun DeviceCard(
                 },
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                DeviceTypeBadge(type = type, size = if (collapsed) 28.dp else 36.dp)
+                DeviceTypeBadge(type = type, icon = icon, size = if (collapsed) 28.dp else 36.dp)
                 Text(
                     text = deviceName,
                     style = if (collapsed) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge,

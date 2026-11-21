@@ -257,7 +257,7 @@ private fun DeviceRow(device: Device, lastLog: LastLog?, onClick: () -> Unit) {
     ListItem(
         headlineContent = { Text(text = device.name, style = MaterialTheme.typography.titleMedium) },
         supportingContent = { Text(lastText ?: setupText(device)) },
-        leadingContent = { DeviceTypeBadge(type = device.type) },
+        leadingContent = { DeviceTypeBadge(type = device.type, icon = device.icon) },
         colors = ListItemDefaults.colors(containerColor = Color.Transparent),
         modifier = Modifier.clickable(onClick = onClick),
     )

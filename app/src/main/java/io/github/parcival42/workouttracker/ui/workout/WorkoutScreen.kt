@@ -542,6 +542,7 @@ private fun WorkoutCard(
     DeviceCard(
         deviceName = item.deviceName,
         type = if (item.isBodyweight) DeviceType.BODYWEIGHT else DeviceType.STRENGTH,
+        icon = item.deviceIcon,
         isComplete = item.isComplete,
         done = item.todaySets.size,
         target = item.targetSets,

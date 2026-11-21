@@ -32,6 +32,7 @@ import io.github.parcival42.workouttracker.R
 import io.github.parcival42.workouttracker.data.BodyweightMeasure
 import io.github.parcival42.workouttracker.data.Device
 import io.github.parcival42.workouttracker.data.DeviceType
+import io.github.parcival42.workouttracker.data.defaultIcon
 import io.github.parcival42.workouttracker.ui.components.formatKg
 import io.github.parcival42.workouttracker.ui.components.parseKgToGrams
 
@@ -184,8 +185,14 @@ fun DeviceDialog(
                     } else {
                         initial
                     }
+                    // An icon that is still the old type's own icon follows the new type.
+                    val icon = if (initial.icon == initial.type.defaultIcon) type.defaultIcon else initial.icon
                     if (valid) {
-                        onConfirm(device.copy(name = name.trim(), type = type, measure = measure, tracksDistance = tracksDistance))
+                        onConfirm(
+                            device.copy(
+                                name = name.trim(), type = type, measure = measure, tracksDistance = tracksDistance, icon = icon,
+                            )
+                        )
                     }
                 },
                 enabled = valid,
