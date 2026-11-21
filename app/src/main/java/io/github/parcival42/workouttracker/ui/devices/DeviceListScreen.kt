@@ -66,7 +66,9 @@ fun DeviceListScreen(
     var showAddChoice by rememberSaveable { mutableStateOf(false) }
     var showAddDialog by rememberSaveable { mutableStateOf(false) }
     var showTemplateDialog by rememberSaveable { mutableStateOf(false) }
-    var editingDevice by remember { mutableStateOf<Device?>(null) }
+    // Only the id survives rotation; the device itself comes from the list.
+    var editingDeviceId by rememberSaveable { mutableStateOf<Long?>(null) }
+    val editingDevice = editingDeviceId?.let { id -> devices.firstOrNull { it.id == id } }
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val resources = LocalResources.current
@@ -78,7 +80,7 @@ fun DeviceListScreen(
         snackbarHostState = snackbarHostState,
         onAddClick = { showAddChoice = true },
         onTemplatesClick = { showTemplateDialog = true },
-        onDeviceClick = { editingDevice = it },
+        onDeviceClick = { editingDeviceId = it.id },
         onShowArchived = onShowArchived,
     )
 
@@ -125,13 +127,13 @@ fun DeviceListScreen(
             initial = device,
             onConfirm = {
                 viewModel.save(it)
-                editingDevice = null
+                editingDeviceId = null
             },
-            onDismiss = { editingDevice = null },
+            onDismiss = { editingDeviceId = null },
             typeLocked = device.id in deviceIdsWithLogs,
             onArchive = {
                 viewModel.archive(device)
-                editingDevice = null
+                editingDeviceId = null
                 scope.launch {
                     val result = snackbarHostState.showSnackbar(
                         message = resources.getString(R.string.device_archived_message, device.name),
