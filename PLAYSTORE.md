@@ -6,6 +6,7 @@
 - Geschlossener Test (Track **Alpha**) ab 17.10.2026 mit den Versionen 1.0.0 (4) bis 0.6.0 (10). Die Versionsnamen der Testphase waren nur Anzeige; `versionCode` ist durchgehend gestiegen.
 - Produktionszugriff erteilt am 02.11.2026 (nach 12 Testern über 14 Tage).
 - Erstes Produktions-Release: **1.0.0 (versionCode 11)**.
+- 1.1.0 (versionCode 12): Übungs-Icons aus Vorlagen, feste Farben im Verlauf, Archivieren als Icon im Übungsdialog, Bearbeiten-Dialog übersteht Drehen.
 - Verwaltete Veröffentlichung ist aus: Freigegebene Änderungen gehen automatisch live.
 
 ## Links
@@ -20,7 +21,7 @@
 
 ## Release
 
-1. `versionCode` um 1 erhöhen (nächster: 12), `versionName` semantisch anpassen (`app/build.gradle.kts`, siehe [docs/development.md](docs/development.md)).
+1. `versionCode` um 1 erhöhen (nächster: 13), `versionName` semantisch anpassen (`app/build.gradle.kts`, siehe [docs/development.md](docs/development.md)).
 2. Testen: aktuelle Android-Version und Android 11 (Emulatoren `Medium_Phone_API_37.0` und `Pixel_4`), inklusive Update über die vorige Version mit Daten.
 3. Release-Build auf einem Emulator ohne Debug-Build testen (R8 kann Fehler verursachen, die im Debug-Build fehlen).
 4. Bundle bauen: `JAVA_HOME="C:\Program Files\Android\Android Studio\jbr" ./gradlew bundleRelease`
