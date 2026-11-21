@@ -2,7 +2,7 @@
 
 [Deutsche Fassung weiter unten](#datenschutzerklärung)
 
-Effective date: October 16, 2026
+Effective date: November 21, 2026
 
 This privacy policy applies to the Android app **Simple Workout Tracker** (package `io.github.parcival42.workouttracker`), developed by parcival42 as a private individual.
 
@@ -12,7 +12,7 @@ The app does not collect, transmit or share any personal data. Everything you en
 
 ## Data stored by the app
 
-The app stores the data you enter, such as devices, training plans, logged sets and cardio sessions, and settings, in a local database on your device. This data is never sent to the developer or to any third party.
+The app stores the data you enter, such as exercises, training plans, logged sets and cardio sessions, and settings, in a local database on your device. This data is never sent to the developer or to any third party.
 
 ## No network access, no tracking
 
@@ -20,7 +20,7 @@ The app has no internet permission and cannot connect to any server. It contains
 
 ## Permissions
 
-The app requests no permissions for your contacts, location, camera, microphone, storage or similar data.
+The app requests no permissions for your contacts, location, camera, microphone, storage or similar data. The only permission it uses is vibration, for the signals of the circuit and rest timers.
 
 ## Export and import
 
@@ -32,7 +32,7 @@ Like most Android apps, the app allows the Android system backup. If you have en
 
 ## Deleting your data
 
-You can delete individual entries and devices in the app. Uninstalling the app or clearing its storage in the Android settings removes all of its data from your device.
+You can delete individual entries and exercises in the app. Uninstalling the app or clearing its storage in the Android settings removes all of its data from your device.
 
 ## Children
 
@@ -50,7 +50,7 @@ For questions about this privacy policy, please open an issue at https://github.
 
 # Datenschutzerklärung
 
-Gültig ab: 16. Oktober 2026
+Gültig ab: 21. November 2026
 
 Diese Datenschutzerklärung gilt für die Android-App **Simple Workout Tracker** (Paket `io.github.parcival42.workouttracker`), entwickelt von parcival42 als Privatperson.
 
@@ -60,7 +60,7 @@ Die App erhebt, überträgt und teilt keine personenbezogenen Daten. Alles, was 
 
 ## Von der App gespeicherte Daten
 
-Die App speichert deine Eingaben, also Geräte, Trainingspläne, eingetragene Sätze und Cardio-Einheiten sowie Einstellungen, in einer lokalen Datenbank auf deinem Gerät. Diese Daten werden nie an den Entwickler oder an Dritte übermittelt.
+Die App speichert deine Eingaben, also Übungen, Trainingspläne, eingetragene Sätze und Cardio-Einheiten sowie Einstellungen, in einer lokalen Datenbank auf deinem Gerät. Diese Daten werden nie an den Entwickler oder an Dritte übermittelt.
 
 ## Kein Netzwerkzugriff, kein Tracking
 
@@ -68,7 +68,7 @@ Die App hat keine Internet-Berechtigung und kann sich mit keinem Server verbinde
 
 ## Berechtigungen
 
-Die App fordert keine Berechtigungen für Kontakte, Standort, Kamera, Mikrofon, Speicher oder ähnliche Daten an.
+Die App fordert keine Berechtigungen für Kontakte, Standort, Kamera, Mikrofon, Speicher oder ähnliche Daten an. Die einzige Berechtigung, die sie nutzt, ist die Vibration für die Signale des Zirkel- und Pausentimers.
 
 ## Export und Import
 
@@ -80,7 +80,7 @@ Wie die meisten Android-Apps erlaubt die App die Sicherung durch das Android-Sys
 
 ## Löschen deiner Daten
 
-Einzelne Einträge und Geräte kannst du in der App löschen. Wenn du die App deinstallierst oder ihren Speicher in den Android-Einstellungen leerst, werden alle ihre Daten von deinem Gerät entfernt.
+Einzelne Einträge und Übungen kannst du in der App löschen. Wenn du die App deinstallierst oder ihren Speicher in den Android-Einstellungen leerst, werden alle ihre Daten von deinem Gerät entfernt.
 
 ## Kinder
 

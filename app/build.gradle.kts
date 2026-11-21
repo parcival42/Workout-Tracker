@@ -24,7 +24,7 @@ android {
         applicationId = "io.github.parcival42.workouttracker"
         minSdk = 30
         targetSdk = 37
-        // Bump both on every release; versionCode must always increase.
+        // Bump both on every release; versionCode must always increase (see docs/development.md).
         versionCode = 11
         versionName = "1.0.0"
 
